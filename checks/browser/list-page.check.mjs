@@ -71,7 +71,10 @@ await withChrome('decision-page', async ({ dir, say, ev, load, key, exported }) 
   const file = await exported();
   const r = file ? checkPair(DECISION, file) : { status: 1, stdout: 'no download' };
   say(r.status === 0, `export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
+});
 
+// ── a review whose every text tries to inject markup ──
+await withChrome('decision-hostile', async ({ dir, say, ev, load }) => {
   const bad = '<img src=x onerror="window.__pwned=1">';
   const evil = JSON.parse(readFileSync(DECISION, 'utf8'));
   Object.assign(evil, { id: 'evil', intro: bad, title: bad, ask: bad, afterwards: bad, audience: bad });

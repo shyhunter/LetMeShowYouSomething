@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: Apache-2.0
 # The protocol, the checker and the examples on every pull request and every change to main (D084).
-# The browser checks stay local (D024): they need Chrome and are never required.
+# In a real browser, only the hostile-input checks run here (D090); the layout checks stay local (D024).
 name: check
 
 # Once per pull request, not twice: a branch push alone does not run it, its pull request does.
@@ -29,6 +29,13 @@ jobs:
 
       - name: Unit tests
         run: node --test test/protocol.test.mjs
+
+      # The page's promise, proven in the runner's Chrome: a hostile review or answer runs no script,
+      # fetches nothing and cannot break out of the exported page. In CI a missing Chrome fails.
+      - name: Hostile input in a real browser
+        run: |
+          CHECKS=hostile node checks/browser/list-page.check.mjs
+          CHECKS=hostile node checks/browser/flow-page.check.mjs
 
       - name: Every example passes the checker
         run: |

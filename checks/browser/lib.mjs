@@ -27,8 +27,15 @@ export function checkPair(reviewPath, feedbackPath) {
 }
 
 export async function withChrome(name, body) {
+  // CHECKS=hostile runs only the checks whose name matches; CI runs the hostile-input ones on every PR.
+  if (process.env.CHECKS && !new RegExp(process.env.CHECKS).test(name)) return;
   const chromePath = findChrome();
-  if (!chromePath) { console.log(`SKIP ${name}: Chrome not found (set CHROME_PATH to run this local check)`); return; }
+  if (!chromePath) {
+    // Locally a missing Chrome is a skip. In CI it would be a pass that proved nothing, so it fails.
+    console.log(`${process.env.CI ? 'FAIL' : 'SKIP'} ${name}: Chrome not found (set CHROME_PATH)`);
+    if (process.env.CI) process.exitCode = 1;
+    return;
+  }
   const dir = mkdtempSync(join(tmpdir(), `browser-${name}-`));
   const downloads = join(dir, 'downloads'); mkdirSync(downloads);
   const port = 9300 + Math.floor(Math.random() * 90);
