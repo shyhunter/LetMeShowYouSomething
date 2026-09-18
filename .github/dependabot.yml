@@ -1,0 +1,11 @@
+# SPDX-License-Identifier: Apache-2.0
+# The workflow pins every action to a commit; Dependabot proposes the new commit when an action
+# releases, security fixes included. Its pull requests pass the same check as any other.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: CI
