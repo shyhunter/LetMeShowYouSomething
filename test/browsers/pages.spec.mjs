@@ -27,18 +27,20 @@ test.beforeEach(async ({ page }, info) => {
 test.afterEach(async ({}, info) => { expect(info.problems, 'errors or network requests').toEqual([]); });
 
 for (const [name, review] of Object.entries(PAGES)) {
-  test(`${name}: loads, fits the screen, every target can be hit`, async ({ page }) => {
+  test(`${name}: loads, fits the screen, every target can be hit`, async ({ page }, info) => {
     await page.goto(url(`examples/${name}.html`));
     await expect(page.locator('h1')).toHaveText(JSON.parse(readFileSync(join(ROOT, 'examples', review), 'utf8')).title);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
-    // WCAG 2.2 AA (2.5.8): 24 × 24 px at least. Links inside running text are exempt, as is the
-    // skip link, which only appears on focus.
-    const small = await page.evaluate(() => [...document.querySelectorAll('button, a[href], select, textarea, input:not([type=hidden]), [role=tab]')]
+    // With a mouse, WCAG 2.2 AA (2.5.8): 24 × 24 px. On a touch screen, 44 × 44 px (D092). Exempt:
+    // links inside running text, the skip link (it appears on focus only) and the drawn app screen,
+    // which is a picture except for its targets.
+    const min = info.project.use.hasTouch ? 44 : 24;
+    const small = await page.evaluate((min) => [...document.querySelectorAll('button, a[href], select, textarea, input:not([type=hidden]), [role=tab]')]
       .map((el) => (el.matches('input[type=radio], input[type=checkbox]') && el.closest('label')) || el)
-      .filter((el, i, all) => all.indexOf(el) === i && el.getClientRects().length && !el.matches('.skip, p a, li a'))
+      .filter((el, i, all) => all.indexOf(el) === i && el.getClientRects().length && !el.matches('.skip, p a, li a, .screen *:not(.is-target)'))
       .map((el) => { const b = el.getBoundingClientRect(); return { el: el.id || el.className || el.tagName, w: Math.round(b.width), h: Math.round(b.height) }; })
-      .filter((x) => x.w < 24 || x.h < 24));
-    expect(small, 'targets smaller than 24 × 24 px').toEqual([]);
+      .filter((x) => x.w < min || x.h < min), min);
+    expect(small, `targets smaller than ${min} × ${min} px`).toEqual([]);
   });
 }
 

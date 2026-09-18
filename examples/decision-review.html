@@ -461,6 +461,15 @@ fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
 .c-progress{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mut)}
 .c-progress progress{width:100%}
 .c-sr{position:absolute;left:-9999px}
+/* D092 — on a touch screen every control is at least 44 × 44 px (Apple's guideline, WCAG AAA); with a
+   mouse the page keeps its compact layout. The drawn app screen is a picture, not controls: .is-target
+   there is 44 px already. Safari ignores a native select's height, so on touch the page draws it. */
+@media (pointer:coarse){
+  :is(button,textarea,input:not([type=radio],[type=checkbox],[type=hidden]),label:has(>input[type=radio]),label:has(>input[type=checkbox]),[role=tab]):not(.screen *,.skip){min-height:44px}
+  .chip,.row-open{min-width:44px}
+  select:not(.screen *){-webkit-appearance:none;appearance:none;height:44px;padding:4px 30px 4px 10px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;
+    background:linear-gradient(45deg,transparent 50%,var(--mut) 50%) right 16px center/5px 5px no-repeat,linear-gradient(135deg,var(--mut) 50%,transparent 50%) right 11px center/5px 5px no-repeat,var(--surf)}
+}
 </style>
 </head><body>
 <a class="skip" href="#items">Skip to the items</a>
