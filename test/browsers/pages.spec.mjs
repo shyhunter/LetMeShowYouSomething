@@ -41,6 +41,12 @@ for (const [name, review] of Object.entries(PAGES)) {
       .map((el) => { const b = el.getBoundingClientRect(); return { el: el.id || el.className || el.tagName, w: Math.round(b.width), h: Math.round(b.height) }; })
       .filter((x) => x.w < min || x.h < min), min);
     expect(small, `targets smaller than ${min} × ${min} px`).toEqual([]);
+    // Signed at the bottom, quietly: the mark and a link that opens beside the page (D095).
+    const made = page.locator('.made');
+    await expect(made).toHaveText('Made with LetMeShowYouSomething');
+    await expect(made.locator('svg')).toBeVisible();
+    await expect(made.locator('a')).toHaveAttribute('href', 'https://github.com/shyhunter/LetMeShowYouSomething');
+    await expect(made.locator('a')).toHaveAttribute('target', '_blank');
   });
 }
 
