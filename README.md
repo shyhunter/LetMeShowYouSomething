@@ -67,11 +67,20 @@ against your code.
 
 ## Use it as a skill
 
-Copy this folder into your agent's skills folder, for example
-`~/.claude/skills/letmeshowyousomething/` for Claude Code. [`SKILL.md`](SKILL.md) tells the agent
-when to use it, how to write a review, and how to report what comes back: gaps first, then the
-reviewer's questions, then choices, then what the reviewer added.
+```bash
+npx skills add shyhunter/LetMeShowYouSomething -g
+```
 
+That installs it for every agent on your machine that reads skills, through the
+[skills](https://github.com/vercel-labs/skills) installer (it needs Node.js 22.20 or newer). Tested
+with Claude Code, where it lands in `~/.claude/skills/letmeshowyousomething/`. The installer also
+supports many other agents; we have not tried each one.
+
+Or copy this folder into your agent's skills folder yourself, for example
+`~/.claude/skills/letmeshowyousomething/` for Claude Code.
+
+[`SKILL.md`](SKILL.md) tells the agent when to use it, how to write a review, and how to report what
+comes back: gaps first, then the reviewer's questions, then choices, then what the reviewer added.
 It is plain files and Node, so it works the same with any agent that can run a command.
 
 ## The protocol
