@@ -1,10 +1,12 @@
 # SPDX-License-Identifier: Apache-2.0
-# The protocol, the checker and the examples on every push and pull request (D084).
+# The protocol, the checker and the examples on every pull request and every change to main (D084).
 # The browser checks stay local (D024): they need Chrome and are never required.
 name: check
 
+# Once per pull request, not twice: a branch push alone does not run it, its pull request does.
 on:
   push:
+    branches: [main]
   pull_request:
 
 permissions:
@@ -12,7 +14,9 @@ permissions:
 
 jobs:
   check:
-    runs-on: ubuntu-latest
+    # Pinned, not ubuntu-latest: the runner changes when we choose, like the actions below. The job
+    # needs only Node, so moving to a newer image is a one-line change once a run on it passes.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       # Actions pinned to a commit, not a tag: a tag can be moved to other code.
