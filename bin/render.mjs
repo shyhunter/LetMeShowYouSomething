@@ -281,6 +281,9 @@ fieldset.item.chosen{border:2px solid var(--ac)}
 
 /* ── flow player (v0.2) ── */
 .wrap.flow{max-width:none;padding-inline:24px}
+/* The header lines up with the text inside the sections below, not with their outer border.
+   On a phone every pixel of width counts, so it stays at the page edge there. */
+@media (min-width:700px){.flow header{padding-inline:20px}}
 .flow .bar{position:static}
 #player{margin-bottom:10px}
 .item .k,#brief .k{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-right:6px}
