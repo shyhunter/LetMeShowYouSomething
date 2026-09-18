@@ -48,8 +48,13 @@ const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut'
 
 // The logo as the tab icon (D094), inlined so the page still fetches nothing. Base64, so no URL sits in
 // the page. A folder without site/ (only bin/ copied) simply renders without one.
-let favicon = '';
-try { favicon = `<link rel="icon" href="data:image/svg+xml;base64,${readFileSync(new URL('../site/logo.svg', import.meta.url)).toString('base64')}">`; } catch {}
+// The same mark signs the page at the bottom (D095): "Made with LetMeShowYouSomething", quiet, drawn inline.
+let favicon = '', mark = '';
+try {
+  const logo = readFileSync(new URL('../site/logo.svg', import.meta.url), 'utf8');
+  favicon = `<link rel="icon" href="data:image/svg+xml;base64,${Buffer.from(logo).toString('base64')}">`;
+  mark = (logo.match(/<g [\s\S]*<\/g>/) || [''])[0];
+} catch {}
 
 // D080/D083 — styles to pick, each in light and dark. A style's colours are written once per mode; its
 // look (fonts, corners, shadows) is written once in tokens, so it holds in both. System fonts only, so
@@ -181,7 +186,7 @@ ${favicon}
 ${STYLE_CSS}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink2);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
-.wrap{max-width:900px;margin:0 auto;padding-inline:18px;padding-block:0 80px}
+.wrap{max-width:900px;margin:0 auto;padding-inline:18px;padding-block:0 32px}
 h1,h2,h3{color:var(--ink);margin:0;text-wrap:balance}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
 .skip{position:absolute;left:-9999px}
@@ -265,6 +270,11 @@ textarea::placeholder{color:var(--sub)}
 .done{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding-block:14px;
   display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
 .done .note{font-size:12.5px;color:var(--mut)}
+/* D095 — the page is signed, quietly, below everything the reviewer came for. */
+.made{display:flex;align-items:center;gap:7px;margin:18px 0 0;font-size:12.5px;color:var(--mut)}
+.made svg{width:16px;height:16px;flex:none;color:var(--ac)}
+.made a{color:inherit;text-underline-offset:2px}
+.made a:hover{color:var(--ink)}
 .empty{padding:26px;text-align:center;color:var(--mut);font-size:13.5px}
 .meta{font:11.5px var(--mono);color:var(--sub);margin-top:6px}
 .asks{display:grid;gap:10px;margin-top:16px;max-width:74ch}
@@ -661,6 +671,7 @@ ${review.allowAddedItems === false ? '' : `
   <button class="btn" id="reset" type="button">Clear my answers</button>
   <span class="note" id="footnote">Answers save in this browser as you go.</span>
 </div>
+<p class="made">${mark ? `<svg viewBox="0 0 64 64" aria-hidden="true">${mark}</svg>` : ''}Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
 
 <script>
