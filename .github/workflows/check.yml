@@ -30,6 +30,16 @@ jobs:
       - name: Unit tests
         run: node --test test/protocol.test.mjs
 
+      # Test-only dependency (D091): the skill itself installs nothing. Exact versions from the
+      # lockfile, no install scripts.
+      - name: Install Playwright and its three browsers
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium firefox webkit
+
+      - name: Every page in Chromium, Firefox and WebKit, at desktop, tablet and phone size
+        run: npx playwright test
+
       # The page's promise, proven in the runner's Chrome: a hostile review or answer runs no script,
       # fetches nothing and cannot break out of the exported page. In CI a missing Chrome fails.
       - name: Hostile input in a real browser

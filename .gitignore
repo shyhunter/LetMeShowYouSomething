@@ -21,3 +21,8 @@
 .aws/credentials
 .npmrc.local
 # --- end security baseline ---
+
+# test-only tooling (Playwright)
+node_modules/
+test-results/
+playwright-report/

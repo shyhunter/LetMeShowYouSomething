@@ -184,7 +184,9 @@ h1,h2,h3{color:var(--ink);margin:0;text-wrap:balance}
 header{padding-block:30px 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
 .htools{display:flex;gap:8px;align-items:center}
 .style-pick{font:500 12.5px var(--sans);color:var(--mut);display:flex;gap:6px;align-items:center}
-.style-pick select{min-height:44px;background:var(--surf);color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 8px;font:inherit}
+/* Safari ignores min-height on a native select: drawn by the page, it keeps the 44px target (D091). */
+.style-pick select{-webkit-appearance:none;appearance:none;height:44px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 30px 4px 10px;font:inherit;
+  background:linear-gradient(45deg,transparent 50%,var(--mut) 50%) right 16px center/5px 5px no-repeat,linear-gradient(135deg,var(--mut) 50%,transparent 50%) right 11px center/5px 5px no-repeat,var(--surf)}
 /* D079 — pin a section: it stays at the top while the rest scrolls under it. Pinned sections stack
    in page order and share 80% of the window between them. */
 .pin{min-height:44px;font-size:12.5px}

@@ -47,7 +47,7 @@ Cyberpunk, Newsletter, ShyHunter) in light or dark.
 
 ## Quick start
 
-You need [Node.js](https://nodejs.org) (tested on Node 22). There are no dependencies and nothing
+You need [Node.js](https://nodejs.org) (tested on Node 22). The skill has no dependencies and nothing
 to install.
 
 ```bash
@@ -88,6 +88,11 @@ would be just as valid, as long as what comes back passes the checker.
 node --test test/protocol.test.mjs            # the protocol, the checker, the renderer
 node checks/browser/flow-page.check.mjs       # the flow page in real Chrome (skips if Chrome is missing)
 node checks/browser/list-page.check.mjs       # the test and decision pages in real Chrome
+
+# The pages in Chromium, Firefox and WebKit, at desktop, tablet and phone size.
+# Playwright is a test-only dependency; the skill itself does not need it.
+npm ci && npx playwright install chromium firefox webkit
+npx playwright test
 ```
 
 ## Licence
