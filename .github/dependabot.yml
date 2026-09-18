@@ -9,3 +9,10 @@ updates:
       interval: weekly
     commit-message:
       prefix: CI
+  # Playwright, the one test-only dependency (D091).
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: Tests

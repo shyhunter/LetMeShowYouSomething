@@ -1,0 +1,14 @@
+{
+  "name": "letmeshowyousomething-tests",
+  "private": true,
+  "description": "Test-only: Playwright checks the pages in Chromium, Firefox and WebKit. The skill itself has no dependencies.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/protocol.test.mjs",
+    "test:browsers": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}

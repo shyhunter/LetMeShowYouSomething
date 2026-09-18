@@ -11,5 +11,5 @@ path = ["examples/**"]
 SPDX-License-Identifier = "MIT-0"
 
 [[annotations]]
-path = ["README.md", "SKILL.md", "LICENSING.md", ".gitignore", "REUSE.toml"]
+path = ["README.md", "SKILL.md", "LICENSING.md", ".gitignore", "REUSE.toml", "package.json", "package-lock.json"]
 SPDX-License-Identifier = "Apache-2.0"
