@@ -1,0 +1,15 @@
+# Licences for files that cannot carry a comment. Code files carry their own SPDX line.
+# Format: https://reuse.software/spec-3.3/
+version = 1
+
+[[annotations]]
+path = ["schemas/**", "PROTOCOL.md"]
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+path = ["examples/**"]
+SPDX-License-Identifier = "MIT-0"
+
+[[annotations]]
+path = ["README.md", "SKILL.md", "LICENSING.md", ".gitignore", "REUSE.toml"]
+SPDX-License-Identifier = "Apache-2.0"
