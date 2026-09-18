@@ -1,0 +1,95 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": {
+    "id": "checkout-uat-2026-09",
+    "title": "Checkout rebuild — acceptance pass",
+    "schemaVersion": 1
+  },
+  "respondedAt": "2026-09-17T09:00:00Z",
+  "verdictSet": {
+    "id": "test",
+    "options": [
+      {
+        "value": "works",
+        "label": "Works",
+        "tone": "positive"
+      },
+      {
+        "value": "partial",
+        "label": "Partially works",
+        "tone": "caution",
+        "hint": "Completes, but not the way it should"
+      },
+      {
+        "value": "fails",
+        "label": "Doesn't work",
+        "tone": "negative"
+      },
+      {
+        "value": "blocked",
+        "label": "Couldn't test it",
+        "tone": "neutral",
+        "hint": "Something upstream stopped you"
+      }
+    ]
+  },
+  "responses": [
+    {
+      "itemId": "guest-checkout",
+      "title": "A guest can buy without creating an account",
+      "verdict": "works",
+      "note": null,
+      "sectionLabel": "The path most people take",
+      "ref": "src/checkout/guest.ts:44"
+    },
+    {
+      "itemId": "saved-card",
+      "title": "A returning customer can pay with a saved card",
+      "verdict": "partial",
+      "note": null,
+      "sectionLabel": "The path most people take",
+      "ref": "src/checkout/wallet.ts:112"
+    },
+    {
+      "itemId": "declined-card",
+      "title": "A declined card explains itself",
+      "verdict": "fails",
+      "note": "Customer sees error 51.",
+      "sectionLabel": "Where it usually breaks"
+    },
+    {
+      "itemId": "back-button",
+      "title": "The back button mid-payment does not double-charge",
+      "verdict": "unset",
+      "note": null,
+      "sectionLabel": "Where it usually breaks"
+    }
+  ],
+  "summary": {
+    "total": 4,
+    "answered": 3,
+    "unset": 1,
+    "added": 1,
+    "byVerdict": {
+      "unset": 1,
+      "works": 1,
+      "partial": 1,
+      "fails": 1,
+      "blocked": 0
+    }
+  },
+  "gaps": [
+    "declined-card",
+    "back-button",
+    "added-1"
+  ],
+  "addedItems": [
+    {
+      "id": "added-1",
+      "title": "Currency switches halfway through",
+      "verdict": "fails",
+      "note": null
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": { "id": "offline-first-2026-09", "title": "Ground rules for the review page", "schemaVersion": 1 },
+  "respondedAt": "2026-09-10T11:00:00Z",
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      { "value": "agree",        "label": "Agree",           "tone": "positive" },
+      { "value": "partly-agree", "label": "Partly agree",    "tone": "caution" },
+      { "value": "disagree",     "label": "Disagree",        "tone": "negative" },
+      { "value": "revisit",      "label": "Revisit",         "tone": "caution" },
+      { "value": "changed-mind", "label": "Changed my mind", "tone": "neutral" }
+    ]
+  },
+  "responses": [
+    { "itemId": "no-network", "title": "The review page makes zero network requests", "verdict": "agree",
+      "note": "A reviewer on a plane must still be able to finish." },
+    { "itemId": "no-account", "title": "A reviewer never needs an account", "verdict": "agree", "note": null }
+  ],
+  "summary": { "total": 2, "answered": 2, "unset": 0, "added": 0,
+    "byVerdict": { "agree": 2, "partly-agree": 0, "disagree": 0, "revisit": 0, "changed-mind": 0, "unset": 0 } },
+  "gaps": []
+}

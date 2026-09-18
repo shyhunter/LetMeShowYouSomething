@@ -12,8 +12,6 @@ It is an agent skill: one folder with instructions, a renderer and a checker. Th
 between (`review.v1` and `feedback.v1`) is written down as a [protocol](PROTOCOL.md), so any agent,
 script or tool can write the question or read the answer.
 
-*(Working title.)*
-
 ## Why
 
 Agents ask for your judgement all the time: which option, does this flow make sense, did these

@@ -1,0 +1,173 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shyhunter.github.io/LetMeShowYouSomething/schema/feedback.v1.json",
+  "title": "LetMeShowYouSomething — Feedback (the answer)",
+  "description": "What comes back from the human. THE DEFINING RULE: this file is readable on its own. Every response echoes the text of the item it answers, so an agent that never saw the review — a different agent, a different model, a script, a colleague — can act on it without the original.",
+  "type": "object",
+  "required": ["protocol", "schemaVersion", "review", "verdictSet", "responses", "summary"],
+  "additionalProperties": false,
+  "properties": {
+    "protocol": { "const": "letmeshowyousomething/feedback" },
+    "schemaVersion": { "const": 1 },
+
+    "review": {
+      "type": "object",
+      "description": "Which ask this answers. The title is echoed so the file names itself.",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+        "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "schemaVersion": { "type": "integer", "minimum": 1 }
+      }
+    },
+
+    "respondedAt": { "type": "string", "format": "date-time" },
+    "respondent": {
+      "type": "object",
+      "description": "Optional and minimal by design. A review is about the work, not the reviewer; nothing here is required and no identifier is implied.",
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "maxLength": 80 },
+        "role": { "type": "string", "maxLength": 80 }
+      }
+    },
+
+    "verdictSet": {
+      "$ref": "https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json#/properties/verdictSet",
+      "description": "Echoed from the review. Without it, 'partial' is a word with no defined meaning to a reader who lacks the original."
+    },
+
+    "responses": {
+      "type": "array",
+      "description": "One entry per item in the review — ALL of them, including untouched ones. See `verdict: unset`.",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "title", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "itemId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+          "title": {
+            "type": "string", "minLength": 1, "maxLength": 300,
+            "description": "ECHOED from the review item. This is the self-describing invariant and the reason the format is portable."
+          },
+          "sectionId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+          "sectionKind": { "enum": ["challenge"], "description": "Echoed from the review section (D051): in a doubts section agree is the gap." },
+          "sectionLabel": { "type": "string", "maxLength": 120 },
+          "ref": { "type": "string", "maxLength": 300 },
+          "affects": {
+            "type": "array",
+            "description": "Echoed from the review item, so a reader knows this answer was given about a change to an earlier decision.",
+            "items": { "$ref": "https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json#/$defs/affects" }
+          },
+          "verdict": {
+            "type": "string",
+            "description": "A value from verdictSet, or the literal \"unset\". Unset is written explicitly and never omitted: 'they read it and had no opinion' and 'this never reached them' must not look the same to an agent deciding what to do next."
+          },
+          "note": {
+            "type": ["string", "null"], "maxLength": 4000,
+            "description": "The reviewer's own words, never summarised before they reach the agent. null when they wrote nothing — which is normal and not a defect."
+          }
+        }
+      }
+    },
+
+    "addedItems": {
+      "type": "array",
+      "description": "Items the reviewer added that the agent did not think to ask about. Frequently the most valuable part of the file.",
+      "items": {
+        "type": "object",
+        "required": ["id", "title", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^added-[a-z0-9][a-z0-9._-]{0,56}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "body": { "type": "string", "maxLength": 4000 },
+          "sectionLabel": { "type": "string", "maxLength": 120 },
+          "verdict": { "type": "string" },
+          "note": { "type": ["string", "null"], "maxLength": 4000 }
+        }
+      }
+    },
+
+    "layerVerdicts": {
+      "type": "array",
+      "description": "Verdicts the reviewer gave on single system or data entries of a flow step. Only entries they judged (D006); each echoes the entry text so the file reads on its own. Nothing about navigation is recorded (D003).",
+      "items": {
+        "type": "object",
+        "required": ["id", "stepId", "entryId", "stepTitle", "layer", "outcome", "entry", "verdict"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}/[a-z0-9][a-z0-9._-]{0,63}$" },
+          "stepId": { "type": "string" },
+          "entryId": { "type": "string" },
+          "stepTitle": { "type": "string", "minLength": 1 },
+          "layer": { "enum": ["system", "data"] },
+          "outcome": { "type": ["string", "null"] },
+          "entry": { "type": "string", "minLength": 1 },
+          "verdict": { "type": "string" },
+          "note": { "type": ["string", "null"], "maxLength": 4000 }
+        }
+      }
+    },
+
+    "requests": {
+      "type": "array",
+      "description": "What the reviewer asked the agent for (D060): an example, or an explanation. The agent answers these in the next round.",
+      "items": {
+        "type": "object",
+        "required": ["itemId", "title", "kind"],
+        "additionalProperties": false,
+        "properties": {
+          "itemId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+          "title": { "type": "string", "minLength": 1, "maxLength": 300 },
+          "kind": { "enum": ["example", "explain"] },
+          "note": { "type": ["string", "null"], "maxLength": 4000 }
+        }
+      }
+    },
+
+    "choices": {
+      "type": "array",
+      "description": "One entry per choose-one section, INCLUDING ones nobody chose (itemId null). The picked option's title is echoed; followedRecommendation is DERIVED and recomputed by the checker.",
+      "items": {
+        "type": "object",
+        "required": ["sectionId", "sectionLabel", "itemId", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "sectionId": { "type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$" },
+          "sectionLabel": { "type": "string", "minLength": 1, "maxLength": 120 },
+          "itemId": { "type": ["string", "null"] },
+          "title": { "type": ["string", "null"], "maxLength": 300 },
+          "recommended": {
+            "type": "object",
+            "required": ["itemId", "title"],
+            "additionalProperties": false,
+            "properties": { "itemId": { "type": "string" }, "title": { "type": "string" } }
+          },
+          "followedRecommendation": { "type": ["boolean", "null"] }
+        }
+      }
+    },
+
+    "summary": {
+      "type": "object",
+      "description": "DERIVED. Present for convenience, and required to agree with `responses` — a checker recomputes it and fails on a mismatch, so a hand-edited file cannot lie about its own totals.",
+      "required": ["total", "answered", "unset", "added", "byVerdict"],
+      "additionalProperties": false,
+      "properties": {
+        "total": { "type": "integer", "minimum": 0 },
+        "answered": { "type": "integer", "minimum": 0 },
+        "unset": { "type": "integer", "minimum": 0 },
+        "added": { "type": "integer", "minimum": 0 },
+        "byVerdict": { "type": "object", "additionalProperties": { "type": "integer", "minimum": 0 } }
+      }
+    },
+
+    "gaps": {
+      "type": "array",
+      "description": "DERIVED, gap-first: ids of every response whose verdict has tone 'negative' or is unset. The unmet items are the headline, not something to find by scrolling.",
+      "items": { "type": "string" }
+    }
+  }
+}

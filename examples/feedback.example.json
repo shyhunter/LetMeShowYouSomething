@@ -1,0 +1,71 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": { "id": "checkout-uat-2026-09", "title": "Checkout rebuild — acceptance pass", "schemaVersion": 1 },
+  "respondedAt": "2026-09-16T17:40:00Z",
+  "respondent": { "name": "shyhunter", "role": "Founder" },
+
+  "verdictSet": {
+    "id": "test",
+    "options": [
+      { "value": "works",   "label": "Works",           "tone": "positive" },
+      { "value": "partial", "label": "Partially works", "tone": "caution",  "hint": "Completes, but not the way it should" },
+      { "value": "fails",   "label": "Doesn't work",    "tone": "negative" },
+      { "value": "blocked", "label": "Couldn't test it","tone": "neutral",  "hint": "Something upstream stopped you" }
+    ]
+  },
+
+  "responses": [
+    {
+      "itemId": "guest-checkout",
+      "title": "A guest can buy without creating an account",
+      "sectionLabel": "The path most people take",
+      "ref": "src/checkout/guest.ts:44",
+      "verdict": "works",
+      "note": null
+    },
+    {
+      "itemId": "saved-card",
+      "title": "A returning customer can pay with a saved card",
+      "sectionLabel": "The path most people take",
+      "ref": "src/checkout/wallet.ts:112",
+      "verdict": "partial",
+      "note": "Pays fine, but the masked card shows the wrong last four until you reload. Looked like it charged the wrong card — I nearly stopped the test."
+    },
+    {
+      "itemId": "declined-card",
+      "title": "A declined card explains itself",
+      "sectionLabel": "Where it usually breaks",
+      "verdict": "fails",
+      "note": "Customer sees \"error 51\". Cart also empties, so they have to start over."
+    },
+    {
+      "itemId": "back-button",
+      "title": "The back button mid-payment does not double-charge",
+      "sectionLabel": "Where it usually breaks",
+      "verdict": "unset",
+      "note": null
+    }
+  ],
+
+  "addedItems": [
+    {
+      "id": "added-currency",
+      "title": "Prices switch currency halfway through if you change the country",
+      "body": "Cart says EUR, the payment sheet says USD. Nobody asked me to test this, I hit it by accident.",
+      "sectionLabel": "Where it usually breaks",
+      "verdict": "fails",
+      "note": "This one worries me more than the declined card."
+    }
+  ],
+
+  "summary": {
+    "total": 4,
+    "answered": 3,
+    "unset": 1,
+    "added": 1,
+    "byVerdict": { "works": 1, "partial": 1, "fails": 1, "blocked": 0, "unset": 1 }
+  },
+
+  "gaps": ["declined-card", "back-button", "added-currency"]
+}

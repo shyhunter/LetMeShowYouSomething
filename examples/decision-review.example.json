@@ -1,0 +1,103 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "answer-storage-2026-09",
+  "title": "Where do reviewer answers go?",
+  "subtitle": "One choice, before the export path is built",
+  "audience": "Product owner; no code knowledge needed",
+  "ask": "Pick one of the three options, and mark anything you disagree with on the way.",
+  "afterwards": "Your pick is what I build in v0.1. If you mark the recommendation \"revisit\", I draft two more options instead of building.",
+  "createdAt": "2026-09-17T15:00:00Z",
+  "createdBy": { "agent": "claude-code" },
+
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      { "value": "agree",         "label": "Agree",           "tone": "positive" },
+      { "value": "partly-agree",  "label": "Partly agree",    "tone": "caution" },
+      { "value": "disagree",      "label": "Disagree",        "tone": "negative" },
+      { "value": "revisit",       "label": "Revisit",         "tone": "caution",  "hint": "Right question, not ready to decide" },
+      { "value": "changed-mind",  "label": "Changed my mind", "tone": "neutral" }
+    ]
+  },
+
+  "fields": [
+    { "key": "assumes",              "label": "Assumes" },
+    { "key": "risk",                 "label": "Risk",                 "tone": "caution" },
+    { "key": "would_change_my_mind", "label": "Would change my mind" }
+  ],
+
+  "sections": [
+    {
+      "id": "storage",
+      "label": "Where the answers are kept",
+      "mode": "choose-one",
+      "recommended": { "itemId": "opt-file", "why": "It is the only option that works offline and for a reviewer with no account." }
+    },
+    { "id": "follow-up", "label": "Consequences of any choice" },
+    { "id": "challenge", "label": "Where I could be wrong", "kind": "challenge", "description": "If I were you, I would push back on these. Agree means the concern is real." }
+  ],
+
+  "items": [
+    {
+      "id": "opt-file",
+      "sectionId": "storage",
+      "title": "The reviewer exports a file and sends it back",
+      "summary": "One click saves feedback.json; the reviewer emails or drops it wherever the agent can read it.",
+      "body": "Answers autosave in the reviewer's own browser while they work. Nothing leaves the machine until they choose to send the file.",
+      "fields": {
+        "assumes": "The reviewer can send a file back (email, chat, shared folder).",
+        "risk": "They forget to send it, and the agent waits.",
+        "would_change_my_mind": "Most reviewers turn out to be colleagues on the same hosted workspace."
+      }
+    },
+    {
+      "id": "opt-db",
+      "sectionId": "storage",
+      "title": "Answers save to a hosted database as the reviewer works",
+      "summary": "No export step; the agent reads answers the moment they are given.",
+      "fields": {
+        "assumes": "A server we run, and an account or link for every reviewer.",
+        "risk": "Breaks offline use and puts reviewer notes on a third-party host."
+      },
+      "affects": [{
+        "decision": { "review": "offline-first-2026-09", "itemId": "no-network",
+                      "title": "The review page makes zero network requests", "verdict": "agree" },
+        "effect": "contradicts",
+        "why": "Every save would need the network."
+      }]
+    },
+    {
+      "id": "opt-both",
+      "sectionId": "storage",
+      "title": "Export a file now, optional sync later",
+      "summary": "Build the file export first; add sync only if reviewers ask for it.",
+      "fields": { "risk": "Two paths to maintain once sync exists." },
+      "affects": [{
+        "decision": { "review": "offline-first-2026-09", "itemId": "no-network",
+                      "title": "The review page makes zero network requests", "verdict": "agree" },
+        "effect": "extends",
+        "why": "Offline stays the default; sync would be opt-in."
+      }]
+    },
+    {
+      "id": "autosave-local",
+      "sectionId": "follow-up",
+      "title": "Autosave stays in the reviewer's browser only",
+      "summary": "Half-finished answers survive a reload, and are never sent anywhere automatically."
+    },
+    {
+      "id": "challenge-forgotten-file",
+      "sectionId": "challenge",
+      "title": "A reviewer who forgets to send the file is a bigger problem than I make it sound",
+      "summary": "If this happens often, the agent waits silently and the loop stalls.",
+      "fields": { "would_change_my_mind": "Reviewers in the first real rounds send files back without a reminder." }
+    },
+    {
+      "id": "challenge-browser-storage",
+      "sectionId": "challenge",
+      "title": "Autosave in the browser can lose work when a reviewer clears their data",
+      "summary": "Answers only become safe once exported."
+    }
+  ]
+}

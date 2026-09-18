@@ -1,0 +1,650 @@
+#!/usr/bin/env node
+// SPDX-License-Identifier: Apache-2.0
+// LetMeShowYouSomething — protocol checker.
+//
+// JSON Schema pins the SHAPE. This pins the things a schema cannot say: that ids are unique, that a
+// verdict is one the review actually offered, that every item got a response, that a derived summary
+// is not lying, and — the one that makes the format portable — that every response carries the text
+// of the item it answers.
+//
+// Deliberately dependency-free. A protocol checker that needs an install is a protocol fewer people
+// check. Run the schemas through any standard validator alongside it.
+//
+//   node bin/check.mjs review   <review.json>
+//   node bin/check.mjs feedback <feedback.json> [review.json]
+//   node bin/check.mjs pair     <review.json> <feedback.json>
+//   node bin/check.mjs history  <review.json> <earlier-feedback.json>...
+//   add --root <project folder> to prove every file:line reference in a flow
+//
+// Exit 0 only when there are zero errors. Warnings never fail the run.
+
+import { readFileSync } from 'node:fs';
+import { relative, resolve } from 'node:path';
+import { findLayerEntry, layerEntryText } from '../lib/build-feedback.mjs';
+
+const UNSET = 'unset';
+const ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+
+const load = (p) => {
+  try { return JSON.parse(readFileSync(p, 'utf8')); }
+  catch (e) { fail(`cannot read ${p}: ${e.message}`); }
+};
+function fail(msg) { console.error(`✗ ${msg}`); process.exit(2); }
+
+class Report {
+  constructor() { this.errors = []; this.warnings = []; this.checks = []; }
+  check(name, ok, detail) {
+    this.checks.push({ name, ok });
+    if (!ok) this.errors.push(`${name}: ${detail}`);
+    return ok;
+  }
+  warn(name, cond, detail) { if (cond) this.warnings.push(`${name}: ${detail}`); }
+}
+
+// ── review ──────────────────────────────────────────────────────────────────────────────────────
+function checkReview(r, rep) {
+  rep.check('protocol', r?.protocol === 'letmeshowyousomething/review', `expected "letmeshowyousomething/review", got ${JSON.stringify(r?.protocol)}`);
+  rep.check('schemaVersion', r?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(r?.schemaVersion)}`);
+  rep.check('review id', ID.test(r?.id ?? ''), `"${r?.id}" is not a valid id`);
+
+  const items = Array.isArray(r?.items) ? r.items : [];
+  rep.check('has items', items.length > 0, 'a review with no items asks nothing');
+
+  const ids = items.map((i) => i?.id);
+  const dupes = ids.filter((v, i) => v && ids.indexOf(v) !== i);
+  rep.check('item ids unique', dupes.length === 0, `duplicated: ${[...new Set(dupes)].join(', ')}`);
+
+  const sectionIds = new Set((r?.sections ?? []).map((s) => s.id));
+  const orphans = items.filter((i) => i?.sectionId && !sectionIds.has(i.sectionId)).map((i) => i.id);
+  rep.check('sections resolve', orphans.length === 0, `item(s) point at a section that does not exist: ${orphans.join(', ')}`);
+
+  const values = new Set((r?.verdictSet?.options ?? []).map((o) => o.value));
+  rep.check('verdict set usable', values.size >= 2, 'a verdict set needs at least two options to be a judgement');
+  rep.check('verdict values unique', values.size === (r?.verdictSet?.options ?? []).length, 'two options share a value');
+  rep.check('no reserved verdict', !values.has(UNSET), `"${UNSET}" is reserved for "the reviewer did not answer" and cannot be an option`);
+
+  const badChoice = [];
+  for (const s of r?.sections ?? []) {
+    const options = items.filter((i) => i?.sectionId === s.id).map((i) => i.id);
+    if (s.mode === 'choose-one' && options.length < 2) badChoice.push(`${s.id}: a choice needs at least two options`);
+    if (s.recommended && s.mode !== 'choose-one') badChoice.push(`${s.id}: "recommended" only makes sense in a choose-one section`);
+    if (s.recommended && !options.includes(s.recommended.itemId)) badChoice.push(`${s.id}: recommends "${s.recommended.itemId}", which is not one of its options`);
+  }
+  rep.check('choices well-formed', badChoice.length === 0, badChoice.join(' · '));
+
+  const EFFECTS = new Set(['reopens', 'extends', 'contradicts', 'depends-on']);
+  const badAffects = items.filter((i) => (i?.affects ?? []).some((a) =>
+    !EFFECTS.has(a?.effect) || !a?.why || !a?.decision?.review || !a?.decision?.itemId || !a?.decision?.title || !a?.decision?.verdict));
+  rep.check('affects well-formed', badAffects.length === 0,
+    `item(s) with an incomplete quote of an earlier decision or an unknown effect: ${badAffects.map((i) => i.id).join(', ')}`);
+
+  // Image data is excluded: base64 can match a pattern by chance.
+  const text = JSON.stringify(r ?? {}, (k, v) => (k === 'src' ? undefined : v));
+  const found = SECRETS.filter(([, re]) => re.test(text)).map(([what]) => what);
+  rep.check('no secrets', found.length === 0,
+    `looks like it contains: ${found.join(', ')}. Replace it with a placeholder like <API_KEY>; reviews get forwarded, and a real one would have to be revoked`);
+
+  if (r?.flow) checkFlow(r, rep);
+  if (Array.isArray(r?.diagrams)) checkDiagrams(r, rep);
+  if (r?.focus !== undefined || r?.brief) checkBrief(r, rep);
+
+  const fieldKeys = new Set((r?.fields ?? []).map((f) => f.key));
+  const strayFields = items.flatMap((i) => Object.keys(i?.fields ?? {}).filter((k) => !fieldKeys.has(k)).map((k) => `${i.id}.${k}`));
+  rep.check('item fields declared', strayFields.length === 0, `field(s) used but never declared: ${strayFields.join(', ')}`);
+
+  // Warnings: shape that is legal but usually a mistake.
+  rep.warn('add-your-own disabled', r?.allowAddedItems === false,
+    'the reviewer cannot add anything — the items you did not know to ask about are usually the valuable ones');
+  rep.warn('unsectioned items', (r?.sections ?? []).length > 0 && items.some((i) => !i.sectionId),
+    'some items sit outside every section and will render in an unlabelled group');
+  rep.warn('very long review', items.length > 60,
+    `${items.length} items; past roughly 60 people stop reading and start clicking`);
+}
+
+// ── secrets ─────────────────────────────────────────────────────────────────────────────────────
+// Reviews get emailed and forwarded. Some patterns are assembled from parts so this file never holds
+// a string that looks like a real key.
+const SECRETS = [
+  ['AWS access key', /AKIA[0-9A-Z]{16}/],
+  ['API key', /\bsk-[A-Za-z0-9_-]{20,}/],
+  ['GitHub token', new RegExp('\\bgh' + '[pousr]_[A-Za-z0-9]{36}')],
+  ['Slack token', new RegExp('\\bxox' + '[abpr]-[A-Za-z0-9-]{10,}')],
+  ['private key', new RegExp('-----BEGIN [A-Z ]*' + 'PRIVATE KEY-----')],
+  ['JWT', /\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/],
+  ['credentials in a URL', /\b[a-z][a-z0-9+.-]*:\/\/[^\s:@/]+:[^\s@/]+@/i],
+];
+
+// ── flow ────────────────────────────────────────────────────────────────────────────────────────
+// Every message says what is wrong, what to do, and what it would cause if left (D032).
+const LAYERS = new Set(['ui', 'flow', 'system', 'data']);
+// The screen component catalogue (D034). Each rule returns messages in the D032 shape; groups are
+// filled in by type. Order matters only for the "Use one of" list in messages.
+const COMPONENT_RULES = Object.fromEntries([
+  'heading', 'text', 'input', 'button', 'list',
+  'header', 'tab-bar', 'tabs', 'side-menu', 'breadcrumb',
+  'checkbox', 'radio-group', 'switch', 'select', 'date-time', 'search', 'stepper', 'slider',
+  'card', 'chip', 'image', 'table', 'avatar',
+  'dialog', 'toast', 'banner', 'empty-state', 'progress',
+].map((type) => [type, () => ({ errors: [], warnings: [] })]));
+
+const inOptions = (value, list) => list.some((x) => (typeof x === 'object' ? x?.id : x) === value);
+const optionIds = (list) => list.map((x) => (typeof x === 'object' ? x?.id : x)).join(', ');
+const outside = (where, b) => (b.min > b.max
+  ? [`${where}: min ${b.min} is above max ${b.max}. Swap them, or no value can be valid`]
+  : b.value < b.min || b.value > b.max ? [`${where}: value ${b.value} is outside ${b.min}–${b.max}. Set value within min and max, or the reviewer sees a state the app can't reach`] : []);
+const UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?Z$/;
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
+const rule = (errors = [], warnings = []) => ({ errors, warnings });
+
+Object.assign(COMPONENT_RULES, {
+  // navigation
+  'list': (b, w) => rule((b.items ?? []).length ? [] : [`${w}: has no items. Add at least one, or the list shows nothing`]),
+  'tab-bar': (b, w) => {
+    const items = b.items ?? [], e = [];
+    if (items.length < 2 || items.length > 5) e.push(`${w}: has ${items.length} item(s). Use 2 to 5, or it isn't a tab bar people can use`);
+    if (!inOptions(b.active, items)) e.push(`${w}: active "${b.active}" is not one of its items (${optionIds(items)}). Set active to one of them, or no tab looks selected`);
+    return rule(e);
+  },
+  'tabs': (b, w) => {
+    const items = b.items ?? [], e = [];
+    if (items.length < 2) e.push(`${w}: has ${items.length} item(s). Use at least 2, or there is nothing to switch between`);
+    if (!inOptions(b.active, items)) e.push(`${w}: active "${b.active}" is not one of its items (${optionIds(items)}). Set active to one of them, or no tab looks selected`);
+    return rule(e);
+  },
+  'side-menu': (b, w) => rule(b.active !== undefined && !inOptions(b.active, b.items ?? [])
+    ? [`${w}: active "${b.active}" is not one of its items (${optionIds(b.items ?? [])}). Set active to one of them or leave it out`] : []),
+  'breadcrumb': (b, w) => rule((b.items ?? []).length >= 2 ? [] : [`${w}: has ${(b.items ?? []).length} level. Show at least 2, or it doesn't show where the person is`]),
+  // input
+  'radio-group': (b, w) => {
+    const o = b.options ?? [], e = [];
+    if (o.length < 2) e.push(`${w}: has ${o.length} option(s). Give at least 2, or there is no choice to make`);
+    if (b.selected !== undefined && !inOptions(b.selected, o)) e.push(`${w}: selected "${b.selected}" is not one of its options (${optionIds(o)}). Select one of them or leave it out`);
+    return rule(e);
+  },
+  'select': (b, w) => {
+    const o = b.options ?? [], e = [];
+    if (!o.length) e.push(`${w}: has no options. Add the values a person can pick, or the dropdown is empty`);
+    else if (b.value !== undefined && !inOptions(b.value, o)) e.push(`${w}: value "${b.value}" is not one of its options (${optionIds(o)}). Use one of them or leave it out`);
+    return rule(e);
+  },
+  'date-time': (b, w) => {
+    if (b.value === undefined) return rule();
+    if (b.mode === 'date-time' && !UTC.test(b.value)) return rule([`${w}: "${b.value}" is not a UTC date-time like 2026-10-03T08:00:00Z. Store times in UTC and show local time only on screen, or bookings shift around daylight-saving changes`]);
+    if (b.mode === 'date' && !DATE.test(b.value)) return rule([`${w}: "${b.value}" is not a date like 2026-10-03. Use year-month-day, or it can be read two ways`]);
+    if (b.mode === 'time' && !TIME.test(b.value)) return rule([`${w}: "${b.value}" is not a time like 10:00. Use 24-hour HH:MM`]);
+    return rule();
+  },
+  'stepper': (b, w) => rule(outside(w, b)),
+  'slider': (b, w) => rule(outside(w, b)),
+  // content
+  'table': (b, w) => {
+    const n = (b.columns ?? []).length;
+    return rule((b.rows ?? []).flatMap((row, i) => (Array.isArray(row) && row.length === n ? []
+      : [`${w}: row ${i + 1} has ${Array.isArray(row) ? row.length : 0} cell(s) but there are ${n} columns. Fill every column (use "" for empty), or the table misaligns`])));
+  },
+  // feedback
+  'dialog': (b, w) => rule((b.actions ?? []).length ? [] : [`${w}: has no actions. Give it at least one way out, or the person is trapped in it`]),
+  'progress': (b, w) => rule(b.value !== undefined && (b.value < 0 || b.value > 100) ? [`${w}: value ${b.value} is outside 0–100. Use a percentage, or leave it out for an endless spinner`] : []),
+  'banner': (b, w) => rule([], ['caution', 'negative'].includes(b.tone) && !b.canNow
+    ? [`${w}: a ${b.tone} banner without canNow. Say what the person can do, or they read a problem with no way forward`] : []),
+  'empty-state': (b, w) => rule([], b.action ? [] : [`${w}: no action. Offer the next step ("Find a time"), or the empty screen is a dead end`]),
+});
+
+// Every id a step can point at on a screen: blocks, and ids nested inside them, and hotspots.
+function screenIds(screen) {
+  const ids = [];
+  for (const b of screen.blocks ?? []) {
+    if (b.id) ids.push(b.id);
+    if (b.back?.id) ids.push(b.back.id);
+    if (b.action?.id) ids.push(b.action.id);
+    for (const key of ['actions', 'items', 'options']) for (const x of Array.isArray(b[key]) ? b[key] : []) if (x && typeof x === 'object' && x.id) ids.push(x.id);
+  }
+  for (const h of screen.hotspots ?? []) ids.push(h.id);
+  return ids;
+}
+const IMAGE = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+const REF = /^[^:\s]+:[1-9][0-9]*$/;
+
+function checkFlow(r, rep) {
+  const flow = r.flow;
+  const screens = flow.screens ?? [];
+  const byId = Object.fromEntries(screens.map((s) => [s.id, s]));
+  const steps = (r.items ?? []).filter((i) => i?.step);
+  const ids = screens.map((s) => s.id);
+
+  const broken = [];
+  if (!byId[flow.start]) broken.push(`start screen "${flow.start}" does not exist. Set flow.start to one of: ${ids.join(', ')}`);
+  const dupes = ids.filter((id, i) => ids.indexOf(id) !== i);
+  if (dupes.length) broken.push(`screen id(s) used twice: ${[...new Set(dupes)].join(', ')}. Rename one, or steps may land on the wrong screen`);
+  for (const it of steps) {
+    const { from, on, outcomes = [] } = it.step;
+    const s = byId[from];
+    if (!s) { broken.push(`${it.id}: starts on unknown screen "${from}". Use one of: ${ids.join(', ')}`); continue; }
+    const targets = screenIds(s);
+    if (!targets.includes(on)) broken.push(`${it.id}: "${on}" is not a button, input or hotspot on "${from}". Point "on" at ${targets.length ? `one of: ${targets.join(', ')}` : 'an element you add to that screen'}, or the reviewer has nothing to tap`);
+    if (!outcomes.length) broken.push(`${it.id}: a step needs at least one outcome, or tapping does nothing`);
+    if (outcomes.length > 1 && outcomes.some((o) => !o.label)) broken.push(`${it.id}: with several outcomes, give each a label, or the reviewer can't choose which one to see`);
+    for (const o of outcomes) if (!byId[o.to]) broken.push(`${it.id}: leads to unknown screen "${o.to}". Use one of: ${ids.join(', ')}`);
+  }
+  rep.check('flow resolves', broken.length === 0, broken.join(' · '));
+
+  // D038 — nested parts (sub-processes), so a reviewer always knows where in the whole process a step sits.
+  if (flow.parts) {
+    const parts = flow.parts;
+    const partIds = parts.map((p) => p.id);
+    const byPart = Object.fromEntries(parts.map((p) => [p.id, p]));
+    const bad = [];
+    for (const id of new Set(partIds.filter((id, i) => partIds.indexOf(id) !== i)))
+      bad.push(`part id "${id}" is used twice. Rename one, or steps can't say which part they belong to`);
+    for (const p of parts) if (p.parent && !byPart[p.parent])
+      bad.push(`${p.id}: parent "${p.parent}" does not exist. Use one of: ${partIds.join(', ')}, or drop parent to make it top-level`);
+    const reported = new Set();
+    for (const p of parts) {
+      const chain = [p.id];
+      for (let cur = byPart[p.parent]; cur; cur = byPart[cur.parent]) {
+        chain.push(cur.id);
+        if (cur.id === p.id) {
+          const key = [...chain].sort().join();
+          if (!reported.has(key)) { reported.add(key); bad.push(`parts nest in a loop: ${chain.join(' → ')}. Break the loop by giving one of them a different parent, or the process map has no top`); }
+          break;
+        }
+        if (chain.length > parts.length + 1) break;
+      }
+    }
+    const used = new Set();
+    for (const it of steps) {
+      if (!it.step.part) bad.push(`${it.id} has no part. Name the part it belongs to (${partIds.join(', ')}), or the reviewer can't see where it sits`);
+      else if (!byPart[it.step.part]) bad.push(`${it.id}: part "${it.step.part}" does not exist. Use one of: ${partIds.join(', ')}`);
+      else for (let cur = byPart[it.step.part], hops = 0; cur && hops <= parts.length; cur = byPart[cur.parent], hops++) used.add(cur.id);
+    }
+    for (const p of parts) if (!used.has(p.id) && !reported.size)
+      bad.push(`${p.id} has no steps. Give it a step, or remove it; an empty part shows the reviewer a process that isn't there`);
+    rep.check('flow parts resolve', bad.length === 0, bad.join(' · '));
+  }
+
+  const next = {};
+  for (const it of steps) for (const o of it.step.outcomes ?? []) (next[it.step.from] ??= new Set()).add(o.to);
+  const seen = new Set();
+  for (const queue = byId[flow.start] ? [flow.start] : []; queue.length;) {
+    const id = queue.shift();
+    if (!seen.has(id)) { seen.add(id); queue.push(...(next[id] ?? [])); }
+  }
+  const unreachable = ids.filter((id) => !seen.has(id));
+  const deadEnds = screens.filter((s) => !next[s.id] && !s.end).map((s) => s.id);
+  rep.check('flow has no orphans or dead ends', !unreachable.length && !deadEnds.length, [
+    unreachable.length && `unreachable from "${flow.start}": ${unreachable.join(', ')}. Add a step that leads there, or remove it; a reviewer can never see it`,
+    deadEnds.length && `no way out and not marked end: ${deadEnds.join(', ')}. Add a step out, or set "end": true if the flow may stop there; otherwise the reviewer gets stuck`,
+  ].filter(Boolean).join(' · '));
+
+  const unsafe = [];
+  for (const s of screens) {
+    if (s.image && !IMAGE.test(s.image.src ?? '')) unsafe.push(`${s.id}: image must be inline PNG, JPEG or WebP. Convert it and inline it as a data: URL; SVG can carry script and a URL breaks offline use`);
+    for (const h of s.hotspots ?? []) if ([h.x, h.y, h.w, h.h].some((n) => typeof n !== 'number' || n < 0 || n > 100)) unsafe.push(`${s.id}.${h.id}: hotspot outside 0–100 %. Give x, y, w, h as percent of the image, or it can't be tapped`);
+    for (const b of s.blocks ?? []) if (!COMPONENT_RULES[b.type]) unsafe.push(`${s.id}: unknown block type "${b.type}". Use one of: ${Object.keys(COMPONENT_RULES).join(', ')}, or it won't be drawn`);
+  }
+  for (const l of flow.layers?.default ?? []) if (!LAYERS.has(l)) unsafe.push(`unknown default layer "${l}". Use ui, flow, system or data`);
+  rep.check('screens are safe to show', unsafe.length === 0, unsafe.join(' · '));
+
+  const inconsistent = [], componentWarnings = [];
+  for (const s of screens) {
+    const seenIds = screenIds(s);
+    for (const id of new Set(seenIds.filter((id, i) => seenIds.indexOf(id) !== i)))
+      inconsistent.push(`${s.id}: id "${id}" is used twice. Rename one, or a step pointing at it can't say which element was tapped`);
+    for (const b of s.blocks ?? []) {
+      const rule = COMPONENT_RULES[b.type];
+      if (!rule) continue;
+      const { errors, warnings } = rule(b, `${s.id}${b.id ? '.' + b.id : ''} (${b.type})`);
+      inconsistent.push(...errors); componentWarnings.push(...warnings);
+    }
+  }
+  rep.check('components are consistent', inconsistent.length === 0, inconsistent.join(' · '));
+  rep.warn('components explain themselves', componentWarnings.length > 0, componentWarnings.join(' · '));
+
+  const dishonest = [];
+  for (const it of steps) {
+    const entryIds = [];
+    for (const o of it.step.outcomes ?? []) {
+      for (const layer of ['system', 'data']) for (const e of o[layer] ?? []) {
+        const where = `${it.id}/${e.id ?? '?'}`;
+        if (!e.id) dishonest.push(`${it.id}: a ${layer} entry has no id. Give it a short one, or no verdict can point at it`);
+        else if (entryIds.includes(e.id)) dishonest.push(`${it.id}: entry id "${e.id}" is used twice. Make it unique within the step, or a verdict on it is ambiguous`);
+        if (e.id) entryIds.push(e.id);
+        if (e.status === 'exists' && !e.ref) dishonest.push(`${where}: marked exists but gives no ref. Add the file:line, or mark it proposed; "exists" is a claim the checker has to be able to prove`);
+        if (e.ref && !REF.test(e.ref)) dishonest.push(`${where}: ref "${e.ref}" is not path:line. Write it like src/booking.mjs:12`);
+      }
+    }
+  }
+  rep.check('layer entries honest', dishonest.length === 0, dishonest.join(' · '));
+
+  const unexplained = [];
+  for (const it of steps) {
+    if (!it.step.goal) unexplained.push(`${it.id} has no goal. Add why the person does it ("to secure the slot"), or the reviewer judges an action without its purpose`);
+    for (const o of it.step.outcomes ?? []) if (!byId[o.to]?.end && !o.canNow) unexplained.push(`${it.id} → ${o.label ? `"${o.label}"` : o.to} leaves the person with no next step. Add canNow (what they can do there), or the reviewer can't judge whether they get stuck`);
+  }
+  rep.warn('flow explains itself', unexplained.length > 0, unexplained.join(' · '));
+
+  // D047 — what is there and what is missing: every claim says where it comes from.
+  const claims = [...(flow.parts ?? []).map((p) => [`part ${p.id}`, p]), ...steps.map((it) => [`step ${it.id}`, it.step])];
+  const unfounded = [];
+  for (const [where, c] of claims) {
+    const b = c.basis;
+    if (c.status === 'exists' && !b) unfounded.push(`${where}: marked exists but has no basis. Add basis (code with a ref, prd, docs, conversation or assumption), or mark it proposed; "exists" is a claim the reviewer should be able to trace`);
+    if (!b) continue;
+    if (b.kind === 'code' && !b.ref) unfounded.push(`${where}: basis is code but gives no ref. Add the file:line it comes from, or the claim can't be checked`);
+    if ((b.kind === 'prd' || b.kind === 'docs') && !b.ref) unfounded.push(`${where}: basis is ${b.kind} but gives no ref. Name the section or document (e.g. "PRD §3.2"), or the reviewer can't find it`);
+    if ((b.kind === 'conversation' || b.kind === 'assumption') && !b.note) unfounded.push(`${where}: basis is ${b.kind} but has no note. Say who said it or what is assumed, or it reads as fact`);
+  }
+  rep.check('claims have a basis', unfounded.length === 0, unfounded.join(' · '));
+  const overclaimed = [];
+  for (const it of steps) if (it.step.status === 'suggested') for (const o of it.step.outcomes ?? []) for (const e of [...(o.system ?? []), ...(o.data ?? [])])
+    if (e.status === 'exists') overclaimed.push(`${it.id}/${e.id}: the step is suggested but this entry is marked exists. Mark it proposed; something not built yet can't have existing code`);
+  rep.check('suggestions stay suggestions', overclaimed.length === 0, overclaimed.join(' · '));
+
+  const refs = [];
+  for (const it of steps) for (const o of it.step.outcomes ?? []) for (const e of [...(o.system ?? []), ...(o.data ?? [])]) if (e.ref && REF.test(e.ref)) refs.push([`${it.id}/${e.id}`, e.ref]);
+  for (const [where, c] of claims) if (c.basis?.kind === 'code' && c.basis.ref && REF.test(c.basis.ref)) refs.push([where, c.basis.ref]);
+  if (!refs.length) return;
+  if (!ROOT) {
+    rep.warn('references not verified', true, `${refs.length} reference(s) were not checked because no project folder was given. Run again with --root <folder>. Until then, a reference to code that does not exist would pass unnoticed.`);
+    return;
+  }
+  const missing = [];
+  for (const [where, ref] of refs) {
+    const cut = ref.lastIndexOf(':');
+    const file = resolve(ROOT, ref.slice(0, cut)), line = Number(ref.slice(cut + 1));
+    const inside = relative(ROOT, file);
+    // A review is written by an agent: never let it make the checker read outside the project.
+    if (inside.startsWith('..') || resolve(ROOT, inside) !== file) { missing.push(`${where}: ${ref} points outside the project folder. Use a path inside ${ROOT}; the checker will not read anywhere else`); continue; }
+    let lines;
+    try { lines = readFileSync(file, 'utf8').split('\n').length; }
+    catch { missing.push(`${where}: ${ref} does not exist under ${ROOT}. Fix the path, or mark the entry proposed; "exists" must point at real code`); continue; }
+    if (line > lines) missing.push(`${where}: ${inside} has ${lines} lines, the ref points at line ${line}. Fix the line number, or the reviewer is sent to code that isn't there`);
+  }
+  rep.check('references resolve', missing.length === 0, missing.join(' · '));
+}
+
+// ── diagrams (v0.2 part 3b, D036, D041, D052) ─────────────────────────────────────────────────────
+const NODE_KINDS = new Set(["start", "end", "end-failed", "entry", "exit", "process", "user-action", "system-action", "manual", "subflow", "screen", "input", "output", "document", "notification", "decision", "parallel-start", "parallel-join", "merge", "event-choice", "wait", "timer", "deadline", "schedule", "error", "retry", "compensate", "escalate", "cancel", "send", "receive", "signal", "callback", "data", "data-store", "group", "connector", "off-page", "note", "loop"]);
+const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'association']);
+const ICONS = ["envelope", "phone", "lock", "clock", "warning", "person", "database", "cloud", "gear", "card", "calendar", "bell", "document", "search", "check", "cross", "chat", "cart", "key", "globe"];
+const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // need not be reachable
+
+function checkDiagrams(r, rep) {
+  const stepIds = new Set((r.items ?? []).filter((i) => i?.step).map((i) => i.id));
+  const partIds = new Set((r.flow?.parts ?? []).map((p) => p.id));
+  const diagramIds = r.diagrams.map((d) => d?.id);
+  const unresolved = [], senseless = [], collisions = [];
+  for (const id of new Set(diagramIds.filter((x, i) => diagramIds.indexOf(x) !== i)))
+    unresolved.push(`diagram id "${id}" is used twice. Rename one, or links to it are ambiguous`);
+  for (const d of r.diagrams) {
+    const nodes = d.nodes ?? [], edges = d.edges ?? [], lanes = (d.lanes ?? []).map((l) => l.id);
+    const ids = nodes.map((n) => n.id);
+    const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+    for (const id of new Set(ids.filter((x, i) => ids.indexOf(x) !== i)))
+      unresolved.push(`${d.id}: node id "${id}" is used twice. Rename one, or arrows can't say which box they mean`);
+    for (const n of nodes) {
+      const w = `${d.id}.${n.id}`;
+      if (!NODE_KINDS.has(n.kind)) unresolved.push(`${w}: unknown kind "${n.kind}". Use one of: ${[...NODE_KINDS].join(', ')}, or it can't be drawn`);
+      if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
+      if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
+      if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not a step in this review. Point at a step id or drop the link, or selecting it highlights nothing`);
+      if (n.part !== undefined && !partIds.has(n.part)) unresolved.push(`${w}: part "${n.part}" is not a part of this flow. Point at a part id or drop the link`);
+      if (n.subflow !== undefined && !diagramIds.includes(n.subflow) && !partIds.has(n.subflow)) unresolved.push(`${w}: subflow "${n.subflow}" is neither a diagram nor a part. Point at one, or the reader can't open it`);
+      if (n.component) {
+        const rule = COMPONENT_RULES[n.component.type];
+        if (!rule) unresolved.push(`${w}: unknown component type "${n.component.type}". Use a screen component type`);
+        else unresolved.push(...rule(n.component, `${w} (${n.component.type})`).errors);
+      }
+    }
+    for (const e of edges) {
+      if (!byId[e.from] || !byId[e.to]) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} points at a node that does not exist. Use one of: ${ids.join(', ')}`);
+      if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message or association`);
+    }
+
+    const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
+    const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
+    const starts = nodes.filter((n) => n.kind === 'start' || n.kind === 'entry');
+    if (!starts.length) senseless.push(`${d.id}: has no start. Add a start node, or the reader doesn't know where to begin`);
+    if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);
+    const seen = new Set();
+    for (const queue = starts.map((n) => n.id); queue.length;) { const id = queue.shift(); if (!seen.has(id)) { seen.add(id); queue.push(...out(id).map((e) => e.to)); } }
+    for (const n of nodes) if (starts.length && !seen.has(n.id) && !ANNOTATIONS.has(n.kind))
+      senseless.push(`${d.id}.${n.id}: can't be reached from a start. Connect it, or remove it; the reader would never get there`);
+    for (const n of nodes) {
+      const w = `${d.id}.${n.id}`;
+      if (n.kind === 'start' && inc(n.id).length) senseless.push(`${w}: a start can't have arrows coming in. Point them at a later step, or use a loop node`);
+      if ((n.kind === 'end' || n.kind === 'end-failed') && out(n.id).length) senseless.push(`${w}: an end can't have arrows going out. Make it a step, or remove the arrow`);
+      if (n.kind === 'decision') {
+        if (out(n.id).length < 2) senseless.push(`${w}: a decision needs at least two ways out. Add the other answer, or make it a step`);
+        for (const e of out(n.id)) if (!e.label) senseless.push(`${w}: the way out to ${e.to} has no label. Say which answer leads there`);
+      }
+      if (n.kind === 'parallel-start' && out(n.id).length < 2) senseless.push(`${w}: a parallel start needs at least two paths out, or nothing runs in parallel`);
+      if (n.kind === 'parallel-join' && inc(n.id).length < 2) senseless.push(`${w}: a parallel join needs at least two paths in, or there is nothing to wait for`);
+    }
+    for (const e of edges) if (e.kind === 'message' && byId[e.from] && byId[e.to] && (byId[e.from].lane ?? null) === (byId[e.to].lane ?? null))
+      senseless.push(`${d.id}: message ${e.from} → ${e.to} stays inside one lane. Use a sequence arrow; messages go between lanes`);
+
+    const cells = {};
+    for (const n of nodes) if (n.col !== undefined && n.row !== undefined) {
+      const k = `${n.col},${n.row}`;
+      if (cells[k]) collisions.push(`${d.id}: ${cells[k]} and ${n.id} are both pinned to column ${n.col}, row ${n.row}. Move one, or they draw on top of each other`);
+      else cells[k] = n.id;
+    }
+  }
+  rep.check('diagrams resolve', unresolved.length === 0, unresolved.join(' · '));
+  rep.check('diagrams make sense', senseless.length === 0, senseless.join(' · '));
+  rep.check("diagram pins don't collide", collisions.length === 0, collisions.join(' · '));
+}
+
+// ── focus and the agent's brief (D057, D059) ────────────────────────────────────────────────────
+function checkBrief(r, rep) {
+  const computed = ['user-flow'];
+  const diagramIds = (r.diagrams ?? []).map((d) => d?.id);
+  if (r.focus !== undefined && !computed.includes(r.focus) && !diagramIds.includes(r.focus))
+    rep.check('focus resolves', false, `focus "${r.focus}" is neither the computed user flow (user-flow) nor a diagram in this review. Use one of: ${[...computed, ...diagramIds].join(', ')}, or the page opens on something else than you meant`);
+  else rep.check('focus resolves', true, '');
+
+  const b = r.brief;
+  if (!b) return;
+  const wrong = [], unverified = [];
+  for (const [i, e] of (b.examples ?? []).entries()) {
+    const who = e?.name ? `"${e.name}"` : `example ${i + 1}`;
+    if (!e?.name) wrong.push(`example ${i + 1} has no name. Say who did it, or the reviewer can't weigh it`);
+    else if (!e.what) wrong.push(`example ${who} says what it is called but not what happened. Add "what", or it is a name without a lesson`);
+    if (e?.name && !e.source) unverified.push(`${who} has no source. Add one, or the page shows it as unverified; agents invent convincing examples`);
+  }
+  rep.check('brief is honest', wrong.length === 0, wrong.join(' · '));
+  rep.warn('examples are unverified', unverified.length > 0, unverified.join(' · '));
+
+  const screens = (r.flow?.screens ?? []).map((s) => s.id);
+  const nodes = (r.diagrams ?? []).flatMap((d) => (d.nodes ?? []).map((n) => n.id))
+    .concat((r.flow?.screens ?? []).map((s) => `screen:${s.id}`), (r.items ?? []).filter((i) => i.step).map((i) => `step:${i.id}`));
+  const lost = [];
+  for (const id of b.highlights?.screens ?? []) if (!screens.includes(id)) lost.push(`highlights screen "${id}", which does not exist. Use one of: ${screens.join(', ')}`);
+  for (const id of b.highlights?.nodes ?? []) if (!nodes.includes(id)) lost.push(`highlights node "${id}", which is in no chart. Use a node id from a diagram, or screen:<id> / step:<id>`);
+  rep.check('brief highlights resolve', lost.length === 0, lost.join(' · '));
+}
+
+// ── feedback ────────────────────────────────────────────────────────────────────────────────────
+function checkFeedback(f, rep, review) {
+  rep.check('protocol', f?.protocol === 'letmeshowyousomething/feedback', `expected "letmeshowyousomething/feedback", got ${JSON.stringify(f?.protocol)}`);
+  rep.check('schemaVersion', f?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(f?.schemaVersion)}`);
+  rep.check('names its review', ID.test(f?.review?.id ?? '') && !!f?.review?.title, 'feedback must name the review id AND echo its title');
+
+  const responses = Array.isArray(f?.responses) ? f.responses : [];
+  const added = Array.isArray(f?.addedItems) ? f.addedItems : [];
+
+  // THE INVARIANT THAT MAKES THIS PORTABLE.
+  const mute = responses.filter((x) => !x?.title || !String(x.title).trim()).map((x) => x?.itemId ?? '?');
+  rep.check('self-describing', mute.length === 0,
+    `response(s) carry no echoed title, so the file cannot be read without the original review: ${mute.join(', ')}`);
+
+  rep.check('verdict set echoed', (f?.verdictSet?.options ?? []).length >= 2,
+    'without the echoed verdict set, a value like "partial" has no defined meaning to a reader who lacks the review');
+
+  const allowed = new Set((f?.verdictSet?.options ?? []).map((o) => o.value));
+  allowed.add(UNSET);
+  const bad = [...responses, ...added].filter((x) => !allowed.has(x?.verdict)).map((x) => `${x?.itemId ?? x?.id}=${x?.verdict}`);
+  rep.check('verdicts in vocabulary', bad.length === 0, `value(s) outside the declared set: ${bad.join(', ')}`);
+
+  const layerVerdicts = Array.isArray(f?.layerVerdicts) ? f.layerVerdicts : [];
+  if (layerVerdicts.length) {
+    const offList = layerVerdicts.filter((x) => !allowed.has(x?.verdict) || x?.verdict === UNSET).map((x) => `${x?.id}=${x?.verdict}`);
+    rep.check('layer verdicts in vocabulary', offList.length === 0,
+      `${offList.join(', ')}. Use one of: ${[...allowed].filter((v) => v !== UNSET).join(', ')}; an unjudged entry is left out, never written as unset`);
+  }
+
+  const addedIds = added.map((a) => a?.id);
+  rep.check('added ids prefixed', addedIds.every((id) => /^added-/.test(id ?? '')),
+    'reviewer-added items must use the "added-" prefix so they can never be confused with items the agent asked about');
+  const addedDupes = addedIds.filter((id, i) => id && addedIds.indexOf(id) !== i);
+  rep.check('added ids unique', addedDupes.length === 0,
+    `duplicated: ${[...new Set(addedDupes)].join(', ')} — a gap or note pointing at this id would be ambiguous`);
+
+  // Derived fields must be true.
+  const s = f?.summary ?? {};
+  const unsetCount = responses.filter((x) => x.verdict === UNSET).length;
+  const byVerdict = {};
+  for (const v of allowed) byVerdict[v] = responses.filter((x) => x.verdict === v).length;
+  const ok =
+    s.total === responses.length &&
+    s.unset === unsetCount &&
+    s.answered === responses.length - unsetCount &&
+    s.added === added.length &&
+    Object.entries(byVerdict).every(([k, n]) => (s.byVerdict?.[k] ?? 0) === n);
+  // Name the field that actually differs. An error that prints two identical-looking objects is how
+  // people learn to distrust a checker — the first version of this message did exactly that when the
+  // mismatch was inside byVerdict.
+  const diffs = [];
+  const cmp = (k, want, got) => { if (want !== got) diffs.push(`${k}: expected ${want}, file says ${got ?? 0}`); };
+  cmp('total', responses.length, s.total);
+  cmp('answered', responses.length - unsetCount, s.answered);
+  cmp('unset', unsetCount, s.unset);
+  cmp('added', added.length, s.added);
+  for (const [k, n] of Object.entries(byVerdict)) cmp(`byVerdict.${k}`, n, s.byVerdict?.[k]);
+  for (const k of Object.keys(s.byVerdict ?? {})) if (!(k in byVerdict)) diffs.push(`byVerdict.${k}: counted, but "${k}" is not in the verdict set`);
+  rep.check('summary is true', ok, diffs.join(' · '));
+
+  if (f?.gaps !== undefined) {
+    const negative = new Set((f?.verdictSet?.options ?? []).filter((o) => o.tone === 'negative').map((o) => o.value));
+    const positive = new Set((f?.verdictSet?.options ?? []).filter((o) => o.tone === 'positive').map((o) => o.value));
+    const picked = new Set((Array.isArray(f?.choices) ? f.choices : []).filter((c) => c?.itemId).map((c) => c.sectionId));
+    const expected = [...responses, ...added, ...layerVerdicts]
+      .filter((x) => (x.verdict === UNSET ? !picked.has(x.sectionId)
+        : x.sectionKind === 'challenge' ? positive.has(x.verdict) : negative.has(x.verdict)))
+      .map((x) => x.itemId ?? x.id).sort();
+    const got = [...f.gaps].sort();
+    rep.check('gaps are derived', JSON.stringify(expected) === JSON.stringify(got),
+      `gap-first list should be [${expected.join(', ')}] but is [${got.join(', ')}]`);
+  }
+
+  const choices = Array.isArray(f?.choices) ? f.choices : [];
+  if (choices.some((c) => c?.recommended)) {
+    const lies = choices.filter((c) => c.recommended &&
+      c.followedRecommendation !== (c.itemId === null ? null : c.itemId === c.recommended.itemId)).map((c) => c.sectionId);
+    rep.check('choices are derived', lies.length === 0, `followedRecommendation does not match the pick in: ${lies.join(', ')}`);
+  }
+
+  rep.warn('nothing answered', responses.length > 0 && responses.every((x) => x.verdict === UNSET),
+    'every item is unset — this is a blank form, not feedback');
+  rep.warn('no notes', responses.length > 3 && responses.every((x) => !x.note),
+    'verdicts with no notes anywhere: usable, but the reviewer\'s own words are the part an agent can actually act on');
+
+  // ── the pair ──
+  if (review) {
+    const reviewIds = new Set((review.items ?? []).map((i) => i.id));
+    const answered = new Set(responses.map((x) => x.itemId));
+    const missing = [...reviewIds].filter((id) => !answered.has(id));
+    const unknown = [...answered].filter((id) => !reviewIds.has(id));
+    rep.check('every item answered', missing.length === 0,
+      `no response for: ${missing.join(', ')} — an unanswered item must be present with verdict "${UNSET}", never omitted`);
+    rep.check('no unknown responses', unknown.length === 0, `response(s) for items not in the review: ${unknown.join(', ')}`);
+    rep.check('review matches', review.id === f?.review?.id, `feedback names "${f?.review?.id}" but the review is "${review.id}"`);
+
+    const chooseOne = (review.sections ?? []).filter((s) => s.mode === 'choose-one');
+    if (chooseOne.length) {
+      const bySection = Object.fromEntries(choices.map((c) => [c.sectionId, c]));
+      const itemById = Object.fromEntries((review.items ?? []).map((i) => [i.id, i]));
+      const problems = [];
+      for (const s of chooseOne) {
+        const c = bySection[s.id];
+        if (!c) problems.push(`${s.id}: missing — an unchosen section is written with itemId null, never omitted`);
+        else if (c.itemId !== null && itemById[c.itemId]?.sectionId !== s.id) problems.push(`${s.id}: "${c.itemId}" is not one of its options`);
+        else if (c.itemId !== null && c.title !== itemById[c.itemId].title) problems.push(`${s.id}: the title does not echo the chosen option`);
+      }
+      rep.check('every choice recorded', problems.length === 0, problems.join(' · '));
+    }
+
+    const requests = Array.isArray(f?.requests) ? f.requests : [];
+    if (requests.length) {
+      const itemIds = new Set((review.items ?? []).map((i) => i.id));
+      const KINDS = ['example', 'explain'];
+      const bad2 = requests.filter((q) => !itemIds.has(q?.itemId) || !KINDS.includes(q?.kind))
+        .map((q) => (!itemIds.has(q?.itemId) ? `"${q?.itemId}" is not an item in this review` : `${q.itemId}: "${q.kind}" is not something to ask for`));
+      rep.check('requests resolve', bad2.length === 0, `${bad2.join(' · ')}. Ask for ${KINDS.join(' or ')} on an item that exists, or the agent can't answer it`);
+    }
+
+    if (layerVerdicts.length) {
+      const itemById = Object.fromEntries((review.items ?? []).map((i) => [i.id, i]));
+      const mismatched = [];
+      for (const x of layerVerdicts) {
+        const found = findLayerEntry(itemById[x.stepId], x.entryId);
+        if (!found || x.id !== `${x.stepId}/${x.entryId}`) { mismatched.push(`${x.id}: points at no entry in the review. Remove it, or fix stepId/entryId`); continue; }
+        if (x.layer !== found.layer || x.stepTitle !== itemById[x.stepId].title || x.entry !== layerEntryText(found.layer, found.entry))
+          mismatched.push(`${x.id}: the echoed entry does not match the review. Rebuild the feedback from the page; a reader of this file alone would see different text than the reviewer judged`);
+      }
+      rep.check('layer verdicts echo the review', mismatched.length === 0, mismatched.join(' · '));
+    }
+    rep.warn('added items not permitted', review.allowAddedItems === false && added.length > 0,
+      'the review disallowed added items but the feedback carries some');
+  }
+}
+
+// ── history: an item that affects an earlier decision must quote it truthfully ──────────────────
+function checkHistory(r, earlier, rep) {
+  const byReview = Object.fromEntries(earlier.map((f) => [f?.review?.id, f]));
+  const misquotes = [];
+  for (const item of r?.items ?? []) {
+    for (const a of item.affects ?? []) {
+      const d = a?.decision ?? {};
+      const f = byReview[d.review];
+      if (!f) { rep.warn('decision not verified', true, `${item.id} quotes review "${d.review}", but no earlier feedback for it was given`); continue; }
+      const answers = [...(f.responses ?? []), ...(f.addedItems ?? []).map((x) => ({ ...x, itemId: x.id }))];
+      const earlierAnswer = answers.find((x) => x.itemId === d.itemId);
+      if (!earlierAnswer) misquotes.push(`${item.id}: review "${d.review}" has no item "${d.itemId}"`);
+      else if (earlierAnswer.title !== d.title) misquotes.push(`${item.id}: quotes the title "${d.title}", but the earlier item is "${earlierAnswer.title}"`);
+      else if (earlierAnswer.verdict !== d.verdict) misquotes.push(`${item.id}: quotes the verdict "${d.verdict}", but the reviewer answered "${earlierAnswer.verdict}"`);
+    }
+  }
+  rep.check('earlier decisions quoted truthfully', misquotes.length === 0, misquotes.join(' · '));
+}
+
+// ── run ─────────────────────────────────────────────────────────────────────────────────────────
+const argv = process.argv.slice(2);
+const rootAt = argv.indexOf('--root');
+const ROOT = rootAt >= 0 ? resolve(argv.splice(rootAt, 2)[1] ?? '.') : null;
+const [mode, a, b] = argv;
+if (!mode || !a) {
+  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...');
+  process.exit(2);
+}
+const rep = new Report();
+if (mode === 'review') checkReview(load(a), rep);
+else if (mode === 'feedback') checkFeedback(load(a), rep, b ? load(b) : null);
+else if (mode === 'pair') { const r = load(a); checkReview(r, rep); checkFeedback(load(b), rep, r); }
+else if (mode === 'history') {
+  if (!b) fail('history needs at least one earlier feedback file');
+  const r = load(a); checkReview(r, rep); checkHistory(r, argv.slice(2).map(load), rep);
+}
+else fail(`unknown mode "${mode}"`);
+
+for (const c of rep.checks) console.log(`  ${c.ok ? '✓' : '✗'} ${c.name}`);
+for (const w of rep.warnings) console.log(`  ! ${w}`);
+if (rep.errors.length) {
+  console.log(`\n${rep.errors.length} error(s):`);
+  for (const e of rep.errors) console.log(`  ✗ ${e}`);
+}
+const n = rep.checks.length;
+console.log(`\n${rep.errors.length === 0 ? 'PASS' : 'FAIL'} — ${n - rep.errors.length}/${n} checks, ${rep.warnings.length} warning(s)`);
+process.exit(rep.errors.length === 0 ? 0 : 1);

@@ -1,0 +1,64 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": {
+    "id": "booking-rules-2026-09",
+    "title": "Ground rules for bookings",
+    "schemaVersion": 1
+  },
+  "respondedAt": "2026-09-10T11:00:00Z",
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      },
+      {
+        "value": "changed-mind",
+        "label": "Changed my mind",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "responses": [
+    {
+      "itemId": "no-refunds",
+      "title": "Customers never get money back after booking",
+      "verdict": "agree",
+      "note": null
+    }
+  ],
+  "summary": {
+    "total": 1,
+    "answered": 1,
+    "unset": 0,
+    "added": 0,
+    "byVerdict": {
+      "agree": 1,
+      "partly-agree": 0,
+      "disagree": 0,
+      "revisit": 0,
+      "changed-mind": 0,
+      "unset": 0
+    }
+  },
+  "gaps": []
+}

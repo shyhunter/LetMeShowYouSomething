@@ -1,0 +1,853 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json",
+  "title": "LetMeShowYouSomething — Review (the ask)",
+  "description": "What an agent shows a human: a set of items to judge, the verdict vocabulary to judge them with, and how they are grouped. Renderer-agnostic — an HTML form is one way to present this, not the only way.",
+  "type": "object",
+  "required": ["protocol", "schemaVersion", "id", "title", "verdictSet", "items"],
+  "additionalProperties": false,
+  "properties": {
+    "protocol": {"const": "letmeshowyousomething/review"},
+    "schemaVersion": {"const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$",
+      "description": "Stable id. Feedback references this, so it must not change between rounds of the same review."
+    },
+    "title": {"type": "string", "minLength": 1, "maxLength": 200},
+    "subtitle": {"type": "string", "maxLength": 400},
+    "intro": {"type": "string", "description": "Markdown. What the reviewer is being asked to do and why."},
+    "createdAt": {"type": "string", "format": "date-time"},
+    "ask": {
+      "type": "string",
+      "maxLength": 600,
+      "description": "What the agent needs from the reviewer, in one or two sentences. Shown before anything else."
+    },
+    "afterwards": {
+      "type": "string",
+      "maxLength": 600,
+      "description": "What the agent will do with the answers. A reviewer puts in real effort when they know what their answer changes."
+    },
+    "flow": {"$ref": "#/$defs/flow"},
+    "audience": {
+      "type": "string",
+      "maxLength": 120,
+      "description": "Who this is written for. Lets the agent write once, at the right level, instead of several versions that can contradict each other."
+    },
+    "createdBy": {
+      "type": "object",
+      "description": "Provenance. Optional, and deliberately vendor-neutral: any agent may fill it, none is required to.",
+      "additionalProperties": false,
+      "properties": {
+        "agent": {"type": "string", "maxLength": 80},
+        "model": {"type": "string", "maxLength": 80},
+        "note": {"type": "string", "maxLength": 300}
+      }
+    },
+    "verdictSet": {
+      "type": "object",
+      "description": "The judgement vocabulary, declared explicitly rather than assumed. A reader who has never seen this review can still interpret its answers.",
+      "required": ["id", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"type": "string", "pattern": "^[a-z0-9-]{1,32}$"},
+        "options": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "required": ["value", "label", "tone"],
+            "additionalProperties": false,
+            "properties": {
+              "value": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,23}$"},
+              "label": {"type": "string", "minLength": 1, "maxLength": 40},
+              "tone": {
+                "enum": ["positive", "caution", "negative", "neutral"],
+                "description": "Semantic role, not a colour. A renderer maps tone to its own palette; 'negative' and unset drive the gap-first view."
+              },
+              "hint": {"type": "string", "maxLength": 160}
+            }
+          }
+        }
+      }
+    },
+    "fields": {
+      "type": "array",
+      "maxItems": 8,
+      "description": "Extra per-item display fields (Expected, How it works, Watch for). Declared once; each item fills what it has.",
+      "items": {
+        "type": "object",
+        "required": ["key", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "key": {"type": "string", "pattern": "^[a-z][a-z0-9_]{0,23}$"},
+          "label": {"type": "string", "minLength": 1, "maxLength": 40},
+          "tone": {"enum": ["positive", "caution", "negative", "neutral"]}
+        }
+      }
+    },
+    "allowAddedItems": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the reviewer may add items the agent failed to think of. Defaults true on purpose: the items you did not know to ask about are usually the valuable ones."
+    },
+    "addNoun": {"type": "string", "maxLength": 40, "default": "item"},
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+          "label": {"type": "string", "minLength": 1, "maxLength": 120},
+          "description": {"type": "string", "maxLength": 600},
+          "kind": {
+            "enum": ["challenge"],
+            "description": "The agent's doubts (D025, D051): here agree means the concern is real, and that is the gap."
+          },
+          "mode": {
+            "enum": ["judge-each", "choose-one"],
+            "default": "judge-each",
+            "description": "choose-one: the reviewer picks exactly one of this section's items. Every item can still be judged."
+          },
+          "recommended": {
+            "type": "object",
+            "required": ["itemId", "why"],
+            "additionalProperties": false,
+            "description": "The option the agent recommends, and why. Only in a choose-one section; must be one of its items.",
+            "properties": {
+              "itemId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+              "why": {"type": "string", "minLength": 1, "maxLength": 600}
+            }
+          },
+          "diagram": {
+            "type": "object",
+            "required": ["kind", "source"],
+            "additionalProperties": false,
+            "properties": {"kind": {"enum": ["mermaid"]}, "source": {"type": "string", "minLength": 1}}
+          }
+        }
+      }
+    },
+    "items": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["id", "title"],
+        "additionalProperties": false,
+        "properties": {
+          "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+          "sectionId": {"type": "string"},
+          "title": {"type": "string", "minLength": 1, "maxLength": 300},
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Plain-language one-liner shown first; body becomes the detail behind it."
+          },
+          "body": {"type": "string", "maxLength": 4000},
+          "step": {"$ref": "#/$defs/step"},
+          "affects": {
+            "type": "array",
+            "description": "Earlier decisions this item reopens, extends, contradicts or depends on. Each quotes the decision so it is readable without the earlier file; `check history` verifies the quote against that file.",
+            "items": {"$ref": "#/$defs/affects"}
+          },
+          "fields": {
+            "type": "object",
+            "description": "Values for the declared `fields`, keyed by field key.",
+            "additionalProperties": {"type": "string", "maxLength": 2000}
+          },
+          "ref": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Where this item came from — a file:line, an issue, a doc anchor. Lets the agent act on an answer without guessing what it referred to."
+          }
+        }
+      }
+    },
+    "diagrams": {
+      "type": "array",
+      "description": "Diagrams the agent writes (D036). Part 3b: flow charts.",
+      "items": {"$ref": "#/$defs/diagram"}
+    },
+    "focus": {
+      "type": "string",
+      "maxLength": 64,
+      "description": "Which chart opens first: user-flow, or a diagram id (D057, D070). The agent shows what it wants understood; the reviewer can still switch."
+    },
+    "brief": {"$ref": "#/$defs/brief"}
+  },
+  "$defs": {
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "ref": {
+      "type": "string",
+      "pattern": "^[^:\\s]+:[1-9][0-9]*$",
+      "description": "path:line, relative to the project folder given to `check --root`."
+    },
+    "status": {
+      "enum": ["proposed", "exists"],
+      "description": "proposed: the agent's design. exists: what the code does today, which needs a ref (D004)."
+    },
+    "flow": {
+      "type": "object",
+      "required": ["start", "screens"],
+      "additionalProperties": false,
+      "description": "A clickable flow: screens, and steps (items with a `step`) that move between them. Nothing is computed; branches are outcomes the reviewer picks (D002).",
+      "properties": {
+        "start": {"$ref": "#/$defs/id"},
+        "layers": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "default": {"type": "array", "uniqueItems": true, "items": {"enum": ["ui", "flow", "system", "data"]}}
+          }
+        },
+        "screens": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/screen"}},
+        "parts": {
+          "type": "array",
+          "description": "Nested parts (sub-processes) of the flow (D038). When present, every step names its part.",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "additionalProperties": false,
+            "properties": {
+              "id": {"$ref": "#/$defs/id"},
+              "title": {"type": "string", "minLength": 1, "maxLength": 120},
+              "parent": {"$ref": "#/$defs/id"},
+              "status": {"$ref": "#/$defs/claimStatus"},
+              "basis": {"$ref": "#/$defs/basis"}
+            }
+          }
+        }
+      }
+    },
+    "screen": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 120},
+        "end": {
+          "type": "boolean",
+          "description": "true when the flow may stop here. A screen with no way out must say so."
+        },
+        "blocks": {"type": "array", "items": {"$ref": "#/$defs/block"}},
+        "image": {
+          "type": "object",
+          "required": ["src", "alt"],
+          "additionalProperties": false,
+          "description": "A screenshot, inlined. PNG, JPEG or WebP only: no SVG, no URL (D010).",
+          "properties": {
+            "src": {"type": "string", "pattern": "^data:image/(png|jpeg|webp);base64,"},
+            "alt": {"type": "string", "minLength": 1, "maxLength": 200}
+          }
+        },
+        "hotspots": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "x", "y", "w", "h"],
+            "additionalProperties": false,
+            "description": "A clickable rectangle on the image, in percent of its width and height.",
+            "properties": {
+              "id": {"$ref": "#/$defs/id"},
+              "x": {"type": "number", "minimum": 0, "maximum": 100},
+              "y": {"type": "number", "minimum": 0, "maximum": 100},
+              "w": {"type": "number", "minimum": 0, "maximum": 100},
+              "h": {"type": "number", "minimum": 0, "maximum": 100}
+            }
+          }
+        }
+      }
+    },
+    "block": {
+      "description": "A wireframe element from the component catalogue (D034): our own generic drawings, nothing copied from any design system (D030).",
+      "oneOf": [
+        {"$ref": "#/$defs/block-heading"},
+        {"$ref": "#/$defs/block-text"},
+        {"$ref": "#/$defs/block-input"},
+        {"$ref": "#/$defs/block-button"},
+        {"$ref": "#/$defs/block-list"},
+        {"$ref": "#/$defs/block-header"},
+        {"$ref": "#/$defs/block-tab-bar"},
+        {"$ref": "#/$defs/block-tabs"},
+        {"$ref": "#/$defs/block-side-menu"},
+        {"$ref": "#/$defs/block-breadcrumb"},
+        {"$ref": "#/$defs/block-checkbox"},
+        {"$ref": "#/$defs/block-radio-group"},
+        {"$ref": "#/$defs/block-switch"},
+        {"$ref": "#/$defs/block-select"},
+        {"$ref": "#/$defs/block-date-time"},
+        {"$ref": "#/$defs/block-search"},
+        {"$ref": "#/$defs/block-stepper"},
+        {"$ref": "#/$defs/block-slider"},
+        {"$ref": "#/$defs/block-card"},
+        {"$ref": "#/$defs/block-chip"},
+        {"$ref": "#/$defs/block-image"},
+        {"$ref": "#/$defs/block-table"},
+        {"$ref": "#/$defs/block-avatar"},
+        {"$ref": "#/$defs/block-dialog"},
+        {"$ref": "#/$defs/block-toast"},
+        {"$ref": "#/$defs/block-banner"},
+        {"$ref": "#/$defs/block-empty-state"},
+        {"$ref": "#/$defs/block-progress"}
+      ]
+    },
+    "step": {
+      "type": "object",
+      "required": ["from", "on", "outcomes"],
+      "additionalProperties": false,
+      "properties": {
+        "goal": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "description": "Why the person does this, shown with the cause (D032)."
+        },
+        "part": {"$ref": "#/$defs/id"},
+        "status": {"$ref": "#/$defs/claimStatus"},
+        "basis": {"$ref": "#/$defs/basis"},
+        "from": {"$ref": "#/$defs/id"},
+        "on": {"$ref": "#/$defs/id"},
+        "outcomes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/outcome"}}
+      }
+    },
+    "outcome": {
+      "type": "object",
+      "required": ["effect", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "label": {"type": "string", "minLength": 1, "maxLength": 120},
+        "effect": {"type": "string", "minLength": 1, "maxLength": 300},
+        "to": {"$ref": "#/$defs/id"},
+        "because": {"type": "string", "maxLength": 300, "description": "Why this outcome happened (D032)."},
+        "canNow": {"type": "string", "maxLength": 300, "description": "What the person can do next (D032)."},
+        "system": {"type": "array", "items": {"$ref": "#/$defs/systemEntry"}},
+        "data": {"type": "array", "items": {"$ref": "#/$defs/dataEntry"}}
+      }
+    },
+    "systemEntry": {
+      "type": "object",
+      "required": ["id", "kind", "name", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["component", "external", "guard"]},
+        "name": {"type": "string", "minLength": 1, "maxLength": 160},
+        "status": {"$ref": "#/$defs/status"},
+        "ref": {"$ref": "#/$defs/ref"}
+      }
+    },
+    "dataEntry": {
+      "type": "object",
+      "required": ["id", "entity", "change", "status"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "entity": {"type": "string", "minLength": 1, "maxLength": 120},
+        "change": {"enum": ["insert", "update", "delete"]},
+        "status": {"$ref": "#/$defs/status"},
+        "ref": {"$ref": "#/$defs/ref"},
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "maxLength": 120},
+              "before": {"type": "string", "maxLength": 300},
+              "after": {"type": "string", "maxLength": 300}
+            }
+          }
+        }
+      }
+    },
+    "affects": {
+      "type": "object",
+      "required": ["decision", "effect", "why"],
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "type": "object",
+          "required": ["review", "itemId", "title", "verdict"],
+          "additionalProperties": false,
+          "description": "A quote of the earlier answer: which review, which item, its title and the verdict given. Never the reviewer's note.",
+          "properties": {
+            "review": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+            "itemId": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+            "title": {"type": "string", "minLength": 1, "maxLength": 300},
+            "verdict": {"type": "string", "minLength": 1}
+          }
+        },
+        "effect": {"enum": ["reopens", "extends", "contradicts", "depends-on"]},
+        "why": {"type": "string", "minLength": 1, "maxLength": 600}
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["id", "label"],
+      "additionalProperties": false,
+      "properties": {"id": {"$ref": "#/$defs/id"}, "label": {"type": "string", "minLength": 1, "maxLength": 120}}
+    },
+    "block-heading": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {"type": {"const": "heading"}, "text": {"type": "string", "minLength": 1, "maxLength": 200}}
+    },
+    "block-text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {"type": {"const": "text"}, "text": {"type": "string", "minLength": 1, "maxLength": 600}}
+    },
+    "block-input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label"],
+      "properties": {
+        "type": {"const": "input"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 120},
+        "value": {"type": "string", "maxLength": 300},
+        "placeholder": {"type": "string", "maxLength": 120}
+      }
+    },
+    "block-button": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label"],
+      "properties": {
+        "type": {"const": "button"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 120}
+      }
+    },
+    "block-list": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items"],
+      "properties": {
+        "type": {"const": "list"},
+        "items": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 200}}
+      }
+    },
+    "block-header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title"],
+      "properties": {
+        "type": {"const": "header"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 120},
+        "back": {
+          "type": "object",
+          "required": ["id"],
+          "additionalProperties": false,
+          "properties": {"id": {"$ref": "#/$defs/id"}}
+        },
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "block-tab-bar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items", "active"],
+      "properties": {
+        "type": {"const": "tab-bar"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "active": {"$ref": "#/$defs/id"}
+      }
+    },
+    "block-tabs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items", "active"],
+      "properties": {
+        "type": {"const": "tabs"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "active": {"$ref": "#/$defs/id"}
+      }
+    },
+    "block-side-menu": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items", "open"],
+      "properties": {
+        "type": {"const": "side-menu"},
+        "items": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "active": {"$ref": "#/$defs/id"},
+        "open": {"type": "boolean"}
+      }
+    },
+    "block-breadcrumb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "items"],
+      "properties": {
+        "type": {"const": "breadcrumb"},
+        "items": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 120}}
+      }
+    },
+    "block-checkbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "checked"],
+      "properties": {
+        "type": {"const": "checkbox"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "checked": {"type": "boolean"}
+      }
+    },
+    "block-radio-group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "options"],
+      "properties": {
+        "type": {"const": "radio-group"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "options": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+        "selected": {"$ref": "#/$defs/id"}
+      }
+    },
+    "block-switch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "on"],
+      "properties": {
+        "type": {"const": "switch"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "on": {"type": "boolean"}
+      }
+    },
+    "block-select": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "options"],
+      "properties": {
+        "type": {"const": "select"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 200},
+        "options": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 120}},
+        "value": {"type": "string", "maxLength": 120}
+      }
+    },
+    "block-date-time": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "mode"],
+      "properties": {
+        "type": {"const": "date-time"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 120},
+        "mode": {"enum": ["date", "time", "date-time"]},
+        "value": {"type": "string", "maxLength": 40}
+      }
+    },
+    "block-search": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id"],
+      "properties": {
+        "type": {"const": "search"},
+        "id": {"$ref": "#/$defs/id"},
+        "placeholder": {"type": "string", "maxLength": 120},
+        "value": {"type": "string", "maxLength": 200}
+      }
+    },
+    "block-stepper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "value", "min", "max"],
+      "properties": {
+        "type": {"const": "stepper"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 120},
+        "value": {"type": "number"},
+        "min": {"type": "number"},
+        "max": {"type": "number"},
+        "step": {"type": "number", "exclusiveMinimum": 0}
+      }
+    },
+    "block-slider": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "label", "value", "min", "max"],
+      "properties": {
+        "type": {"const": "slider"},
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 120},
+        "value": {"type": "number"},
+        "min": {"type": "number"},
+        "max": {"type": "number"}
+      }
+    },
+    "block-card": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title"],
+      "properties": {
+        "type": {"const": "card"},
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 160},
+        "text": {"type": "string", "maxLength": 600},
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "block-chip": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": {"const": "chip"},
+        "text": {"type": "string", "minLength": 1, "maxLength": 60},
+        "tone": {"enum": ["positive", "caution", "negative", "neutral"]}
+      }
+    },
+    "block-image": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "alt"],
+      "properties": {
+        "type": {"const": "image"},
+        "alt": {"type": "string", "minLength": 1, "maxLength": 200},
+        "caption": {"type": "string", "maxLength": 200}
+      }
+    },
+    "block-table": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "columns", "rows"],
+      "properties": {
+        "type": {"const": "table"},
+        "columns": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1, "maxLength": 80}},
+        "rows": {"type": "array", "items": {"type": "array", "items": {"type": "string", "maxLength": 200}}}
+      }
+    },
+    "block-avatar": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "name"],
+      "properties": {"type": {"const": "avatar"}, "name": {"type": "string", "minLength": 1, "maxLength": 80}}
+    },
+    "block-dialog": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "title", "actions"],
+      "properties": {
+        "type": {"const": "dialog"},
+        "id": {"$ref": "#/$defs/id"},
+        "title": {"type": "string", "minLength": 1, "maxLength": 160},
+        "text": {"type": "string", "maxLength": 600},
+        "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}}
+      }
+    },
+    "block-toast": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {"type": {"const": "toast"}, "text": {"type": "string", "minLength": 1, "maxLength": 200}}
+    },
+    "block-banner": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "tone", "text"],
+      "properties": {
+        "type": {"const": "banner"},
+        "tone": {"enum": ["positive", "caution", "negative", "neutral"]},
+        "text": {"type": "string", "minLength": 1, "maxLength": 300},
+        "because": {"type": "string", "maxLength": 300},
+        "canNow": {"type": "string", "maxLength": 300}
+      }
+    },
+    "block-empty-state": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "text"],
+      "properties": {
+        "type": {"const": "empty-state"},
+        "text": {"type": "string", "minLength": 1, "maxLength": 300},
+        "action": {"$ref": "#/$defs/action"}
+      }
+    },
+    "block-progress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": {"const": "progress"},
+        "label": {"type": "string", "maxLength": 120},
+        "value": {"type": "number"}
+      }
+    },
+    "claimStatus": {
+      "enum": ["exists", "proposed", "suggested"],
+      "description": "exists: in the product today. proposed: designed, not built. suggested: not asked for, the agent thinks it is missing (D047)."
+    },
+    "basis": {
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "description": "Where a claim comes from (D047). code needs a ref proven with --root; prd and docs need a ref; conversation and assumption need a note.",
+      "properties": {
+        "kind": {"enum": ["code", "prd", "docs", "conversation", "assumption"]},
+        "ref": {"type": "string", "maxLength": 300},
+        "note": {"type": "string", "maxLength": 600}
+      }
+    },
+    "diagram": {
+      "type": "object",
+      "required": ["id", "kind", "title", "nodes"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["flowchart"]},
+        "title": {"type": "string", "minLength": 1, "maxLength": 160},
+        "lanes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "title"],
+            "additionalProperties": false,
+            "properties": {"id": {"$ref": "#/$defs/id"}, "title": {"type": "string", "minLength": 1, "maxLength": 80}}
+          }
+        },
+        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/diagramNode"}},
+        "edges": {"type": "array", "items": {"$ref": "#/$defs/diagramEdge"}}
+      }
+    },
+    "diagramNode": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "kind": {
+          "enum": [
+            "start",
+            "end",
+            "end-failed",
+            "entry",
+            "exit",
+            "process",
+            "user-action",
+            "system-action",
+            "manual",
+            "subflow",
+            "screen",
+            "input",
+            "output",
+            "document",
+            "notification",
+            "decision",
+            "parallel-start",
+            "parallel-join",
+            "merge",
+            "event-choice",
+            "wait",
+            "timer",
+            "deadline",
+            "schedule",
+            "error",
+            "retry",
+            "compensate",
+            "escalate",
+            "cancel",
+            "send",
+            "receive",
+            "signal",
+            "callback",
+            "data",
+            "data-store",
+            "group",
+            "connector",
+            "off-page",
+            "note",
+            "loop"
+          ]
+        },
+        "label": {"type": "string", "maxLength": 160},
+        "lane": {"$ref": "#/$defs/id"},
+        "step": {"$ref": "#/$defs/id"},
+        "part": {"$ref": "#/$defs/id"},
+        "subflow": {"$ref": "#/$defs/id"},
+        "icon": {
+          "enum": [
+            "envelope",
+            "phone",
+            "lock",
+            "clock",
+            "warning",
+            "person",
+            "database",
+            "cloud",
+            "gear",
+            "card",
+            "calendar",
+            "bell",
+            "document",
+            "search",
+            "check",
+            "cross",
+            "chat",
+            "cart",
+            "key",
+            "globe"
+          ]
+        },
+        "component": {"$ref": "#/$defs/block"},
+        "col": {"type": "integer", "minimum": 0},
+        "row": {"type": "integer", "minimum": 0}
+      }
+    },
+    "diagramEdge": {
+      "type": "object",
+      "required": ["from", "to"],
+      "additionalProperties": false,
+      "properties": {
+        "from": {"$ref": "#/$defs/id"},
+        "to": {"$ref": "#/$defs/id"},
+        "kind": {"enum": ["sequence", "conditional", "default", "message", "association"]},
+        "label": {"type": "string", "maxLength": 80}
+      }
+    },
+    "brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "What the agent explains before asking (D059): the question to decide, the cause, what it recommends, real-life examples with their sources, and the risks.",
+      "properties": {
+        "question": {"type": "string", "maxLength": 300, "description": "The one thing the reviewer is asked to decide, as a single question. Shown first, in bold (D071)."},
+        "explains": {"type": "string", "maxLength": 1200},
+        "highlights": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "nodes": {"type": "array", "items": {"type": "string", "maxLength": 128}},
+            "screens": {"type": "array", "items": {"$ref": "#/$defs/id"}}
+          }
+        },
+        "recommendation": {"type": "string", "maxLength": 1200},
+        "examples": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "minLength": 1, "maxLength": 160},
+              "what": {"type": "string", "maxLength": 600},
+              "source": {"type": "string", "maxLength": 300}
+            }
+          }
+        },
+        "risks": {"type": "array", "items": {"type": "string", "maxLength": 400}}
+      }
+    }
+  }
+}

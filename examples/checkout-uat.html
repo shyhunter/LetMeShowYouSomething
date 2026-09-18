@@ -1,0 +1,1623 @@
+<!doctype html>
+<html lang="en"><head>
+<!-- SPDX-License-Identifier: MIT-0 -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Checkout rebuild — acceptance pass</title>
+<style>
+:root{
+  --bg:#FBFAFC; --surf:#FFFFFF; --surf2:#F3F1F6; --inset:#ECE9F1;
+  --line:rgba(28,22,42,.13); --line2:rgba(28,22,42,.22); --line3:rgba(28,22,42,.36);
+  --ink:#16141B; --ink2:#2C2735; --ink3:#524C60; --mut:#6F6880; --sub:#938CA3;
+  color-scheme:light;
+  --ac:#5B3E8C; --ac-bg:rgba(91,62,140,.10); --ac-line:rgba(91,62,140,.30); --on-ac:#FFFFFF;
+  --ok:#2F6B45; --ok-bg:rgba(47,107,69,.11);
+  --warn:#8E6110; --warn-bg:rgba(142,97,16,.12);
+  --bad:#A03A2E; --bad-bg:rgba(160,58,46,.10);
+  --neut:#5A6270; --neut-bg:rgba(90,98,112,.11);
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme]){
+  --bg:#121017; --surf:#1A1721; --surf2:#221E2C; --inset:#121017;
+  --line:#2B2736; --line2:#393347; --line3:#4D455E;
+  --ink:#ECE9F1; --ink2:#D6D1E0; --ink3:#ADA6BD; --mut:#8C859E; --sub:#6C6580;
+  color-scheme:dark;
+  --ac:#A98BD6; --ac-bg:rgba(169,139,214,.14); --ac-line:rgba(169,139,214,.32); --on-ac:#121017;
+  --ok:#63B584; --ok-bg:rgba(99,181,132,.14);
+  --warn:#D9A441; --warn-bg:rgba(217,164,65,.14);
+  --bad:#E08272; --bad-bg:rgba(224,130,114,.13);
+  --neut:#9AA3B2; --neut-bg:rgba(154,163,178,.13);
+}}
+:root[data-theme="dark"]{
+  --bg:#121017; --surf:#1A1721; --surf2:#221E2C; --inset:#121017;
+  --line:#2B2736; --line2:#393347; --line3:#4D455E;
+  --ink:#ECE9F1; --ink2:#D6D1E0; --ink3:#ADA6BD; --mut:#8C859E; --sub:#6C6580;
+  color-scheme:dark;
+  --ac:#A98BD6; --ac-bg:rgba(169,139,214,.14); --ac-line:rgba(169,139,214,.32); --on-ac:#121017;
+  --ok:#63B584; --ok-bg:rgba(99,181,132,.14);
+  --warn:#D9A441; --warn-bg:rgba(217,164,65,.14);
+  --bad:#E08272; --bad-bg:rgba(224,130,114,.13);
+  --neut:#9AA3B2; --neut-bg:rgba(154,163,178,.13);
+}
+:root[data-style="mac84"]{--mono:Monaco,'Courier New',monospace; --sans:Chicago,Charcoal,Geneva,'Helvetica Neue',sans-serif;}
+:root[data-style="mac84"]{--bg:#FFFFFF; --surf:#FFFFFF; --surf2:#FFFFFF; --inset:#FFFFFF;
+  --line:#000000; --line2:#000000; --line3:#000000;
+  --ink:#000000; --ink2:#000000; --ink3:#222222; --mut:#333333; --sub:#555555;
+  color-scheme:light; --ac:#000000; --ac-bg:#DDDDDD; --ac-line:#000000; --on-ac:#FFFFFF;}
+@media (prefers-color-scheme:dark){:root[data-style="mac84"]:not([data-theme]){--bg:#000000; --surf:#000000; --surf2:#000000; --inset:#000000;
+  --line:#FFFFFF; --line2:#FFFFFF; --line3:#FFFFFF;
+  --ink:#FFFFFF; --ink2:#FFFFFF; --ink3:#DDDDDD; --mut:#CCCCCC; --sub:#AAAAAA;
+  color-scheme:dark; --ac:#FFFFFF; --ac-bg:#333333; --ac-line:#FFFFFF; --on-ac:#000000;}}
+:root[data-style="mac84"][data-theme="dark"]{--bg:#000000; --surf:#000000; --surf2:#000000; --inset:#000000;
+  --line:#FFFFFF; --line2:#FFFFFF; --line3:#FFFFFF;
+  --ink:#FFFFFF; --ink2:#FFFFFF; --ink3:#DDDDDD; --mut:#CCCCCC; --sub:#AAAAAA;
+  color-scheme:dark; --ac:#FFFFFF; --ac-bg:#333333; --ac-line:#FFFFFF; --on-ac:#000000;}
+:root[data-style="mac84"] *{border-radius:0!important}
+:root[data-style="mac84"] body{background:repeating-conic-gradient(var(--ink) 0 25%,var(--bg) 0 50%) 0 0/2px 2px}
+:root[data-style="mac84"] .wrap{background:var(--bg)}
+:root[data-style="mac84"] :is(.panel,.sec-box,#brief,#feedback,fieldset.item,.btn){box-shadow:2px 2px 0 var(--ink)}
+:root[data-style="mac84"] :is(.panel-head,.sec-head){background:repeating-linear-gradient(var(--ink) 0 1px,var(--bg) 1px 3px);padding:2px 4px}
+:root[data-style="mac84"] :is(.panel-title,.sec-toggle){flex:none;background:var(--bg);padding:0 8px}
+:root[data-style="mac84"] .panel-head::after{content:"";flex:1}
+:root[data-style="cyber"]{--sans:ui-monospace,SFMono-Regular,Menlo,monospace;}
+:root[data-style="cyber"]{--bg:#F4F1FF; --surf:#FFFFFF; --surf2:#EAE4FF; --inset:#EAE4FF;
+  --line:#C9B8F0; --line2:#A58BE0; --line3:#7A55CC;
+  --ink:#1A0B2E; --ink2:#2A1745; --ink3:#4A3470; --mut:#5E4D80; --sub:#7A6A99;
+  color-scheme:light; --ac:#C2006B; --ac-bg:rgba(194,0,107,.10); --ac-line:rgba(194,0,107,.40); --on-ac:#FFFFFF;
+  --neon:#0088A0;}
+@media (prefers-color-scheme:dark){:root[data-style="cyber"]:not([data-theme]){--bg:#0B0716; --surf:#140C26; --surf2:#1C1233; --inset:#07040F;
+  --line:#3A1F5C; --line2:#5A2D8A; --line3:#8A3FD1;
+  --ink:#F4F1FF; --ink2:#DCD3FF; --ink3:#A99BD9; --mut:#8B7FB8; --sub:#6E6396;
+  color-scheme:dark; --ac:#00F0FF; --ac-bg:rgba(0,240,255,.12); --ac-line:rgba(0,240,255,.45); --on-ac:#0B0716;
+  --neon:#FF2E88;}}
+:root[data-style="cyber"][data-theme="dark"]{--bg:#0B0716; --surf:#140C26; --surf2:#1C1233; --inset:#07040F;
+  --line:#3A1F5C; --line2:#5A2D8A; --line3:#8A3FD1;
+  --ink:#F4F1FF; --ink2:#DCD3FF; --ink3:#A99BD9; --mut:#8B7FB8; --sub:#6E6396;
+  color-scheme:dark; --ac:#00F0FF; --ac-bg:rgba(0,240,255,.12); --ac-line:rgba(0,240,255,.45); --on-ac:#0B0716;
+  --neon:#FF2E88;}
+:root[data-style="cyber"] body{background-image:repeating-linear-gradient(0deg,var(--ac-bg) 0 1px,transparent 1px 3px)}
+:root[data-style="cyber"] :is(h1,h2){color:var(--ac);text-shadow:0 0 10px var(--ac-line);text-transform:uppercase;letter-spacing:.06em}
+:root[data-style="cyber"] :is(.panel,.sec-box,#brief,#feedback){border-color:var(--neon);box-shadow:0 0 14px color-mix(in srgb,var(--neon) 30%,transparent)}
+:root[data-style="cyber"] .btn.pri{box-shadow:0 0 14px var(--ac-line)}
+:root[data-style="newsletter"]{--mono:'Courier New',Courier,monospace; --sans:Georgia,'Times New Roman',serif;}
+:root[data-style="newsletter"]{--bg:#F3EAD3; --surf:#FAF4E4; --surf2:#EDE2C6; --inset:#EDE2C6;
+  --line:rgba(60,40,20,.25); --line2:rgba(60,40,20,.40); --line3:rgba(60,40,20,.60);
+  --ink:#2A1C10; --ink2:#3B2A1A; --ink3:#5C4630; --mut:#6E5A42; --sub:#8A7458;
+  color-scheme:light; --ac:#B4441E; --ac-bg:rgba(180,68,30,.10); --ac-line:rgba(180,68,30,.35); --on-ac:#FFF8E8;}
+@media (prefers-color-scheme:dark){:root[data-style="newsletter"]:not([data-theme]){--bg:#1C1812; --surf:#241F17; --surf2:#2E281E; --inset:#15120D;
+  --line:rgba(240,230,210,.18); --line2:rgba(240,230,210,.30); --line3:rgba(240,230,210,.50);
+  --ink:#F3EAD3; --ink2:#E4D8BE; --ink3:#C7B89A; --mut:#A8997C; --sub:#8A7C62;
+  color-scheme:dark; --ac:#E8875E; --ac-bg:rgba(232,135,94,.14); --ac-line:rgba(232,135,94,.40); --on-ac:#1C1812;}}
+:root[data-style="newsletter"][data-theme="dark"]{--bg:#1C1812; --surf:#241F17; --surf2:#2E281E; --inset:#15120D;
+  --line:rgba(240,230,210,.18); --line2:rgba(240,230,210,.30); --line3:rgba(240,230,210,.50);
+  --ink:#F3EAD3; --ink2:#E4D8BE; --ink3:#C7B89A; --mut:#A8997C; --sub:#8A7C62;
+  color-scheme:dark; --ac:#E8875E; --ac-bg:rgba(232,135,94,.14); --ac-line:rgba(232,135,94,.40); --on-ac:#1C1812;}
+:root[data-style="newsletter"] *{border-radius:2px!important}
+:root[data-style="newsletter"] header{border-bottom:5px double var(--ink)}
+:root[data-style="newsletter"] h1{font-size:clamp(28px,5vw,46px);text-transform:uppercase;letter-spacing:.04em}
+:root[data-style="newsletter"] h2{font-style:italic}
+:root[data-style="newsletter"] :is(.panel,.sec-box,#brief,#feedback){border-color:var(--ink3)}
+:root[data-style="shyhunter"]{--sans:Archivo,-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;}
+:root[data-style="shyhunter"]{--bg:#FFFDF9; --surf:#FFFDF9; --surf2:#EEE7D8; --inset:#F0E4C3;
+  --line:#544C43; --line2:#544C43; --line3:#141210;
+  --ink:#141210; --ink2:#141210; --ink3:#3A342E; --mut:#635C55; --sub:#7A726A;
+  color-scheme:light; --ac:#8F6D00; --ac-bg:rgba(244,196,35,.22); --ac-line:#8F6D00; --on-ac:#FFFFFF;
+  --ok:#008130; --bad:#C4000A;}
+@media (prefers-color-scheme:dark){:root[data-style="shyhunter"]:not([data-theme]){--bg:#121110; --surf:#1B1A18; --surf2:#262420; --inset:#0D0C0B;
+  --line:#8A8278; --line2:#8A8278; --line3:#D8D2C8;
+  --ink:#FFFFFF; --ink2:#EDEAE4; --ink3:#C9C3BA; --mut:#A39C92; --sub:#847D74;
+  color-scheme:dark; --ac:#F4C423; --ac-bg:rgba(244,196,35,.16); --ac-line:#F4C423; --on-ac:#141210;
+  --ok:#63B584; --bad:#E08272;}}
+:root[data-style="shyhunter"][data-theme="dark"]{--bg:#121110; --surf:#1B1A18; --surf2:#262420; --inset:#0D0C0B;
+  --line:#8A8278; --line2:#8A8278; --line3:#D8D2C8;
+  --ink:#FFFFFF; --ink2:#EDEAE4; --ink3:#C9C3BA; --mut:#A39C92; --sub:#847D74;
+  color-scheme:dark; --ac:#F4C423; --ac-bg:rgba(244,196,35,.16); --ac-line:#F4C423; --on-ac:#141210;
+  --ok:#63B584; --bad:#E08272;}
+:root[data-style="shyhunter"] :is(h1,h2,h3){font-family:'Bricolage Grotesque',Archivo,system-ui,sans-serif;font-weight:800;letter-spacing:-.015em}
+:root[data-style="shyhunter"] :is(.panel,.sec-box,#brief,#feedback,fieldset.item){border:1.5px solid var(--line);box-shadow:4px 4px 0 var(--line);border-radius:22px 8px 26px 10px/10px 26px 8px 22px}
+:root[data-style="shyhunter"] .btn{border-radius:12px 5px 14px 6px/6px 14px 5px 12px;box-shadow:2px 2px 0 var(--line)}
+:root[data-style="shyhunter"] .btn.pri{background:#F4C423;border-color:#544C43;color:#141210}
+:root[data-style="shyhunter"] :is(input,select,textarea){border-radius:6px 13px 5px 12px/12px 5px 14px 6px}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font:15px/1.6 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:900px;margin:0 auto;padding-inline:18px;padding-block:0 80px}
+h1,h2,h3{color:var(--ink);margin:0;text-wrap:balance}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-9999px}
+.skip:focus{left:8px;top:8px;z-index:9;background:var(--surf);border:1px solid var(--ac);padding:8px 12px;border-radius:6px}
+
+header{padding-block:30px 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+.htools{display:flex;gap:8px;align-items:center}
+.style-pick{font:500 12.5px var(--sans);color:var(--mut);display:flex;gap:6px;align-items:center}
+.style-pick select{min-height:44px;background:var(--surf);color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 8px;font:inherit}
+/* D079 — pin a section: it stays at the top while the rest scrolls under it. Pinned sections stack
+   in page order and share 80% of the window between them. */
+.pin{min-height:44px;font-size:12.5px}
+.pin[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+.pinned{position:sticky;top:var(--pin-top,0);z-index:6;max-height:calc(80vh / var(--pins,1));overflow:auto;background:var(--bg);box-shadow:0 6px 12px -8px rgba(0,0,0,.35)}
+.flow #stage{display:contents}
+.flow #upanel:not(.full){margin-top:16px}
+.htop{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
+h1{font-size:clamp(22px,3.4vw,30px);letter-spacing:-.015em;line-height:1.2}
+.sub{color:var(--ink3);font-size:14px;margin-top:4px}
+.intro{margin-top:14px;color:var(--ink2);font-size:14px;line-height:1.65;max-width:70ch}
+.intro strong{color:var(--ink)}
+.btn{background:var(--surf);border:1px solid var(--line2);border-radius:7px;padding:7px 12px;
+  font:500 12.5px var(--sans);color:var(--ink2);cursor:pointer}
+.btn:hover{border-color:var(--line3);color:var(--ink)}
+.btn.pri{background:var(--ac);border-color:var(--ac);color:var(--on-ac)}
+.btn.pri:hover{opacity:.92;color:var(--on-ac)}
+
+.bar{position:sticky;top:var(--pins-h,0);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+  padding-block:11px;margin-bottom:20px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.bar input[type=search]{flex:1 1 180px;min-width:0;background:var(--inset);border:1px solid var(--line2);
+  border-radius:7px;padding:8px 11px;font:13px var(--mono);color:var(--ink)}
+.chip{border:1px solid var(--line2);background:var(--surf);border-radius:99px;padding:5px 11px;
+  font:500 11.5px var(--sans);color:var(--mut);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ac-bg);border-color:var(--ac-line);color:var(--ac)}
+#filters{display:flex;gap:6px;flex-wrap:wrap}
+.prog{font:12px var(--mono);color:var(--mut);margin-left:auto;font-variant-numeric:tabular-nums}
+
+.sec{margin-bottom:30px}
+.sec>h2{font-size:15px;letter-spacing:-.01em;margin-bottom:3px}
+.sec>.d{font-size:13px;color:var(--mut);margin-bottom:12px}
+.mmd{background:var(--surf2);border:1px solid var(--line);border-radius:9px;padding:14px;margin-bottom:14px;overflow-x:auto}
+.mmd pre{margin:0;font:12px var(--mono);color:var(--ink3);white-space:pre}
+
+fieldset.item{border:1px solid var(--line);border-radius:10px;background:var(--surf);padding:16px 18px;margin:0 0 11px}
+fieldset.item[data-v]:not([data-v="unset"]){border-left:3px solid var(--tone,var(--line2))}
+legend{padding:0 4px;font-weight:600;color:var(--ink);font-size:14.5px;line-height:1.4}
+.body{font-size:13.5px;color:var(--ink3);margin:2px 0 10px;max-width:74ch}
+.flds{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.fld{display:flex;gap:9px;font-size:13px;align-items:baseline}
+.fld .k{font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--fk,var(--mut));min-width:78px;flex:none}
+.fld .val{color:var(--ink3)}
+.ref{font:11px var(--mono);color:var(--sub);margin-bottom:10px}
+
+.verdicts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.verdicts label{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line2);border-radius:99px;
+  padding:5px 12px;font-size:12.5px;color:var(--ink3);cursor:pointer;background:var(--surf)}
+.verdicts label:hover{border-color:var(--line3)}
+.verdicts input{margin:0;accent-color:var(--tc)}
+.verdicts input:checked+span{color:var(--tc);font-weight:600}
+.verdicts label:has(input:checked){background:var(--tcb);border-color:var(--tc)}
+.v-ok{--tc:var(--ok);--tcb:var(--ok-bg)} .v-warn{--tc:var(--warn);--tcb:var(--warn-bg)}
+.v-bad{--tc:var(--bad);--tcb:var(--bad-bg)} .v-neut{--tc:var(--neut);--tcb:var(--neut-bg)}
+.hint{font-size:11.5px;color:var(--sub);margin:-4px 0 10px}
+textarea{width:100%;background:var(--inset);border:1px solid var(--line2);border-radius:7px;padding:9px 11px;
+  font:13.5px var(--sans);color:var(--ink);resize:vertical;min-height:42px}
+textarea::placeholder{color:var(--sub)}
+
+.add{border:1px dashed var(--line2);border-radius:10px;padding:16px 18px;background:var(--surf2);margin-top:8px}
+.add h2{font-size:14px;margin-bottom:3px}
+.add .d{font-size:12.5px;color:var(--mut);margin-bottom:11px}
+.add input[type=text]{width:100%;background:var(--surf);border:1px solid var(--line2);border-radius:7px;
+  padding:8px 11px;font:13.5px var(--sans);color:var(--ink);margin-bottom:8px}
+.addedrow{display:flex;gap:10px;align-items:flex-start;background:var(--surf);border:1px solid var(--line);
+  border-radius:8px;padding:10px 12px;margin-bottom:7px}
+.added-h{font:600 13px var(--sans);color:var(--ink);margin:14px 0 8px}
+.addedrow .t{flex:1;font-size:13.5px;color:var(--ink)}
+.addedrow .b{font-size:12.5px;color:var(--mut);margin-top:2px}
+
+.done{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding-block:14px;
+  display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
+.done .note{font-size:12.5px;color:var(--mut)}
+.empty{padding:26px;text-align:center;color:var(--mut);font-size:13.5px}
+.meta{font:11.5px var(--mono);color:var(--sub);margin-top:6px}
+.asks{display:grid;gap:10px;margin-top:16px;max-width:74ch}
+.asks p{margin:0;font-size:14px;color:var(--ink2)}
+.asks b{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-bottom:2px}
+details.more{margin:-4px 0 10px}
+details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bottom:6px}
+.aff{border:1px solid var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 11px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
+.aff .k{display:block;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
+.pick{font-size:12.5px;color:var(--ac);font-weight:600;margin:-6px 0 12px}
+.choose{display:flex;align-items:center;gap:8px 10px;flex-wrap:wrap;margin-bottom:12px}
+.choose label{display:inline-flex;gap:7px;align-items:center;font-weight:600;font-size:13px;color:var(--ink);cursor:pointer;
+  border:1px solid var(--ac-line);border-radius:99px;padding:5px 12px;background:var(--ac-bg)}
+.choose input{margin:0;accent-color:var(--ac)}
+.rec{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--on-ac);background:var(--ac);border-radius:99px;padding:3px 9px}
+.recwhy{font-size:12.5px;color:var(--ink3);flex-basis:100%}
+/* A fieldset's own border breaks around its legend; a shadow ring would run through the title. */
+fieldset.item.chosen{border:2px solid var(--ac)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ── flow player (v0.2) ── */
+.wrap.flow{max-width:none;padding-inline:24px}
+.flow .bar{position:static}
+#player{margin-bottom:10px}
+.item .k,#brief .k{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-right:6px}
+#restart{min-height:44px;min-width:44px}
+/* The page as drawn (D068): the diagram, then the screen below it, each full width.
+   Either one opens full screen (D073): it covers the window until Esc or "Exit full screen". */
+.stage{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+.panel-full{min-height:44px;font-size:12.5px}
+.panel-full[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+.panel.full{position:fixed;inset:0;z-index:50;border-radius:0;overflow:auto;max-height:none;margin:0;padding:12px 24px 24px}
+.panel.full #flowbeside{max-height:none;height:calc(100vh - 130px)}
+body:has(.panel.full){overflow:hidden}
+.panel{border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:8px 10px 10px;min-width:0}
+.panel-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.panel-title{font:600 13px var(--sans);color:var(--ink);flex:1;white-space:nowrap}
+/* One row of tabs that scrolls sideways: long chart titles must not stack into a column. */
+#dgtabs{display:flex;gap:4px;overflow-x:auto;padding-bottom:2px;border-bottom:1px solid var(--line)}
+#dgtabs [role=tab]{min-height:44px;padding:4px 12px;border:1px solid transparent;border-radius:9px 9px 0 0;background:none;
+  color:var(--mut);font:600 13px var(--sans);cursor:pointer;white-space:nowrap;flex:none}
+#dgtabs [role=tab][aria-selected="true"]{color:var(--ink);border-color:var(--line2);background:var(--surf)}
+#chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
+#chips .chip{min-height:44px}
+.dg-empty{padding:16px 4px;color:var(--mut);font-size:13.5px}
+/* D074 — what to decide, full width; then your feedback: filters, the steps on the left and the
+   open step on the right, the row shared in three steps; then your own feedback, full width. */
+.brief-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
+#brief{margin-top:14px;border:1px solid var(--line2);border-left:3px solid var(--ac);border-radius:12px;background:var(--surf);padding:14px 16px}
+/* D069 — the step list is the feedback panel: one row per step, the chosen one open. */
+#feedback{margin-top:14px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
+.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.split[data-size="list"]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+.split[data-size="detail"]{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+.split>.sizes{grid-column:1/-1;display:flex;justify-content:flex-end;gap:6px}
+.sizes button{min-width:44px;min-height:44px;font-size:15px}
+.sizes button[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+#detail{position:sticky;top:calc(var(--pins-h,0px) + 12px);min-width:0}
+@media (max-width:1099px){.split,.split[data-size]{grid-template-columns:minmax(0,1fr)}.split>.sizes{display:none}}
+#feedback>h2{font-size:15px;margin-bottom:2px}
+#feedback .bar{position:static;margin-bottom:10px;padding-block:8px}
+#feedback .sec{margin-bottom:0}
+#feedback fieldset.item{padding:10px 14px;margin-bottom:8px;background:var(--bg)}
+#feedback fieldset.item.row{cursor:pointer}
+#feedback fieldset.item.open{padding:14px 16px}
+.row-meta{margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--mut)}
+.row-v{margin-left:auto;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tone,var(--warn))}
+.row-open{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left;min-height:32px}
+#feedback .add{margin:10px 0}
+.sec-box:only-child .sec-actions{display:none}
+#feedback fieldset.item.row{padding:2px 14px 8px;margin-bottom:6px}
+#feedback .prog{display:none}
+/* Sub-processes: a column beside the chart, switched on or off (sketch, 2026-09-18). */
+.dg-body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:8px}
+.dg-body.sub-off{grid-template-columns:auto minmax(0,1fr)}
+#subproc{width:170px;border:1px solid var(--line);border-radius:10px;padding:8px;background:var(--bg)}
+.dg-body.sub-off #subproc{width:auto}
+.dg-body.sub-off #chips{display:none}
+#chips{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+#chips .chip{min-height:44px;text-align:left;justify-content:flex-start}
+#chips .sub-h{font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sub);margin-top:6px}
+.switch{display:flex;align-items:center;gap:8px;min-height:44px;width:100%;border:0;background:none;color:var(--ink);
+  font:600 12.5px var(--sans);cursor:pointer;text-align:left}
+.switch-box{flex:none;width:34px;height:20px;border-radius:99px;background:var(--line2);position:relative;transition:background .15s}
+.switch-box::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:left .15s}
+.switch[aria-checked="true"] .switch-box{background:var(--ac)}
+.switch[aria-checked="true"] .switch-box::after{left:16px}
+/* Every screen at once, the way the flow shows every step (sketch, 2026-09-18). */
+.seg{display:flex;gap:4px}
+.seg .btn{min-height:44px;font-size:12.5px}
+.seg .btn[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+/* D078 — each small screen twice the size it was: twice the width, drawn at full scale; one column on a phone. */
+/* D081 — the connections between screens, like a prototype: from each action to where it leads. */
+#allscreens{position:relative;overflow-x:auto;padding-bottom:8px}
+/* Laid out like a prototype canvas: one column per tap from the start, gaps wide enough for the curves. */
+#allscreens.canvas{grid-template-columns:repeat(var(--cols),420px);column-gap:96px;row-gap:28px;align-items:start}
+@media (max-width:699px){#allscreens.canvas{grid-template-columns:minmax(0,1fr)}#allscreens.canvas .mini{grid-column:auto!important;grid-row:auto!important}}
+#allscreens .links{position:absolute;left:0;top:0;overflow:visible;pointer-events:none;z-index:1}
+.links path{fill:none;stroke:var(--ac);stroke-width:2;opacity:.85;transition:opacity .15s}
+.links circle{fill:var(--ac)}
+.links .head{fill:var(--ac);stroke:none}
+.links .back{opacity:.55}
+.links .back path{stroke-dasharray:6 5}
+.links.focus g:not(.hot){opacity:.12}
+.links.focus g.hot{opacity:1}
+#allscreens{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(420px,100%),1fr));gap:14px}
+.mini{display:flex;flex-direction:column;justify-content:flex-start;border:1px solid var(--line2);border-radius:12px;background:var(--bg);padding:8px;cursor:pointer;text-align:left;width:100%}
+.mini[aria-current="true"]{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac-bg)}
+.mini .mini-title{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sub);display:block;margin-bottom:4px}
+.mini .mini-body{pointer-events:none}
+.mini .screen{min-height:0}
+#brief h2{font-size:15px;margin-bottom:6px}
+.brief-q{font-size:17px;font-weight:650;color:var(--ink);line-height:1.4;margin:0 0 10px}
+.brief-h3{font:600 12px var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--mut);margin:12px 0 4px}
+.brief-explains{font-size:14.5px}
+.brief-rec{margin-top:8px}
+.brief-ex,.brief-risks{margin:0;padding-left:18px;font-size:13.5px}
+.brief-ex li,.brief-risks li{margin:3px 0}
+.unverified{color:var(--warn);font-size:12.5px}
+.dg-brief .dg-shape{stroke:var(--warn);stroke-width:3;stroke-dasharray:3 3}
+#upanel.brief-here{border-color:var(--warn)}
+#upanel.brief-here .panel-title::after{content:" · look here";color:var(--warn);font-weight:600}
+.asks-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.ask{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:4px 12px;border:1px solid var(--line2);border-radius:10px;
+  cursor:pointer;font-size:13px;color:var(--ink2);background:var(--surf)}
+.ask input{margin:0;accent-color:var(--ac)}
+.ask:has(input:checked){border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+#flowbeside{border:1px solid var(--line);border-radius:10px;background:var(--surf);overflow:auto;max-height:420px;padding:4px}
+#flowbeside svg{max-width:none}
+.dg-part-off{opacity:.3}
+.dg-part-up .dg-shape{stroke-dasharray:5 4}
+.dg-part-on .dg-shape{stroke:var(--ac);stroke-width:2.5}
+.dg-part-label{display:flex;gap:6px;align-items:center;font-size:13px;min-height:44px;margin-bottom:6px}
+.dg-part-label select{min-height:36px;font:13px var(--sans)}
+.sec-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px;background:var(--bg)}
+.sec-head{display:flex;align-items:center;gap:8px}
+.sec-toggle{flex:1;text-align:left;background:none;border:0;color:var(--ink);font:600 14px var(--sans);min-height:44px;cursor:pointer}
+.sec-actions{display:flex;gap:6px}
+.sec-up,.sec-down{min-width:44px;min-height:44px;border:1px solid var(--line2);border-radius:9px;background:var(--surf);color:var(--ink2);cursor:pointer;font-size:14px}
+.sec-body .steps-h:first-child{display:none}
+.screen{background:var(--surf);border:1px solid var(--line2);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:300px}
+.screen-title{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
+.hint{color:var(--mut);font-size:13px}
+.player-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.player-bar .note{font-size:12.5px;color:var(--mut)}
+.steps-h{font-size:15px;margin:24px 0 0}
+.end{font-size:12.5px;color:var(--mut);margin:0}
+/* part 3a views */
+[hidden]{display:none!important}
+.journeys{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin:8px 0 16px}
+.journey,.w-row,.p-item{display:flex;flex-direction:column;align-items:flex-start;gap:4px;min-height:44px;text-align:left;background:var(--surf);border:1px solid var(--line2);border-radius:12px;padding:10px 12px;font:13px var(--sans);color:var(--ink2);cursor:pointer;width:100%}
+.journey[aria-current="true"],.w-row[aria-current="true"],.p-item[aria-current="true"]{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac-line)}
+fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
+.j-title{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
+.basis,.j-count{font-size:12px;color:var(--mut)}
+.outcome-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0}
+.outcome{border:1px solid var(--line2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}
+.outcome[data-picked="true"]{border-color:var(--ac);background:var(--ac-bg)}
+.outcome p{margin:0;font-size:13px}
+.outcome [data-outcome]{min-height:44px;align-self:flex-start;margin-top:4px}
+.whole-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
+.whole-filters label{display:flex;gap:6px;align-items:center;font-size:13px;min-height:44px}
+.whole-filters select{min-height:36px;font:13px var(--sans)}
+.whole-count,.filterinfo{font-size:12.5px;color:var(--mut);margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#showall{min-height:44px}
+.flow-filters{display:flex;gap:12px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+.flow-filters label{display:flex;gap:6px;align-items:center;min-height:44px}
+.flow-filters select{min-height:36px;font:13px var(--sans)}
+.whole-rows{display:flex;flex-direction:column;gap:8px}
+.w-journey{font:11px var(--mono);color:var(--sub)}
+.w-status{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ac)}
+.panes{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:10px}
+@media (max-width:699px){.panes{grid-template-columns:1fr}}
+.pane{border:1px solid var(--line);border-radius:12px;padding:12px}
+.pane h3{font-size:12.5px;color:var(--mut);margin:10px 0 6px}
+.pane-body{display:flex;flex-direction:column;gap:6px}
+/* diagrams (part 3b): our own shapes and icons (D041) */
+.dg-list{display:flex;flex-direction:column;gap:18px;margin-top:8px}
+.dg-figure{margin:0}
+.dg-figure figcaption{font-size:13px;color:var(--mut);margin-bottom:6px}
+.dg-scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surf);padding:6px}
+.dg{display:block}
+.dg-shape{fill:var(--surf2);stroke:var(--line3);stroke-width:1.5}
+.dg-k-start .dg-shape,.dg-k-entry .dg-shape,.dg-k-end .dg-shape,.dg-k-exit .dg-shape{fill:var(--ok-bg);stroke:var(--ok)}
+.dg-k-end-failed .dg-shape,.dg-k-error .dg-shape,.dg-k-cancel .dg-shape{fill:var(--bad-bg);stroke:var(--bad)}
+.dg-k-decision .dg-shape,.dg-k-event-choice .dg-shape,.dg-k-merge .dg-shape,.dg-k-parallel-start .dg-shape,.dg-k-parallel-join .dg-shape,.dg-k-note .dg-shape{fill:var(--warn-bg);stroke:var(--warn)}
+.dg-group{fill:none;stroke-dasharray:5 4}
+.dg-line{fill:none;stroke:var(--line3);stroke-width:1.5}
+.dg-label{fill:var(--ink);font:12.5px var(--sans)}
+.dg-lane rect{fill:none;stroke:var(--line)}
+.dg-lane-title{fill:var(--mut);font:600 11px var(--mono)}
+.dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
+.dg-e-message path{stroke-dasharray:6 4}
+.dg-e-association path{stroke-dasharray:2 3}
+.dg-back path{stroke:var(--warn)}
+.dg-edge-label{fill:var(--ink2);font:600 11px var(--sans);paint-order:stroke;stroke:var(--surf);stroke-width:5px;stroke-linejoin:round}
+.dg marker path{fill:var(--line3)}
+.dg-icon{fill:none;stroke:var(--ac);stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.dg-node[data-step]{cursor:pointer}
+.dg-node[aria-current="true"] .dg-shape{stroke:var(--ac);stroke-width:3;fill:var(--ac-bg)}
+.dg-node:focus-visible{outline:none}
+.dg-node:focus-visible .dg-shape{stroke:var(--ac);stroke-width:3}
+.dg-component{font-size:11px;line-height:1.35}
+.dg-component .c-dialog,.dg-component .c-card,.dg-component .c-banner{padding:6px}
+/* components: our own generic wireframes (D030) */
+.screen .is-target{min-height:44px;min-width:44px;border:2px solid var(--ac);background:var(--ac-bg);color:var(--ac);border-radius:9px;padding:8px 14px;font:600 13.5px var(--sans);cursor:pointer;text-align:left}
+.screen .is-target:hover{background:var(--ac);color:var(--on-ac)}
+.c-button{display:inline-flex;align-items:center;min-height:36px;padding:6px 14px;border:1px solid var(--line2);border-radius:9px;font-size:13.5px;color:var(--ink3)}
+.c-heading{font-size:19px}
+.c-text,.c-card p,.c-dialog p,.c-empty p,.c-banner p{margin:0;font-size:14px;color:var(--ink2)}
+.c-field{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mut)}
+.c-field input,.c-field select,.c-search input{font:14px var(--sans);padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--inset);color:var(--ink)}
+.c-date{font:14px var(--mono);color:var(--ink);padding:8px 10px;border:1px solid var(--line2);border-radius:8px;background:var(--inset)}
+.c-list{margin:0;padding-left:18px;font-size:14px}
+.c-header{display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.c-header h2{font-size:16px;flex:1}
+.c-tab-bar,.c-tabs{display:flex;gap:4px;border:1px solid var(--line);border-radius:10px;padding:4px}
+.c-tab{flex:1;text-align:center;border-radius:7px}
+.c-tab[aria-current],.c-tab[aria-selected="true"]{background:var(--ac-bg)}
+.c-tab-label,.c-menu-label{display:block;padding:8px;font-size:13px}
+.c-side-menu{display:flex;flex-direction:column;border-left:3px solid var(--line2);padding-left:8px}
+.c-menu-item[aria-current]{font-weight:700}
+.c-breadcrumb ol{display:flex;gap:6px;list-style:none;margin:0;padding:0;font-size:12.5px;color:var(--mut)}
+.c-breadcrumb li+li::before{content:'›';margin-right:6px}
+.c-check,.c-radio label,.c-switch{display:flex;align-items:center;gap:8px;font-size:14px}
+.c-radio{border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:6px;margin:0}
+.c-radio legend{font-size:12.5px;color:var(--mut)}
+.c-switch b{font:600 11px var(--mono);color:var(--ac)}
+.c-stepper{display:flex;align-items:center;gap:8px;font-size:14px}
+.c-stepper>span:first-child{flex:1;color:var(--mut)}
+.c-step{min-width:32px;justify-content:center;padding:0}
+.c-card{border:1px solid var(--line2);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.c-card h3{font-size:15px}
+.c-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.c-chip{align-self:flex-start;font:600 11.5px var(--sans);padding:3px 10px;border-radius:99px;border:1px solid var(--line2)}
+.c-chip[data-tone=positive]{color:var(--ok);background:var(--ok-bg)}
+.c-chip[data-tone=caution]{color:var(--warn);background:var(--warn-bg)}
+.c-chip[data-tone=negative]{color:var(--bad);background:var(--bad-bg)}
+.c-image{margin:0}
+.c-placeholder{display:grid;place-items:center;min-height:110px;border:1px dashed var(--line3);border-radius:10px;color:var(--mut);font-size:13px;background:var(--inset)}
+.c-image figcaption{font-size:12px;color:var(--mut);margin-top:4px}
+.c-table-wrap{overflow-x:auto}
+.c-table{border-collapse:collapse;width:100%;font-size:13px}
+.c-table th,.c-table td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left}
+.c-avatar{display:inline-grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--ac-bg);color:var(--ac);font:700 13px var(--sans)}
+.c-dialog{border:1px solid var(--line3);border-radius:14px;padding:16px;box-shadow:0 12px 32px -18px rgba(0,0,0,.5);background:var(--surf)}
+.c-dialog h3{font-size:16px;margin-bottom:6px}
+.c-toast{align-self:center;background:var(--ink);color:var(--bg);border-radius:10px;padding:8px 14px;font-size:13.5px}
+.c-banner{border-radius:10px;padding:10px 12px;border:1px solid var(--line2);display:flex;flex-direction:column;gap:3px}
+.c-banner[data-tone=caution]{background:var(--warn-bg);border-color:var(--warn)}
+.c-banner[data-tone=negative]{background:var(--bad-bg);border-color:var(--bad)}
+.c-banner[data-tone=positive]{background:var(--ok-bg);border-color:var(--ok)}
+.c-banner .c-because,.c-banner .c-cannow{font-size:13px;color:var(--ink3)}
+.c-empty{text-align:center;padding:18px;border:1px dashed var(--line2);border-radius:12px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.c-progress{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mut)}
+.c-progress progress{width:100%}
+.c-sr{position:absolute;left:-9999px}
+</style>
+</head><body>
+<a class="skip" href="#items">Skip to the items</a>
+<div class="wrap">
+<header>
+  <div class="htop">
+    <div>
+      <h1>Checkout rebuild — acceptance pass</h1>
+      <p class="sub">Four flows, before we open it to real payments</p>
+      
+    </div>
+    <div class="htools">
+      <label class="style-pick">Style <select id="style">
+        <option value="">Default</option><option value="mac84">Macintosh 1984</option><option value="cyber">Cyberpunk</option>
+        <option value="newsletter">Newsletter</option><option value="shyhunter">ShyHunter</option>
+      </select></label>
+      <label class="style-pick">Mode <select id="theme">
+        <option value="">Auto</option><option value="light">Light</option><option value="dark">Dark</option>
+      </select></label>
+      <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+    </div>
+  </div>
+  <div class="intro" id="intro"></div>
+  
+</header>
+
+
+
+<div class="bar" role="search">
+  <label class="skip" for="q">Search items</label>
+  <input type="search" id="q" placeholder="Search…" autocomplete="off">
+  <div id="filters" role="group" aria-label="Filter items"></div>
+  
+  <output class="prog" id="prog" aria-live="polite"></output>
+  <p id="filterinfo" class="filterinfo" aria-live="polite"></p>
+</div>
+
+
+<section class="add" aria-labelledby="addh">
+  <h2 id="addh">Add your own feedback</h2>
+  <p class="d">Anything you want to say: a flow nobody asked about, an idea, or something unrelated. It goes back with your answers.</p>
+  <label class="skip" for="at">Title</label>
+  <input type="text" id="at" placeholder="What is it about?">
+  <label class="skip" for="ab">Detail</label>
+  <textarea id="ab" placeholder="Your feedback (optional)"></textarea>
+  <div style="display:flex;gap:8px;margin-top:9px"><button class="btn" id="addbtn" type="button">Add it</button></div>
+  <div id="added" style="margin-top:12px"></div>
+</section>
+
+<main id="items"></main>
+
+<div class="done">
+  <button class="btn pri" id="export" type="button">Export feedback.json</button>
+  <button class="btn" id="exporth" type="button">Export feedback.html</button>
+  <button class="btn" id="reset" type="button">Clear my answers</button>
+  <span class="note" id="footnote">Answers save in this browser as you go.</span>
+</div>
+</div>
+
+<script>
+// D076 — the page as it arrived, before anything is drawn: "Export feedback.html" saves this whole
+// page with the answers written into SEED, so the file shows everything, not a summary.
+const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"checkout-uat-2026-09","title":"Checkout rebuild — acceptance pass","subtitle":"Four flows, before we open it to real payments","intro":"Work through each flow on the staging build. **A note matters more than a verdict** — if something is off, say what you saw rather than grading it. Anything missing from this list, add it at the bottom.","createdAt":"2026-09-16T09:00:00Z","createdBy":{"agent":"claude-code","note":"Derived from the acceptance criteria in issue #218."},"verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"fields":[{"key":"expect","label":"Expected","tone":"positive"},{"key":"watch","label":"Watch for","tone":"caution"}],"allowAddedItems":true,"addNoun":"flow","sections":[{"id":"happy","label":"The path most people take","description":"If any of these are wrong, nothing below matters.","diagram":{"kind":"mermaid","source":"flowchart LR\n  Cart --> Address --> Pay --> Confirm"}},{"id":"edges","label":"Where it usually breaks","description":"Declines, timeouts, and the back button."}],"items":[{"id":"guest-checkout","sectionId":"happy","title":"A guest can buy without creating an account","body":"Add one item, check out without signing in, pay with a test card.","fields":{"expect":"Order confirmed, receipt emailed, no account created.","watch":"A sign-in prompt appearing anywhere in the flow."},"ref":"src/checkout/guest.ts:44"},{"id":"saved-card","sectionId":"happy","title":"A returning customer can pay with a saved card","fields":{"expect":"Card shown masked, one tap to pay."},"ref":"src/checkout/wallet.ts:112"},{"id":"declined-card","sectionId":"edges","title":"A declined card explains itself","body":"Use the test card that always declines.","fields":{"expect":"Plain-language reason, cart intact, retry without re-entering the address.","watch":"A raw gateway error code reaching the customer."}},{"id":"back-button","sectionId":"edges","title":"The back button mid-payment does not double-charge","fields":{"expect":"One charge, one order, whatever the customer does."}}]};
+const SEED = null;
+// SPDX-License-Identifier: MIT-0
+// The single source of truth for what a completed review exports.
+//
+// Pure: takes the review and the reviewer's raw input, returns a feedback.v1 object. No DOM, no
+// storage, no side effects. `render.mjs` inlines this function's source into the generated
+// page, so the page and the test suite run the SAME code — the export shape cannot drift from what
+// the checker expects without both failing together.
+//
+// Everything here exists to satisfy an invariant in PROTOCOL.md. The comments name which.
+
+// One line of text per flow layer entry. Exported so the checker compares with exactly what the page
+// wrote into the feedback (invariant 1: the verdict carries the text it judged).
+function layerEntryText(layer, e) {
+  if (layer === 'system') return `${e.kind} ${e.name} · ${e.status}${e.ref ? ` · ${e.ref}` : ''}`;
+  const fields = (e.fields || []).map((f) => `${f.name} ${f.before ?? '—'} → ${f.after ?? '—'}`).join(', ');
+  return `${e.entity} ${e.change}${fields ? `: ${fields}` : ''}`;
+}
+
+// Finds a system or data entry of a flow step by its id (D033).
+function findLayerEntry(item, entryId) {
+  for (const outcome of item?.step?.outcomes || [])
+    for (const layer of ['system', 'data'])
+      for (const entry of outcome[layer] || []) if (entry.id === entryId) return { outcome, layer, entry };
+  return null;
+}
+
+function buildFeedback(review, store, now = new Date().toISOString()) {
+  const sectionLabel = {};
+  const sectionKind = {};
+  for (const s of review.sections || []) { sectionLabel[s.id] = s.label; if (s.kind) sectionKind[s.id] = s.kind; }
+
+  const negative = new Set(
+    (review.verdictSet?.options || []).filter((o) => o.tone === 'negative').map((o) => o.value),
+  );
+  const positive = new Set(
+    (review.verdictSet?.options || []).filter((o) => o.tone === 'positive').map((o) => o.value),
+  );
+
+  // Invariant 2 — every item appears, including ones nobody touched. An untouched item is written
+  // as "unset", never omitted, so "no opinion" stays distinguishable from "never reached them".
+  const responses = (review.items || []).map((item) => {
+    const r = {
+      itemId: item.id,
+      // Invariant 1 — the echoed title is what makes the file readable without the review.
+      title: item.title,
+      verdict: store.verdicts?.[item.id] || 'unset',
+      note: (store.notes?.[item.id] || '').trim() || null,
+    };
+    if (item.sectionId) r.sectionId = item.sectionId;
+    if (sectionKind[item.sectionId]) r.sectionKind = sectionKind[item.sectionId];
+    if (item.sectionId && sectionLabel[item.sectionId]) r.sectionLabel = sectionLabel[item.sectionId];
+    if (item.ref) r.ref = item.ref;
+    if (item.affects?.length) r.affects = item.affects;
+    return r;
+  });
+
+  // Invariant 3 — what the reviewer added. `added-` prefix so these can never be mistaken for
+  // something the agent asked about.
+  const addedItems = (store.added || []).map((a, i) => {
+    const out = {
+      id: a.id || `added-${i + 1}`,
+      title: (a.title || '').trim() || '(untitled)',
+      verdict: a.verdict || 'unset',
+      note: (a.note || '').trim() || null,
+    };
+    if ((a.body || '').trim()) out.body = a.body.trim();
+    if (a.sectionLabel) out.sectionLabel = a.sectionLabel;
+    return out;
+  });
+
+  // Invariant 4 — derived, and required to agree with the data. The checker recomputes all of this.
+  const unset = responses.filter((r) => r.verdict === 'unset').length;
+  const byVerdict = { unset };
+  for (const o of review.verdictSet?.options || []) {
+    byVerdict[o.value] = responses.filter((r) => r.verdict === o.value).length;
+  }
+
+  // Invariant 5 — gap-first: anything judged negative, plus anything nobody answered. In a choose-one
+  // section that has a pick, the pick answers the section, so unrated options are not gaps.
+  // D006 — verdicts on single flow layer entries, only the ones the reviewer judged. Each echoes the
+  // entry text. Nothing about how the reviewer navigated is recorded (D003).
+  const itemById = {};
+  for (const it of review.items || []) itemById[it.id] = it;
+  const layerVerdicts = Object.entries(store.layerVerdicts || {}).map(([id, v]) => {
+    const [stepId, entryId] = id.split('/');
+    const found = findLayerEntry(itemById[stepId], entryId);
+    if (!found || !v?.verdict) return null;
+    return { id, stepId, entryId, stepTitle: itemById[stepId].title, layer: found.layer,
+      outcome: found.outcome.label ?? null, entry: layerEntryText(found.layer, found.entry),
+      verdict: v.verdict, note: (v.note || '').trim() || null };
+  }).filter(Boolean);
+
+  // D060 — what the reviewer asks the agent for: an example, or an explanation. Answered next round.
+  const requests = [];
+  for (const [itemId, ask] of Object.entries(store.requests || {})) {
+    const item = itemById[itemId];
+    if (!item) continue;
+    for (const kind of ['example', 'explain']) if (ask && ask[kind])
+      requests.push({ itemId, title: item.title, kind, note: (ask.note || '').trim() || null });
+  }
+
+  const picked = new Set((review.sections || []).filter((s) => s.mode === 'choose-one' && store.choices?.[s.id]).map((s) => s.id));
+  const gaps = [...responses, ...addedItems, ...layerVerdicts]
+    .filter((x) => (x.verdict === 'unset' ? !picked.has(x.sectionId)
+      // D051 — in a doubts section, agree (a positive verdict) means the concern is real: that is the gap.
+      : x.sectionKind === 'challenge' ? positive.has(x.verdict) : negative.has(x.verdict)))
+    .map((x) => x.itemId || x.id);
+
+  // choose-one sections — every one is written down, chosen or not (itemId null), mirroring
+  // invariant 2. followedRecommendation is derived, so the checker can recompute it (invariant 4).
+  const titleOf = {};
+  for (const it of review.items || []) titleOf[it.id] = it.title;
+  const choices = (review.sections || []).filter((s) => s.mode === 'choose-one').map((s) => {
+    const picked = store.choices?.[s.id] || null;
+    const c = { sectionId: s.id, sectionLabel: s.label, itemId: picked, title: picked ? titleOf[picked] : null };
+    if (s.recommended) {
+      c.recommended = { itemId: s.recommended.itemId, title: titleOf[s.recommended.itemId] };
+      c.followedRecommendation = picked ? picked === s.recommended.itemId : null;
+    }
+    return c;
+  });
+
+  const out = {
+    protocol: 'letmeshowyousomething/feedback',
+    schemaVersion: 1,
+    review: { id: review.id, title: review.title, schemaVersion: review.schemaVersion },
+    respondedAt: now,
+    // Echoed so a value like "partial" still means something to a reader without the review.
+    verdictSet: review.verdictSet,
+    responses,
+    summary: {
+      total: responses.length,
+      answered: responses.length - unset,
+      unset,
+      added: addedItems.length,
+      byVerdict,
+    },
+    gaps,
+  };
+  if (addedItems.length) out.addedItems = addedItems;
+  if (choices.length) out.choices = choices;
+  if (requests.length) out.requests = requests;
+  if (layerVerdicts.length) out.layerVerdicts = layerVerdicts;
+  if (store.respondent && (store.respondent.name || store.respondent.role)) {
+    out.respondent = {};
+    if (store.respondent.name) out.respondent.name = store.respondent.name;
+    if (store.respondent.role) out.respondent.role = store.respondent.role;
+  }
+  return out;
+}
+
+// SPDX-License-Identifier: MIT-0
+// Draws a flow screen's components as HTML strings. Pure: no DOM, no state. The renderer inlines this
+// file verbatim, so the page and the tests run the same code.
+//
+// Every value from a review is agent-written: it goes through esc() before it reaches the page, in
+// text and in attributes alike. Only ids that a step points at become real buttons; everything else is
+// drawn as a still wireframe, because a reviewer can only act where the flow says something happens.
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// A tappable element when a step points at it, a still one otherwise. In a still picture (ctx.still,
+// the "All screens" cards, which are buttons themselves) it is a marked span the connections start from.
+function act(id, label, ctx, cls = 'c-button') {
+  if (id === undefined || !ctx.targets.has(id)) return `<span class="${cls}">${esc(label)}</span>`;
+  return ctx.still
+    ? `<span class="${cls} is-target" data-link="${esc(id)}">${esc(label)}</span>`
+    : `<button type="button" class="${cls} is-target" data-target="${esc(id)}">${esc(label)}</button>`;
+}
+const actions = (list, ctx) => (list?.length ? `<div class="c-actions">${list.map((a) => act(a.id, a.label, ctx)).join('')}</div>` : '');
+const initials = (name) => String(name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+const DRAW = {
+  heading: (b) => `<h2 class="c-heading">${esc(b.text)}</h2>`,
+  text: (b) => `<p class="c-text">${esc(b.text)}</p>`,
+  input: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? b.placeholder ?? ''}`, ctx, 'c-input')
+    : `<label class="c-field"><span>${esc(b.label)}</span><input disabled value="${esc(b.value)}" placeholder="${esc(b.placeholder)}"></label>`),
+  button: (b, ctx) => act(b.id, b.label, ctx),
+  list: (b) => `<ul class="c-list">${(b.items ?? []).map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`,
+
+  header: (b, ctx) => `<div class="c-header">${b.back ? act(b.back.id, '← Back', ctx, 'c-back') : ''}<h2>${esc(b.title)}</h2>${actions(b.actions, ctx)}</div>`,
+  'tab-bar': (b, ctx) => `<nav class="c-tab-bar" aria-label="Main sections">${(b.items ?? []).map((i) => `<span class="c-tab"${i.id === b.active ? ' aria-current="page"' : ''}>${act(i.id, i.label, ctx, 'c-tab-label')}</span>`).join('')}</nav>`,
+  tabs: (b, ctx) => `<div class="c-tabs" role="tablist">${(b.items ?? []).map((i) => `<span class="c-tab" role="tab" aria-selected="${i.id === b.active}">${act(i.id, i.label, ctx, 'c-tab-label')}</span>`).join('')}</div>`,
+  'side-menu': (b, ctx) => `<nav class="c-side-menu" data-open="${b.open ? 'true' : 'false'}" aria-label="Menu">${(b.items ?? []).map((i) => `<span class="c-menu-item"${i.id === b.active ? ' aria-current="page"' : ''}>${act(i.id, i.label, ctx, 'c-menu-label')}</span>`).join('')}</nav>`,
+  breadcrumb: (b) => `<nav class="c-breadcrumb" aria-label="Breadcrumb"><ol>${(b.items ?? []).map((i) => `<li>${esc(i)}</li>`).join('')}</ol></nav>`,
+
+  checkbox: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.checked ? '☑' : '☐'} ${b.label}`, ctx, 'c-check')
+    : `<label class="c-check"><input type="checkbox" disabled${b.checked ? ' checked' : ''}> ${esc(b.label)}</label>`),
+  'radio-group': (b, ctx) => `<fieldset class="c-radio" disabled><legend>${esc(b.label)}</legend>${(b.options ?? []).map((o) => (ctx.targets.has(o.id)
+    ? act(o.id, `${o.id === b.selected ? '◉' : '○'} ${o.label}`, ctx, 'c-option')
+    : `<label><input type="radio" name="${esc(b.id)}"${o.id === b.selected ? ' checked' : ''}> ${esc(o.label)}</label>`)).join('')}</fieldset>`,
+  switch: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.on ? 'on' : 'off'}`, ctx, 'c-switch')
+    : `<span class="c-switch" role="switch" aria-checked="${b.on ? 'true' : 'false'}" aria-disabled="true">${esc(b.label)} <b>${b.on ? 'on' : 'off'}</b></span>`),
+  select: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? ''} ▾`, ctx, 'c-select')
+    : `<label class="c-field"><span>${esc(b.label)}</span><select disabled>${(b.options ?? []).map((o) => `<option${o === b.value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`),
+  'date-time': (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? ''}`, ctx, 'c-date')
+    : `<div class="c-field"><span>${esc(b.label)}</span><output class="c-date" data-mode="${esc(b.mode)}">${esc(b.value)}</output></div>`),
+  search: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `⌕ ${b.value || b.placeholder || 'Search'}`, ctx, 'c-search')
+    : `<label class="c-search"><span class="c-sr">Search</span><input type="search" disabled placeholder="${esc(b.placeholder)}" value="${esc(b.value)}"></label>`),
+  stepper: (b, ctx) => `<div class="c-stepper"><span>${esc(b.label)}</span>${act(`${b.id}`, '−', { targets: new Set() }, 'c-step')}<output>${esc(b.value)}</output>${act(`${b.id}`, '+', { targets: new Set() }, 'c-step')}${ctx.targets.has(b.id) ? act(b.id, 'Change', ctx) : ''}</div>`,
+  slider: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value}`, ctx, 'c-slider')
+    : `<label class="c-field"><span>${esc(b.label)}</span><input type="range" disabled min="${esc(b.min)}" max="${esc(b.max)}" value="${esc(b.value)}"><output>${esc(b.value)}</output></label>`),
+
+  card: (b, ctx) => `<article class="c-card"><h3>${esc(b.title)}</h3>${b.text ? `<p>${esc(b.text)}</p>` : ''}${actions(b.actions, ctx)}</article>`,
+  chip: (b) => `<span class="c-chip" data-tone="${esc(b.tone ?? 'neutral')}">${esc(b.text)}</span>`,
+  image: (b) => `<figure class="c-image"><div class="c-placeholder" role="img" aria-label="${esc(b.alt)}">${esc(b.alt)}</div>${b.caption ? `<figcaption>${esc(b.caption)}</figcaption>` : ''}</figure>`,
+  table: (b) => `<div class="c-table-wrap"><table class="c-table"><thead><tr>${(b.columns ?? []).map((c) => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead><tbody>${(b.rows ?? []).map((r) => `<tr>${(Array.isArray(r) ? r : []).map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`,
+  avatar: (b) => `<span class="c-avatar" role="img" aria-label="${esc(b.name)}" title="${esc(b.name)}">${esc(initials(b.name))}</span>`,
+
+  dialog: (b, ctx) => `<div class="c-dialog" role="dialog" aria-label="${esc(b.title)}"><h3>${esc(b.title)}</h3>${b.text ? `<p>${esc(b.text)}</p>` : ''}${actions(b.actions, ctx)}</div>`,
+  toast: (b) => `<div class="c-toast" role="status">${esc(b.text)}</div>`,
+  banner: (b) => `<div class="c-banner" data-tone="${esc(b.tone)}" role="${b.tone === 'negative' ? 'alert' : 'status'}"><p>${esc(b.text)}</p>${b.because ? `<p class="c-because">Why: ${esc(b.because)}</p>` : ''}${b.canNow ? `<p class="c-cannow">You can: ${esc(b.canNow)}</p>` : ''}</div>`,
+  'empty-state': (b, ctx) => `<div class="c-empty"><p>${esc(b.text)}</p>${b.action ? act(b.action.id, b.action.label, ctx) : ''}</div>`,
+  progress: (b) => `<div class="c-progress">${b.label ? `<span>${esc(b.label)}</span>` : ''}<progress max="100"${b.value !== undefined ? ` value="${esc(b.value)}"` : ''}></progress></div>`,
+};
+
+function drawBlock(block, ctx) {
+  const draw = DRAW[block?.type];
+  return draw ? draw(block, ctx) : `<p class="c-unknown">${esc(block?.type)}</p>`;
+}
+
+// SPDX-License-Identifier: MIT-0
+// Lays out a flow chart (D052, D075 — each column gap as wide as its widest label): boxes in columns by their longest distance from a start, one row band
+// per lane, loops found and routed underneath. Deterministic and pure; the renderer inlines this file.
+//
+// Deliberately not a general graph-layout engine (D009). When a chart comes out awkward, a node's
+// `col` (and `row` within its lane) pins it; everything else stays automatic.
+
+const NODE_W = 168, GAP_MIN = 32, NODE_H = 64, COMPONENT_H = 170, PAD = 16, LANE_W = 110, LOOP_GAP = 14;
+
+function layout(diagram) {
+  const nodes = diagram.nodes || [];
+  // A node showing a screen component is taller; only the lane holding one gets taller rows.
+  const cellH = (members) => (members.some((n) => n.component) ? COMPONENT_H + 26 : 96);
+  const ids = nodes.map((n) => n.id);
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const edges = (diagram.edges || []).filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
+
+  // 1. Loops: a depth-first walk from every start (then from anything left) marks edges that point back
+  //    at a node still on the path. Those are drawn underneath and ignored when ranking columns.
+  const back = new Set(), state = {};
+  const outOf = (id) => edges.filter((e) => e.from === id);
+  const walk = (root) => {
+    const stack = [[root, 0]];
+    state[root] = 'open';
+    while (stack.length) {
+      const top = stack[stack.length - 1], outs = outOf(top[0]);
+      if (top[1] >= outs.length) { state[top[0]] = 'done'; stack.pop(); continue; }
+      const e = outs[top[1]++];
+      if (state[e.to] === 'open') back.add(e);
+      else if (!state[e.to]) { state[e.to] = 'open'; stack.push([e.to, 0]); }
+    }
+  };
+  for (const n of nodes) if ((n.kind === 'start' || n.kind === 'entry') && !state[n.id]) walk(n.id);
+  for (const id of ids) if (!state[id]) walk(id);
+  const forward = edges.filter((e) => !back.has(e));
+
+  // 2. Columns: longest forward distance from anything without predecessors; a pinned col wins.
+  const col = {}, indegree = Object.fromEntries(ids.map((id) => [id, 0]));
+  for (const e of forward) indegree[e.to]++;
+  const queue = ids.filter((id) => indegree[id] === 0);
+  for (const id of ids) col[id] = 0;
+  for (let i = 0; i < queue.length; i++) {
+    const id = queue[i];
+    if (Number.isInteger(byId[id].col)) col[id] = byId[id].col;
+    for (const e of forward.filter((x) => x.from === id)) {
+      col[e.to] = Math.max(col[e.to], col[id] + 1);
+      if (--indegree[e.to] === 0) queue.push(e.to);
+    }
+  }
+
+  // An end stands alone in the last column, the way a start stands alone in the first (D077).
+  const ends = ids.filter((id) => byId[id].kind === 'end' && !Number.isInteger(byId[id].col));
+  if (ends.length && ends.length < ids.length) {
+    const last = Math.max(...ids.filter((id) => !ends.includes(id)).map((id) => col[id]));
+    for (const id of ends) col[id] = last + 1;
+  }
+
+  // 3. Lanes as row bands; inside a band, boxes sharing a column stack in sub-rows (pins first).
+  const laneList = (diagram.lanes || []).map((l) => ({ id: l.id, title: l.title }));
+  if (!laneList.length || nodes.some((n) => !laneList.some((l) => l.id === n.lane))) laneList.push({ id: null, title: '' });
+  const laneOf = (n) => (laneList.some((l) => l.id === n.lane) ? n.lane : null);
+  const taken = {}, sub = {};
+  const place = (n, want) => {
+    const key = (r) => `${laneOf(n)}|${col[n.id]}|${r}`;
+    let r = want;
+    while (taken[key(r)]) r++;
+    taken[key(r)] = true;
+    sub[n.id] = r;
+  };
+  for (const n of nodes) if (Number.isInteger(n.row)) place(n, n.row);
+  for (const n of nodes) if (!Number.isInteger(n.row)) place(n, 0);
+
+  const offsetX = laneList.some((l) => l.id !== null) ? LANE_W : 0;
+  let y = 0;
+  const lanes = [];
+  for (const l of laneList) {
+    const members = nodes.filter((n) => laneOf(n) === l.id);
+    if (l.id === null && !members.length && laneList.length > 1) continue;
+    const rows = members.length ? Math.max(...members.map((n) => sub[n.id])) + 1 : 1;
+    const h = PAD + rows * cellH(members);
+    lanes.push({ id: l.id, title: l.title, y, h, cell: cellH(members) });
+    y += h;
+  }
+  const bandY = Object.fromEntries(lanes.map((l) => [l.id, l.y]));
+  const bandCell = Object.fromEntries(lanes.map((l) => [l.id, l.cell]));
+
+  // Each corridor between columns is as wide as the widest label it carries, so no label covers a box.
+  const maxCol = nodes.length ? Math.max(...Object.values(col)) : 0;
+  const gap = Array.from({ length: maxCol + 1 }, () => GAP_MIN);
+  for (const e of edges) {
+    const a = col[e.from], b = col[e.to];
+    if (e.label && !back.has(e) && b === a + 1) gap[a] = Math.max(gap[a], labelWidth(e.label) + 12);
+  }
+  const colX = [offsetX + PAD];
+  for (let c = 1; c <= maxCol; c++) colX[c] = colX[c - 1] + NODE_W + gap[c - 1];
+
+  const boxes = {};
+  for (const n of nodes) {
+    boxes[n.id] = { x: colX[col[n.id]], y: bandY[laneOf(n)] + PAD + sub[n.id] * bandCell[laneOf(n)],
+      w: NODE_W, h: n.component ? COMPONENT_H : NODE_H, col: col[n.id], row: sub[n.id], lane: laneOf(n) };
+  }
+
+  // 4. Edges travel only where no box can be: the corridor between columns, the gap above a row, and
+  //    below everything for loops. Nothing crosses an unrelated box (tested on random diagrams).
+  const bottom = y;
+  let loops = 0;
+  const lines = edges.map((e) => {
+    const a = boxes[e.from], b = boxes[e.to];
+    const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2;
+    const out = x1 + gap[a.col] / 2, into = x2 - gap[Math.max(0, b.col - 1)] / 2;
+    const isBack = back.has(e) || b.col <= a.col;
+    let points, labelAt;
+    if (isBack) {
+      const ly = bottom + LOOP_GAP + loops++ * LOOP_GAP;
+      points = [[x1, y1], [out, y1], [out, ly], [into, ly], [into, y2], [x2, y2]];
+      labelAt = [(out + into) / 2, ly];
+    } else if (b.col === a.col + 1) {
+      points = [[x1, y1], [out, y1], [out, y2], [x2, y2]];
+      labelAt = [out, (y1 + y2) / 2];
+    } else {
+      const gy = b.y - PAD / 2;
+      points = [[x1, y1], [out, y1], [out, gy], [into, gy], [into, y2], [x2, y2]];
+      labelAt = [(out + into) / 2, gy];
+    }
+    return { from: e.from, to: e.to, kind: e.kind || 'sequence', label: e.label, back: isBack, points, labelAt };
+  });
+
+  return { nodes: boxes, edges: lines, lanes, width: colX[maxCol] + NODE_W + gap[maxCol] + PAD, height: bottom + (loops ? LOOP_GAP * (loops + 1) : 0) };
+}
+
+// Edge labels are 600 11px sans: about 6.6px a character, plus the halo drawn around them.
+function labelWidth(text) { return Math.ceil(String(text).length * 6.6) + 10; }
+
+// SPDX-License-Identifier: MIT-0
+// Draws a flow chart as an SVG string: our own shapes per node kind, our own icons (D041), screen
+// components inside nodes, and the selected step marked (D045). Pure; the renderer inlines this file
+// with its imports removed, so the page and the tests run the same code. Every text goes through esc().
+
+function escSvg(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Our own icon set: simple strokes on a 24-unit grid, drawn for this project (nothing copied).
+const ICON_PATHS = {
+  envelope: '<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M3 7l9 6 9-6"/>',
+  phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  warning: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  database: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 18z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  calendar: '<rect x="4" y="5" width="16" height="16" rx="1"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  document: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  search: '<circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/>',
+  check: '<path d="M4 12l5 5L20 6"/>',
+  cross: '<path d="M6 6l12 12M18 6L6 18"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  cart: '<path d="M3 4h3l2 11h11l2-8H7"/><circle cx="10" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
+  key: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+};
+// A kind without an explicit icon still gets a hint of what it is.
+const KIND_ICON = { 'user-action': 'person', notification: 'bell', timer: 'clock', wait: 'clock', deadline: 'clock', schedule: 'calendar',
+  error: 'warning', escalate: 'person', cancel: 'cross', send: 'envelope', receive: 'envelope', callback: 'chat', 'data-store': 'database', document: 'document', screen: 'phone' };
+
+function icon(name, x, y) {
+  return ICON_PATHS[name] ? `<g class="dg-icon" data-icon="${escSvg(name)}" transform="translate(${x} ${y}) scale(.75)">${ICON_PATHS[name]}</g>` : '';
+}
+
+// One outline per kind; the box is x, y, w, h from the layout.
+function outline(kind, x, y, w, h) {
+  const r = (rx) => `<rect class="dg-shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+  const poly = (pts) => `<polygon class="dg-shape" points="${pts.map((p) => p.join(',')).join(' ')}"/>`;
+  const cx = x + w / 2, cy = y + h / 2;
+  switch (kind) {
+    case 'start': case 'entry': case 'end': case 'end-failed': case 'exit': return r(Math.min(h / 2, 28));
+    case 'decision': case 'event-choice': case 'merge': case 'parallel-start': case 'parallel-join':
+      return poly([[cx, y], [x + w, cy], [cx, y + h], [x, cy]]);
+    case 'input': case 'output': case 'data': return poly([[x + 14, y], [x + w, y], [x + w - 14, y + h], [x, y + h]]);
+    case 'manual': return poly([[x, y], [x + w, y], [x + w - 14, y + h], [x + 14, y + h]]);
+    case 'off-page': return poly([[x, y], [x + w, y], [x + w, y + h - 14], [cx, y + h], [x, y + h - 14]]);
+    case 'loop': return poly([[x + 14, y], [x + w - 14, y], [x + w, cy], [x + w - 14, y + h], [x + 14, y + h], [x, cy]]);
+    case 'connector': return `<circle class="dg-shape" cx="${cx}" cy="${cy}" r="${Math.min(w, h) / 2}"/>`;
+    case 'data-store': return `<path class="dg-shape" d="M${x} ${y + 8}c0-10 ${w} -10 ${w} 0v${h - 16}c0 10 -${w} 10 -${w} 0z"/><path class="dg-line" d="M${x} ${y + 8}c0 10 ${w} 10 ${w} 0"/>`;
+    case 'document': return `<path class="dg-shape" d="M${x} ${y}h${w}v${h - 8}c-${w / 4} -10 -${w / 2} 10 -${w} 0z"/>`;
+    case 'note': return `<path class="dg-shape dg-note" d="M${x} ${y}h${w - 14}l14 14v${h - 14}h-${w}z"/>`;
+    case 'subflow': return r(6) + `<path class="dg-line" d="M${x + 8} ${y}v${h}M${x + w - 8} ${y}v${h}"/>`;
+    case 'group': return `<rect class="dg-shape dg-group" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
+    default: return r(8);
+  }
+}
+
+function wrap(text, max = 22, lines = 3) {
+  const out = [];
+  let line = '';
+  for (const word of String(text ?? '').split(/\s+/).filter(Boolean)) {
+    if ((line + ' ' + word).trim().length > max && line) { out.push(line); line = word; } else line = (line + ' ' + word).trim();
+  }
+  if (line) out.push(line);
+  return out.length > lines ? [...out.slice(0, lines - 1), out.slice(lines - 1).join(' ').slice(0, max - 1) + '…'] : out;
+}
+
+function drawDiagram(diagram, opts = {}) {
+  const L = layout(diagram);
+  const id = escSvg(diagram.id);
+  const byId = Object.fromEntries((diagram.nodes || []).map((n) => [n.id, n]));
+  const parts = [], labels = [];
+
+  // D054 — highlight one part: its boxes strongly, what leads into them lightly, the rest dimmed.
+  const onIds = new Set(), upIds = new Set();
+  if (opts.part) {
+    for (const n of diagram.nodes || []) if (n.part === opts.part || (n.step && opts.partSteps && opts.partSteps.has(n.step))) onIds.add(n.id);
+    for (const queue = [...onIds]; queue.length;) {
+      const id = queue.shift();
+      for (const e of diagram.edges || []) if (e.to === id && !onIds.has(e.from) && !upIds.has(e.from)) { upIds.add(e.from); queue.push(e.from); }
+    }
+  }
+  const partClass = (nodeId) => (!opts.part ? '' : onIds.has(nodeId) ? ' dg-part-on' : upIds.has(nodeId) ? ' dg-part-up' : ' dg-part-off');
+
+  for (const lane of L.lanes) {
+    if (lane.id === null && L.lanes.length === 1) continue;
+    parts.push(`<g class="dg-lane"><rect x="0" y="${lane.y}" width="${L.width}" height="${lane.h}"/><text class="dg-lane-title" x="10" y="${lane.y + 22}">${escSvg(lane.title)}</text></g>`);
+  }
+
+  for (const e of L.edges) {
+    const d = e.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+    const [mx, my] = e.labelAt;
+    parts.push(`<g class="dg-edge dg-e-${escSvg(e.kind)}${e.back ? ' dg-back' : ''}" data-from="${escSvg(e.from)}" data-to="${escSvg(e.to)}">`
+      + `<path d="${d}" marker-end="url(#dg-arrow-${id})"/></g>`);
+    // Labels are drawn after the boxes, so a label wider than its corridor stays readable.
+    if (e.label) labels.push(`<text class="dg-edge-label" x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle">${escSvg(e.label)}</text>`);
+  }
+
+  for (const [nodeId, box] of Object.entries(L.nodes)) {
+    const n = byId[nodeId];
+    const linked = n.step !== undefined;
+    const selected = (linked && n.step === opts.selected) || opts.here === nodeId;
+    const diamond = ['decision', 'event-choice', 'merge', 'parallel-start', 'parallel-join'].includes(n.kind);
+    const glyph = diamond ? null : n.icon || KIND_ICON[n.kind];
+    const textX = diamond ? box.x + box.w / 2 : box.x + (glyph ? 34 : 12);
+    const lines = wrap(n.label, diamond ? 14 : glyph ? 18 : 22);
+    const labelTop = box.y + (n.component ? 22 : box.h / 2 - (lines.length - 1) * 7 + 4);
+    parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}${selected ? ' dg-selected' : ''}${partClass(nodeId)}"`
+      + (linked ? ` data-step="${escSvg(n.step)}" tabindex="0" role="button"` : '')
+      + ` aria-label="${escSvg(n.label || n.kind)}" aria-current="${selected}">`
+      + outline(n.kind, box.x, box.y, box.w, box.h)
+      + (glyph ? icon(glyph, box.x + 8, box.y + (n.component ? 6 : box.h / 2 - 9)) : '')
+      + `<text class="dg-label" x="${textX}" y="${labelTop}"${diamond ? ' text-anchor="middle"' : ''}>${lines.map((l, i) => `<tspan x="${textX}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text>`
+      + (n.component ? `<foreignObject x="${box.x + 6}" y="${box.y + 34}" width="${box.w - 12}" height="${box.h - 40}"><div class="dg-component">${drawBlock(n.component, { targets: new Set() })}</div></foreignObject>` : '')
+      + '</g>');
+  }
+
+  return `<svg class="dg" viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${escSvg(diagram.title)}">`
+    + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
+    + parts.join('') + labels.join('') + '</svg>';
+}
+
+// The user-flow chart, computed from the flow: screens, and the steps that move between them. Never
+// written by hand, so it can't disagree with the clickable flow.
+function flowAsDiagram(review) {
+  const flow = review.flow || { screens: [] };
+  const steps = (review.items || []).filter((i) => i.step);
+  const leaves = (screenId) => steps.some((s) => s.step.from === screenId);
+  const nodes = [{ id: 'start', kind: 'start', label: 'Start' }];
+  for (const s of flow.screens) nodes.push({ id: `screen:${s.id}`, kind: 'screen', label: s.title });
+  for (const s of steps) nodes.push({ id: `step:${s.id}`, kind: 'user-action', label: s.title, step: s.id });
+  // A chart that begins with Start ends with End: every screen the journey can stop on leads there,
+  // whether it is a dead stop (nothing leaves it) or an ending the person can still act on.
+  const ends = flow.screens.filter((s) => s.end || !leaves(s.id));
+  if (ends.length) nodes.push({ id: 'end', kind: 'end', label: 'End' });
+  const edges = [{ from: 'start', to: `screen:${flow.start}` }];
+  for (const s of ends) edges.push({ from: `screen:${s.id}`, to: 'end' });
+  for (const s of steps) edges.push({ from: `screen:${s.step.from}`, to: `step:${s.id}` });
+  for (const s of steps) for (const o of s.step.outcomes)
+    edges.push(s.step.outcomes.length > 1 ? { from: `step:${s.id}`, to: `screen:${o.to}`, kind: 'conditional', label: o.label } : { from: `step:${s.id}`, to: `screen:${o.to}` });
+  return { id: 'user-flow', kind: 'flowchart', title: 'The user flow', nodes, edges };
+}
+
+
+// An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
+const LS = 'letmeshowyousomething:' + REVIEW.id + (SEED ? ':copy:' + SEED.exportedAt : '');
+const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
+let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{} };
+if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
+try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch {} };
+
+const $ = (s) => document.querySelector(s);
+const OPTS = REVIEW.verdictSet.options;
+const negative = new Set(OPTS.filter(o=>o.tone==='negative').map(o=>o.value));
+let filter = 'all', q = '';
+
+// Minimal markdown for the intro: bold and inline code only. Anything richer is the agent's job.
+if (REVIEW.intro) $('#intro').innerHTML = esc(REVIEW.intro)
+  .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/`(.+?)`/g,'<code>$1</code>');
+
+// theme
+// Style and mode are two choices (D083): any style in light or dark. Only listed values are applied.
+for (const [key, attr] of [['style', 'data-style'], ['theme', 'data-theme']]) {
+  const pick = $('#' + key), set = (v) => v ? document.documentElement.setAttribute(attr, v) : document.documentElement.removeAttribute(attr);
+  try { const v = localStorage.getItem(LS + ':' + key) || ''; if ([...pick.options].some(o => o.value === v)) { set(v); pick.value = v; } } catch {}
+  pick.addEventListener('change', () => { set(pick.value); try { localStorage.setItem(LS + ':' + key, pick.value); } catch {} });
+}
+
+// D079 — pins: the header, the diagram, the screen and the brief can each stay on screen.
+// Which ones are pinned is remembered in this browser only.
+const PINNABLE = ['header', '#dpanel', '#upanel', '#brief'];
+let pins = [];
+try { pins = JSON.parse(localStorage.getItem(LS + ':pins') || '[]'); } catch {}
+function stackPins(){
+  let top = 0; const on = [...document.querySelectorAll('.pinned')];
+  document.documentElement.style.setProperty('--pins', String(on.length || 1));
+  for (const el of on) { el.style.setProperty('--pin-top', top + 'px'); top += el.offsetHeight; }
+  document.documentElement.style.setProperty('--pins-h', top + 'px');
+}
+function applyPins(){
+  for (const sel of PINNABLE) {
+    const el = $(sel); if (!el) continue;
+    const on = pins.includes(sel);
+    el.classList.toggle('pinned', on);
+    const b = el.querySelector('.pin'); if (b) { b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Unpin' : 'Pin'; }
+  }
+  stackPins();
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.pin'); if (!b) return;
+  const sel = PINNABLE.find(s => b.closest(s) === $(s)); if (!sel) return;
+  pins = pins.includes(sel) ? pins.filter(x => x !== sel) : pins.concat(sel);
+  try { localStorage.setItem(LS + ':pins', JSON.stringify(pins)); } catch {}
+  applyPins();
+});
+const pinSizes = new ResizeObserver(stackPins);
+for (const sel of PINNABLE) if ($(sel)) pinSizes.observe($(sel));
+addEventListener('resize', stackPins);
+applyPins();
+
+// filters — "gaps only" is first-class, per the protocol's gap-first invariant
+$('#filters').innerHTML = [['all','All'],['gaps','⚠ Gaps only'],['unset','Unanswered']]
+  .concat(OPTS.map(o=>[o.value,o.label]))
+  .map(([v,l])=>`<button class="chip" type="button" data-f="${v}" aria-pressed="${v==='all'}">${esc(l)}</button>`).join('');
+$('#filters').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if(!b) return;
+  filter = b.dataset.f;
+  $('#filters').querySelectorAll('[data-f]').forEach(x=>x.setAttribute('aria-pressed', String(x.dataset.f===filter)));
+  render();
+});
+$('#q').addEventListener('input', e => { q = e.target.value.toLowerCase().trim(); render(); });
+
+function visible(it){
+  const v = store.verdicts[it.id] || 'unset';
+  if (it.step) {
+    const j = ($('#f-journey') || {}).value || '', st = ($('#f-status') || {}).value || '', problems = ($('#f-problems') || {}).checked;
+    if (j && journeyOf(it) !== j) return false;
+    if (st && statusOf(it.step) !== st) return false;
+    if (problems && !it.step.outcomes.some(o => o.because)) return false;
+  }
+  const pickedSection = (REVIEW.sections || []).some(s => s.id === it.sectionId && s.mode === 'choose-one') && store.choices[it.sectionId];
+  const doubts = (REVIEW.sections || []).some(s => s.id === it.sectionId && s.kind === 'challenge');
+  const positiveV = OPTS.filter(o => o.tone === 'positive').map(o => o.value).includes(v);
+  const isGap = v === 'unset' ? !pickedSection : doubts ? positiveV : negative.has(v);
+  if (filter === 'gaps' && !isGap) return false;
+  if (filter !== 'all' && filter !== 'gaps' && v !== filter) return false;
+  if (!q) return true;
+  return (it.title + ' ' + (it.body||'') + ' ' + Object.values(it.fields||{}).join(' ')).toLowerCase().includes(q);
+}
+
+function render(){
+  const secs = REVIEW.sections && REVIEW.sections.length ? REVIEW.sections : [{ id:'__all', label:'' }];
+  let html = '', shown = 0;
+  for (const sec of secs){
+    const items = REVIEW.items.filter(i => (sec.id==='__all' ? true : i.sectionId===sec.id) && visible(i));
+    if (!items.length) continue;
+    shown += items.length;
+    html += '<section class="sec" aria-labelledby="h-'+sec.id+'">';
+    if (sec.label) html += `<h2 id="h-${sec.id}">${esc(sec.label)}</h2>`;
+    if (sec.description) html += `<p class="d">${esc(sec.description)}</p>`;
+    if (sec.mode === 'choose-one') html += '<p class="pick">Choose one</p>';
+    if (sec.diagram && sec.diagram.kind === 'mermaid')
+      html += `<div class="mmd"><pre>${esc(sec.diagram.source)}</pre></div>`;
+    html += items.map(it => itemHtml(it, sec)).join('');
+    html += '</section>';
+  }
+  $('#items').innerHTML = html || '<p class="empty">Nothing matches that filter.</p>';
+  const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
+  $('#prog').textContent = answered + '/' + REVIEW.items.length + ' answered' + (shown!==REVIEW.items.length ? ' · '+shown+' shown' : '');
+  // D046 — a filter never hides silently
+  $('#filterinfo').innerHTML = shown !== REVIEW.items.length ? 'Showing ' + shown + ' of ' + REVIEW.items.length + ' · <button type="button" class="btn" id="showall">Show all</button>' : '';
+  renderAdded();
+  if (REVIEW.flow) {
+    $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
+    const st = STEPS.find(s => s.id === selected);
+    $('#detail').innerHTML = st ? itemHtml(st, null, true)
+      : '<p class="hint">Tap a highlighted element on the screen, or pick a step on the left. Its goal, outcomes and your answer open here.</p>';
+  }
+}
+
+// D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
+const ASKS = [['example', 'Show me an example'], ['explain', 'Explain this']];
+const asksRow = (id) => `<div class="asks-row">${ASKS.map(([kind, label]) => `<label class="ask"><input type="checkbox"
+  data-ask="${esc(kind)}" data-for="${esc(id)}"${(store.requests[id] || {})[kind] ? ' checked' : ''}> ${label}</label>`).join('')}</div>`;
+
+// D069 — a step you have not opened is one line: where it sits, and whether it is answered or still open.
+function stepRow(it, cur){
+  const o = OPTS.find(x => x.value === cur);
+  return `<fieldset class="item row" data-v="${cur}" data-step="${esc(it.id)}" aria-current="${selected === it.id}" style="--tone:var(--${TONE[(o || {}).tone] || 'line2'})">
+    <legend><button type="button" class="row-open" data-open="${esc(it.id)}">${esc(it.title)}</button></legend>
+    <p class="row-meta"><span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
+      <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span>${store.notes[it.id] ? '<span>· note</span>' : ''}
+      <span class="row-v">${o ? esc(o.label) : 'Open'}</span></p>
+  </fieldset>`;
+}
+// The open step shows every outcome side by side; "Show this" plays it on the screen.
+function outcomeCols(it){
+  const o = last && last.step === it ? last.outcome : null;
+  return (pending === it ? '<p class="hint">What happens? Pick one to see it.</p>' : '')
+    + `<div class="outcome-cols">${it.step.outcomes.map((x, i) => `<div class="outcome" data-picked="${x === o}">
+      <b>${esc(x.label || 'Result')}</b><p><span class="k">Effect</span>${esc(x.effect)}</p>
+      ${x.because ? `<p><span class="k">Why</span>${esc(x.because)}</p>` : ''}${x.canNow ? `<p><span class="k">You can now</span>${esc(x.canNow)}</p>` : ''}
+      <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>
+      <button type="button" class="btn" data-outcome="${i}" data-for="${esc(it.id)}">${x === o ? 'Showing this' : 'Show this'}</button></div>`).join('')}</div>`;
+}
+
+function itemHtml(it, sec, full){
+  const cur = store.verdicts[it.id] || 'unset';
+  if (it.step && !full) return stepRow(it, cur);
+  const choosing = sec && sec.mode === 'choose-one';
+  const chosen = choosing && store.choices[sec.id] === it.id;
+  const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
+  const tone = TONE[(OPTS.find(o=>o.value===cur)||{}).tone] || '';
+  const flds = (REVIEW.fields||[]).filter(f => (it.fields||{})[f.key]).map(f =>
+    `<div class="fld"><span class="k" style="--fk:var(--${TONE[f.tone]||'mut'})">${esc(f.label)}</span><span class="val">${esc(it.fields[f.key])}</span></div>`).join('');
+  const stepAttrs = it.step && !full ? ` data-step="${esc(it.id)}" aria-current="${selected === it.id}"` : '';
+  return `<fieldset class="item${chosen ? ' chosen' : ''}${it.step ? ' open' : ''}" data-v="${cur}"${stepAttrs} style="--tone:var(--${tone||'line2'})">
+    <legend>${esc(it.title)}</legend>
+    ${choosing ? `<div class="choose"><label><input type="radio" name="c-${esc(sec.id)}" value="${esc(it.id)}"
+      data-choice="${esc(sec.id)}" ${chosen ? 'checked' : ''}> Choose this</label>
+      ${rec ? `<span class="rec">Recommended</span><span class="recwhy">${esc(sec.recommended.why)}</span>` : ''}</div>` : ''}
+    ${it.step ? `<p class="w-line"><span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
+      <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span></p>` : ''}
+    ${it.step && it.step.goal ? `<p class="body">Goal: ${esc(it.step.goal)}</p>` : ''}
+    ${it.step ? outcomeCols(it) : ''}
+    ${it.summary ? `<p class="body">${esc(it.summary)}</p>` : ''}
+    ${it.body ? (it.summary
+      ? `<details class="more"><summary>More detail</summary><p class="body">${esc(it.body)}</p></details>`
+      : `<p class="body">${esc(it.body)}</p>`) : ''}
+    ${(it.affects || []).map(a => `<p class="aff"><span class="k">Previously decided · ${esc(a.effect)}</span>
+      "${esc(a.decision.title)}" was answered ${esc(a.decision.verdict)}. ${esc(a.why)}</p>`).join('')}
+    ${flds ? `<div class="flds">${flds}</div>` : ''}
+    ${it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''}
+    <div class="verdicts" role="radiogroup" aria-label="Verdict for: ${esc(it.title)}">
+      ${OPTS.map(o=>`<label class="v-${TONE[o.tone]}">
+        <input type="radio" name="v-${esc(it.id)}" value="${esc(o.value)}" ${cur===o.value?'checked':''}
+          data-item="${esc(it.id)}">\
+        <span>${esc(o.label)}</span></label>`).join('')}
+    </div>
+    ${(OPTS.find(o=>o.value===cur)||{}).hint ? `<p class="hint">${esc(OPTS.find(o=>o.value===cur).hint)}</p>` : ''}
+    <label class="skip" for="n-${esc(it.id)}">Note for ${esc(it.title)}</label>
+    <textarea id="n-${esc(it.id)}" data-note="${esc(it.id)}"
+      placeholder="What did you see? Your own words are the part that gets acted on.">${esc(store.notes[it.id]||'')}</textarea>
+    ${asksRow(it.id)}
+  </fieldset>`;
+}
+
+function renderAdded(){
+  const box = $('#added'); if (!box) return;
+  box.innerHTML = (store.added.length ? '<h3 class="added-h">Your own feedback</h3>' : '') + store.added.map((a,i)=>`<div class="addedrow">
+    <div class="t">${esc(a.title)}${a.body?`<div class="b">${esc(a.body)}</div>`:''}</div>
+    <button class="btn" type="button" data-del="${i}" aria-label="Remove ${esc(a.title)}">Remove</button></div>`).join('');
+}
+
+document.addEventListener('change', e => {
+  const ask = e.target.closest('input[data-ask]');
+  if (ask) {
+    const id = ask.dataset.for, kind = ask.dataset.ask;
+    const cur = store.requests[id] || (store.requests[id] = {});
+    cur[kind] = ask.checked;
+    if (!cur.example && !cur.explain && !cur.note) delete store.requests[id];
+    save(); render();
+    const same = document.querySelector('[data-ask="' + CSS.escape(kind) + '"][data-for="' + CSS.escape(id) + '"]');
+    if (same) same.focus();
+    return;
+  }
+  const r = e.target.closest('input[type=radio][data-item], input[type=radio][data-choice]');
+  if (!r) return;
+  if (r.dataset.item) store.verdicts[r.dataset.item] = r.value; else store.choices[r.dataset.choice] = r.value;
+  save(); render();
+  // render() rebuilds the list; put keyboard focus back on the same choice
+  const same = document.querySelector('input[name="'+CSS.escape(r.name)+'"][value="'+CSS.escape(r.value)+'"]');
+  if (same) same.focus();
+});
+document.addEventListener('input', e => {
+  const t = e.target.closest('textarea[data-note]');
+  if (t){ store.notes[t.dataset.note] = t.value; save();
+    const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
+    $('#prog').textContent = answered + '/' + REVIEW.items.length + ' answered'; }
+});
+document.addEventListener('click', e => {
+  if (e.target.closest('#showall')) {
+    filter = 'all'; q = ''; $('#q').value = '';
+    if ($('#f-journey')) { $('#f-journey').value = ''; $('#f-status').value = ''; $('#f-problems').checked = false; }
+    $('#filters').querySelectorAll('[data-f]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.f === 'all')));
+    return render();
+  }
+  const card = e.target.closest('fieldset.item.row[data-step]');
+  if (card && FLOW && !e.target.closest('input,textarea,label,button')) return selectStep(card.dataset.step);
+  const d = e.target.closest('[data-del]');
+  if (d){ store.added.splice(+d.dataset.del,1); save(); render(); }
+});
+const addBtn = $('#addbtn');
+if (addBtn) addBtn.addEventListener('click', () => {
+  const t = $('#at').value.trim(), b = $('#ab').value.trim();
+  if (!t && !b) { $('#at').focus(); return; }
+  let n = store.added.length + 1;
+  while (store.added.some(a => a.id === 'added-'+n)) n++;
+  store.added.push({ id:'added-'+n, title:t||'(untitled)', body:b, verdict:'unset', note:null });
+  save(); $('#at').value=''; $('#ab').value=''; render(); $('#at').focus();
+});
+
+$('#export').addEventListener('click', () => {
+  const out = buildFeedback(REVIEW, store);
+  saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
+  $('#footnote').textContent = `Exported ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Send me the file.`;
+});
+const saveAs = (text, type, name) => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([text], {type}));
+  a.download = name; a.click(); URL.revokeObjectURL(a.href);
+};
+// D076 — the HTML export is this whole page with the answers in it: every chart, screen and step, for
+// someone who will never open a .json file. "<" is escaped so no answer can close the script tag.
+$('#exporth').addEventListener('click', () => {
+  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/</g, '\\u003c');
+  saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
+  $('#footnote').textContent = 'Exported the whole page with your answers. The agent still needs the .json file.';
+});
+$('#reset').addEventListener('click', () => {
+  if (!confirm('Clear every answer you have given on this machine?')) return;
+  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{} }; save(); render();
+});
+// ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
+const FLOW = REVIEW.flow || null;
+let at = FLOW ? FLOW.start : null, pending = null, last = null;
+let selected = null;   // the one step marked across every view; memory only (D003)
+const partsById = FLOW ? Object.fromEntries((FLOW.parts || []).map(p => [p.id, p])) : {};
+const stepsFrom = (screenId) => REVIEW.items.filter(i => i.step && i.step.from === screenId);
+const STEPS = REVIEW.items.filter(i => i.step);
+const STATUS_LABEL = { exists: 'In the product', proposed: 'Planned', suggested: 'Suggested' };
+const STATUS_TONE = { exists: 'positive', proposed: 'caution', suggested: 'neutral' };
+const statusOf = (x) => (x && x.status) || 'proposed';
+// Journeys: the top-level parts, or the children of the only top-level part (the whole process).
+const topParts = FLOW ? (FLOW.parts || []).filter(p => !p.parent) : [];
+const JOURNEYS = topParts.length === 1 ? (FLOW.parts || []).filter(p => p.parent === topParts[0].id) : topParts;
+function journeyOf(it){ for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (JOURNEYS.some(j => j.id === p.id)) return p.id; return null; }
+const screenTitle = (id) => (FLOW.screens.find(s => s.id === id) || {}).title || id;
+function basisText(b){
+  if (!b) return 'No basis given';
+  return ({ code: 'Based on code · ' + (b.ref || ''), prd: 'Based on the PRD · ' + (b.ref || ''), docs: 'Based on docs · ' + (b.ref || ''),
+    conversation: 'From a conversation · ' + (b.note || ''), assumption: 'Assumption · ' + (b.note || '') })[b.kind] || 'Basis: ' + b.kind;
+}
+let partHighlight = '';
+const partSteps = (partId) => new Set(!partId ? [] : STEPS.filter(s => {
+  for (let p = partsById[s.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (p.id === partId) return true;
+  return false;
+}).map(s => s.id));
+function drawAll(){ drawTabs(); drawChips(); drawPlayer(); drawAllScreens(); render(); }
+function selectStep(id){
+  const st = STEPS.find(s => s.id === id); if (!st) return;
+  selected = id; at = st.step.from; pending = st; last = null;
+  drawAll();
+  $('#announce').textContent = 'Selected: ' + st.title + ', on ' + screenTitle(at);
+}
+
+// D057 — one diagram panel with tabs, the focus tab first (D059), and an empty tab that says what it is for (D062).
+const SYSTEM_NOTE = 'System design · what runs behind these screens: services, data stores, external services. Coming with the system diagrams.';
+const TABS = [['user-flow', 'The user flow']]
+  .concat((REVIEW.diagrams || []).map(d => [d.id, d.title || d.id]))
+  .concat([['system', 'System design']]);
+if (REVIEW.focus && TABS.some(t => t[0] === REVIEW.focus)) TABS.unshift(TABS.splice(TABS.findIndex(t => t[0] === REVIEW.focus), 1)[0]);
+let chartTab = TABS[0][0];
+const chartFor = (id) => id === 'user-flow' ? flowAsDiagram(REVIEW)
+  : id === 'system' ? null
+  : (REVIEW.diagrams || []).find(d => d.id === id) || null;
+
+function drawTabs(){
+  $('#dgtabs').innerHTML = TABS.map(([id, title]) => `<button type="button" role="tab" data-tab="${esc(id)}"
+    aria-selected="${id === chartTab}" tabindex="${id === chartTab ? '0' : '-1'}">${esc(title)}</button>`).join('');
+}
+// The sub-processes, grouped the way people ask about them: what is in the product, what is planned,
+// what is only suggested. Pressing one highlights it in the chart; pressing it again clears it.
+function drawChips(){
+  const group = (status) => {
+    const list = JOURNEYS.filter(j => statusOf(j) === status);
+    if (!list.length) return '';
+    return `<p class="sub-h">${STATUS_LABEL[status]}</p>` + list.map(j => {
+      const steps = STEPS.filter(s => journeyOf(s) === j.id);
+      return `<button type="button" class="chip" data-part="${esc(j.id)}" aria-pressed="${partHighlight === j.id}">${esc(j.title)}
+        <span class="basis">${steps.filter(s => store.verdicts[s.id]).length}/${steps.length} judged</span></button>`;
+    }).join('');
+  };
+  $('#chips').innerHTML = ['exists', 'proposed', 'suggested'].map(group).join('')
+    || '<p class="hint">This flow has a single path.</p>';
+}
+function drawStageChart(){
+  const box = $('#flowbeside');
+  const d = chartFor(chartTab);
+  if (!d) { box.innerHTML = '<p class="dg-empty">' + esc(SYSTEM_NOTE) + '</p>'; return; }
+  box.innerHTML = drawDiagram(d, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight) });
+  for (const id of ((REVIEW.brief || {}).highlights || {}).nodes || [])
+    box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-brief');
+  // Keep where you are in view; the chart is wider than the panel.
+  const hereBox = $('#flowbeside [aria-current="true"]');
+  if (hereBox) {
+    const b = hereBox.getBBox();
+    box.scrollLeft = Math.max(0, b.x + b.width / 2 - box.clientWidth / 2);
+    box.scrollTop = Math.max(0, b.y + b.height / 2 - box.clientHeight / 2);
+  }
+}
+
+// Every screen at once, not just the one you are on: the same overview the chart gives the flow.
+let screensView = 'one';
+function drawAllScreens(){
+  const box = $('#allscreens');
+  $('#linkswitch').hidden = screensView !== 'all';
+  if (screensView !== 'all') { box.hidden = true; $('#screen').hidden = false; return; }
+  box.hidden = false; $('#screen').hidden = true;
+  // Column = taps from the start (breadth first); a screen nothing leads to goes after the last.
+  const depth = { [FLOW.start]: 0 }, queue = [FLOW.start];
+  while (queue.length) { const id = queue.shift(); for (const st of stepsFrom(id)) for (const o of st.step.outcomes) if (!(o.to in depth)) { depth[o.to] = depth[id] + 1; queue.push(o.to); } }
+  const last = Math.max(...Object.values(depth)) + 1, rows = {};
+  box.classList.add('canvas');
+  box.style.setProperty('--cols', String(last + (FLOW.screens.some(s => !(s.id in depth)) ? 1 : 0)));
+  box.innerHTML = FLOW.screens.slice().sort((a, b) => (depth[a.id] ?? last) - (depth[b.id] ?? last)).map(s => {
+    const col = depth[s.id] ?? last, row = rows[col] = (rows[col] || 0) + 1;
+    return `<button type="button" class="mini" style="grid-column:${col + 1};grid-row:${row}" data-screen="${esc(s.id)}" aria-current="${s.id === at}">
+    <span class="mini-title">${esc(s.title)}</span>
+    <span class="mini-body"><span class="screen">${(s.blocks || []).map(b => drawBlock(b, { targets: new Set(stepsFrom(s.id).map(i => i.step.on)), still: true })).join('')}</span></span>
+  </button>`; }).join('');
+  drawLinks();
+}
+
+// The connections switch off when the reviewer wants the screens alone (D082); remembered in this browser only.
+let linksOn = true;
+try { linksOn = JSON.parse(localStorage.getItem(LS + ':links') ?? 'true'); } catch {}
+
+// One curve per outcome: out of the action's side, into the side of the screen it leads to that faces it.
+function drawLinks(){
+  const box = $('#allscreens'); box.querySelector('.links')?.remove();
+  if (box.hidden || !linksOn) return;
+  const bb = box.getBoundingClientRect(), o = { left: bb.left - box.scrollLeft, top: bb.top - box.scrollTop };
+  const R = (el) => el.getBoundingClientRect(), paths = [];
+  for (const s of FLOW.screens) for (const st of stepsFrom(s.id)) {
+    const from = box.querySelector('.mini[data-screen="' + CSS.escape(s.id) + '"] [data-link="' + CSS.escape(st.step.on) + '"]'); if (!from) continue;
+    const a = R(from), ay = a.top + a.height / 2 - o.top, card = R(from.closest('.mini'));
+    for (const out of st.step.outcomes) {
+      const to = box.querySelector('.mini[data-screen="' + CSS.escape(out.to) + '"]'); if (!to) continue;
+      const b = R(to), right = b.left + b.width / 2 > a.left + a.width / 2 && out.to !== s.id;
+      const sx = (right ? a.right : a.left) - o.left, c1 = (right ? card.right + 60 : card.left - 60) - o.left;
+      // Into the left or right side near the title when the screen is beside; its top or bottom when above or below.
+      let ex, ey, c2x, c2y;
+      if (out.to === s.id) { ex = b.left - o.left; ey = b.top - o.top + 14; c2x = ex - 70; c2y = ey; }
+      else if (b.left - o.left > sx + 20) { ex = b.left - o.left; ey = b.top - o.top + 14; c2x = ex - 70; c2y = ey; }
+      else if (b.right - o.left < sx - 20) { ex = b.right - o.left; ey = b.top - o.top + 14; c2x = ex + 70; c2y = ey; }
+      else if (b.top - o.top > ay) { ex = b.left + b.width / 2 - o.left; ey = b.top - o.top; c2x = ex; c2y = ey - 70; }
+      else { ex = b.left + b.width / 2 - o.left; ey = b.bottom - o.top; c2x = ex; c2y = ey + 70; }
+      const ang = Math.atan2(ey - c2y, ex - c2x), h = (d) => (ex - 9 * Math.cos(ang + d)).toFixed(1) + ',' + (ey - 9 * Math.sin(ang + d)).toFixed(1);
+      paths.push(`<g${right ? '' : ' class="back"'} data-from="${esc(s.id)}" data-to="${esc(out.to)}"><title>${esc(st.title)} → ${esc(out.label || screenTitle(out.to))}</title>
+        <circle cx="${sx}" cy="${ay}" r="3.5"/><path d="M${sx},${ay} C${c1},${ay} ${c2x},${c2y} ${ex},${ey}"/>
+        <polygon class="head" points="${ex},${ey} ${h(0.45)} ${h(-0.45)}"/></g>`);
+    }
+  }
+  box.insertAdjacentHTML('beforeend', '<svg class="links" aria-hidden="true" width="' + box.scrollWidth + '" height="' + box.scrollHeight + '">' + paths.join('') + '</svg>');
+}
+
+function drawPlayer(){
+  const s = FLOW.screens.find(x => x.id === at);
+  const targets = new Set(stepsFrom(at).map(i => i.step.on));
+  $('#screen').innerHTML = `<h2 id="screen-title" class="screen-title" tabindex="-1">${esc(s.title)}</h2>`
+    + (s.blocks || []).map(b => drawBlock(b, { targets })).join('')
+    + (s.end ? '<p class="end">An end of this flow. Restart to try another path.</p>' : '');
+  drawStageChart();
+  $('#upanel').classList.toggle('brief-here', (((REVIEW.brief || {}).highlights || {}).screens || []).includes(at));
+}
+
+function go(st, o){
+  pending = null; last = { step: st, outcome: o }; at = o.to; selected = st.id;
+  drawAll();
+  $('#announce').textContent = 'Now on: ' + FLOW.screens.find(x => x.id === at).title;
+  // No scroll (D079): a pick made down in the feedback must not throw the reviewer back up the page.
+  $('#screen-title').focus({ preventScroll: true });
+}
+
+if (FLOW) {
+  $('#screen').addEventListener('click', e => {
+    const t = e.target.closest('[data-target]'); if (!t) return;
+    const st = stepsFrom(at).find(i => i.step.on === t.dataset.target); if (!st) return;
+    selected = st.id;
+    if (st.step.outcomes.length === 1) return go(st, st.step.outcomes[0]);
+    // The outcomes are picked in the feedback panel, so a full-screen screen steps aside for it.
+    if ($('#upanel.full')) setFull($('#upanel'), false);
+    pending = st; last = null; drawAll();
+    const first = document.querySelector('#detail [data-outcome]'); if (first) first.focus();
+  });
+  $('#restart').addEventListener('click', () => {
+    at = FLOW.start; pending = null; last = null; selected = null; drawAll();
+    $('#announce').textContent = 'Now on: ' + FLOW.screens.find(x => x.id === at).title;
+    $('#screen-title').focus();
+  });
+  $('#split').addEventListener('click', e => {
+    const b = e.target.closest('[data-outcome]'), open = e.target.closest('[data-open]'), size = e.target.closest('button[data-size]');
+    if (size) { splitSize = size.dataset.size; return applySplit(); }
+    if (open) { selectStep(open.dataset.open); document.querySelector('#detail [data-outcome]')?.focus(); return; }
+    if (!b) return;
+    const st = STEPS.find(x => x.id === b.dataset.for); if (!st) return;
+    // The screen above changes height with the next screen; the feedback stays put on the window.
+    const y = $('#feedback').getBoundingClientRect().top;
+    go(st, st.step.outcomes[+b.dataset.outcome]);
+    scrollBy(0, $('#feedback').getBoundingClientRect().top - y);
+  });
+  // D074 — filters, then steps | open step, then your own feedback, full width.
+  $('#split').before($('.bar')); $('#steplist').append($('#items'));
+  if ($('.add')) $('#feedback').append($('.add'));
+  // The steps and the open step share the row in three steps, remembered in this browser only.
+  let splitSize = 'even';
+  try { splitSize = localStorage.getItem(LS + ':split') || 'even'; } catch {}
+  function applySplit(){
+    $('#split').dataset.size = splitSize;
+    $('#split').querySelectorAll('.sizes [data-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === splitSize)));
+    try { localStorage.setItem(LS + ':split', splitSize); } catch {}
+  }
+  applySplit();
+  // Clicking a box in the chart selects that step.
+  const chartPick = (target) => {
+    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
+    selectStep(node.dataset.step); $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
+    return true;
+  };
+  $('#flowbeside').addEventListener('click', e => chartPick(e.target));
+  $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
+  $('#f-journey').insertAdjacentHTML('beforeend', JOURNEYS.map(j => `<option value="${esc(j.id)}">${esc(j.title)}</option>`).join(''));
+  for (const id of ['#f-journey', '#f-status', '#f-problems']) $(id).addEventListener('change', render);
+
+  // The sub-processes column switches off when the reviewer wants the chart to have the width.
+  const subSwitch = $('#subswitch');
+  let subOn = true;
+  try { subOn = JSON.parse(localStorage.getItem(LS + ':subproc') ?? 'true'); } catch {}
+  const applySub = () => {
+    subSwitch.setAttribute('aria-checked', String(subOn));
+    $('.dg-body').classList.toggle('sub-off', !subOn);
+    try { localStorage.setItem(LS + ':subproc', JSON.stringify(subOn)); } catch {}
+  };
+  subSwitch.addEventListener('click', () => { subOn = !subOn; applySub(); drawStageChart(); });
+  applySub();
+
+  // One screen, or all of them.
+  $('#upanel .seg').addEventListener('click', e => {
+    const b = e.target.closest('[data-screens]'); if (!b) return;
+    screensView = b.dataset.screens;
+    $('#upanel .seg').querySelectorAll('[data-screens]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.screens === screensView)));
+    drawAllScreens();
+  });
+  new ResizeObserver(drawLinks).observe($('#allscreens'));
+  $('#linkswitch').setAttribute('aria-checked', String(linksOn));
+  $('#linkswitch').addEventListener('click', () => {
+    linksOn = !linksOn; $('#linkswitch').setAttribute('aria-checked', String(linksOn));
+    try { localStorage.setItem(LS + ':links', JSON.stringify(linksOn)); } catch {}
+    drawLinks();
+  });
+  // Pointing at a screen keeps its own connections bright and fades the rest.
+  $('#allscreens').addEventListener('mouseover', e => {
+    const m = e.target.closest('.mini'), svg = $('#allscreens .links'); if (!svg) return;
+    svg.classList.toggle('focus', !!m);
+    svg.querySelectorAll('g').forEach(g => g.classList.toggle('hot', !!m && (g.dataset.from === m.dataset.screen || g.dataset.to === m.dataset.screen)));
+  });
+  $('#allscreens').addEventListener('mouseleave', () => $('#allscreens .links')?.classList.remove('focus'));
+  $('#allscreens').addEventListener('click', e => {
+    const b = e.target.closest('[data-screen]'); if (!b) return;
+    at = b.dataset.screen; pending = null; last = null;
+    screensView = 'one';
+    $('#upanel .seg').querySelectorAll('[data-screens]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.screens === 'one')));
+    drawAll();
+    $('#announce').textContent = 'Now on: ' + screenTitle(at);
+    $('#screen-title').focus();
+  });
+
+  // Tabs: click or arrow keys, one chart on show at a time.
+  const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };
+  $('#dgtabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) pickTab(t.dataset.tab); });
+  $('#dgtabs').addEventListener('keydown', e => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+    const i = TABS.findIndex(t => t[0] === chartTab);
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1
+      : (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+    e.preventDefault(); pickTab(TABS[next][0]);
+    $('#dgtabs [aria-selected="true"]').focus();
+  });
+
+  // Chips instead of a dropdown (D057): press one to highlight its sub-process, press it again to clear.
+  $('#chips').addEventListener('click', e => {
+    const c = e.target.closest('[data-part]'); if (!c) return;
+    partHighlight = partHighlight === c.dataset.part ? '' : c.dataset.part;
+    drawAll();
+  });
+
+  // D073 — either panel opens full screen, and Esc or the same button brings it back.
+  const setFull = (panel, on) => {
+    panel.classList.toggle('full', on);
+    const b = panel.querySelector('.panel-full');
+    b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
+    if (panel.id === 'dpanel') drawStageChart();
+  };
+  $('#stage').addEventListener('click', e => {
+    const b = e.target.closest('.panel-full'); if (!b) return;
+    const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
+  });
+  document.addEventListener('keydown', e => {
+    const open = $('.panel.full'); if (e.key !== 'Escape' || !open) return;
+    setFull(open, false); open.querySelector('.panel-full').focus();
+  });
+
+  // D055 — the reviewer arranges the page: sections collapse and move, remembered in this browser only.
+  const SECTIONS = [['player', 'Walk through it']];
+  const pieces = { player: ['#stage', '#brief', '#feedback', '.player-bar'] };
+  let arrangement = { order: SECTIONS.map(s => s[0]), collapsed: {} };
+  try { arrangement = Object.assign(arrangement, JSON.parse(localStorage.getItem(LS + ':sections') || '{}')); } catch {}
+  const saveArrangement = () => { try { localStorage.setItem(LS + ':sections', JSON.stringify(arrangement)); } catch {} };
+
+  const holder = document.createElement('div');
+  holder.id = 'sections';
+  $('#player').before(holder);
+  for (const [id, title] of SECTIONS) {
+    const box = document.createElement('section');
+    box.className = 'sec-box'; box.dataset.section = id;
+    box.innerHTML = `<div class="sec-head"><button type="button" class="sec-toggle" aria-expanded="true">${esc(title)}</button>
+      <span class="sec-actions"><button type="button" class="sec-up" aria-label="Move ${esc(title)} up">↑</button>
+      <button type="button" class="sec-down" aria-label="Move ${esc(title)} down">↓</button></span></div><div class="sec-body"></div>`;
+    const body = box.querySelector('.sec-body');
+    for (const sel of pieces[id]) { const el = document.querySelector(sel); if (el) body.append(el); }
+    holder.append(box);
+  }
+  const applyArrangement = () => {
+    for (const id of arrangement.order) { const box = holder.querySelector('[data-section="' + id + '"]'); if (box) holder.append(box); }
+    for (const box of holder.querySelectorAll('[data-section]')) {
+      const off = !!arrangement.collapsed[box.dataset.section];
+      box.querySelector('.sec-toggle').setAttribute('aria-expanded', String(!off));
+      box.querySelector('.sec-body').hidden = off;
+    }
+  };
+  applyArrangement();
+  holder.addEventListener('click', e => {
+    const box = e.target.closest('[data-section]'); if (!box) return;
+    const id = box.dataset.section, order = arrangement.order, at2 = order.indexOf(id);
+    if (e.target.closest('.sec-toggle')) arrangement.collapsed[id] = !arrangement.collapsed[id];
+    else if (e.target.closest('.sec-up') && at2 > 0) order.splice(at2 - 1, 0, order.splice(at2, 1)[0]);
+    else if (e.target.closest('.sec-down') && at2 < order.length - 1) order.splice(at2 + 1, 0, order.splice(at2, 1)[0]);
+    else return;
+    saveArrangement(); applyArrangement();
+  });
+  drawAll();
+}
+render();
+if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
+</script>
+</body></html>

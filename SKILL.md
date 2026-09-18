@@ -1,0 +1,68 @@
+---
+name: letmeshowyousomething
+description: Use when a human's judgement is needed on several things at once (options to choose from, a plan to approve, test results, drafts, an agent's own doubts), when the person deciding has no AI account or works offline, or when a feedback.json from such a review comes back to be read and acted on.
+---
+
+# Let me show you something
+
+The agent writes a `review.json`. It becomes one offline HTML page. The human judges each item and exports a `feedback.json`. The agent checks that file and acts on it. The format is in `PROTOCOL.md`; the checker is what makes the answers trustworthy.
+
+`<skill>` below is this skill's folder.
+
+## When to use it
+
+- **Five or more items** to judge, **something to look at**, a reviewer **outside this session** (client, product owner, domain expert), or an answer that **must be kept**.
+- **Not** for one to four quick questions. Ask those directly, with your recommendation and what would change your mind.
+
+## 1. Write and check the review
+
+Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing.
+
+- `ask` and `afterwards`: what you need, and what you will do with the answer.
+- Options to pick from: a section with `mode: "choose-one"` and `recommended: { itemId, why }`.
+- Walking someone through a user flow (an app idea, or a change to an existing app): start from `flow-booking.review.json`. Give every step a `goal`, every dead end a `canNow`, and mark each journey and step `exists`, `proposed` or `suggested` with a `basis` (code, PRD, docs, conversation or assumption), so the reviewer sees what is there and what is missing. Check with `--root <project>` so every `file:line` is proven.
+- Explaining a process behind the screens: a flow chart in `diagrams` with lanes (who does what), decisions, timers, messages and data stores; link boxes to steps with `step`. The user flow is drawn for you; the parts become the sub-processes column beside it.
+- Reopening or contradicting something decided before: add `affects` to the item, quoting the earlier title and verdict.
+- One explanation for the whole review: `brief` (what you are explaining, `highlights` for the screens and nodes you mean, your `recommendation`, `examples` each with a `source`, and the `risks`), plus `focus` for the chart that opens first. Say it once there instead of repeating it per item; an example with no source is shown as unverified.
+- Where you may be wrong: an optional section with `kind: "challenge"` of **statements** judged with the same verdicts (agree = the concern is real, and that is the gap), but only when those verdicts mean agree/disagree. Otherwise put your doubts in a separate small review with the `decision` preset.
+- Never put secrets, real customer data or someone else's private notes in a review. The file will be forwarded.
+
+```bash
+node <skill>/bin/check.mjs review docs/<name>.review.json --root .   # fix every ✗; --root proves flow refs
+node <skill>/bin/check.mjs history docs/<name>.review.json <earlier>.feedback.json   # if you used affects
+node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
+```
+
+## 2. Hand it over
+
+Tell the user: open the HTML file (or send it to the reviewer), give each item a verdict and a note, ask back with **Show me an example** or **Explain this** where something is unclear, add anything missing, press **Export feedback.json**, and send that file back. (**Export feedback.html** is the whole page with the answers in it, for passing on to someone who will open a page but not a JSON file — it is not what you read.) Then stop and wait.
+
+For a flow, say how to use it: tap the highlighted elements on the screen to walk through, pick an outcome when asked, judge each step in "Your feedback" (the steps on the left, the open one on the right), switch the diagram tabs to see the same step from another side, and check the answered/open count before exporting so none is left unanswered.
+
+**Never offer "or just tell me what they picked".** A summary in chat loses the unanswered items, the added items and the overruled recommendation, and nothing can be checked.
+
+## 3. Read what comes back
+
+```bash
+node <skill>/bin/check.mjs pair docs/<name>.review.json <returned>.feedback.json
+```
+
+Do not act on a file that fails. The person who answered (the **reviewer**, see `respondent`) is often not the person you are talking to. Name them, and never write "you picked" to someone who didn't. Then report in this order:
+
+1. **Gaps first**: every id in `gaps`. For each one, give your recommendation and ask a question, addressed to whoever can answer it. Questions about the reviewer's answers go back to the reviewer, ideally as a short follow-up review.
+2. **Requests**: every entry in `requests` — the reviewer asked you for an `example` or an `explain` on that item. Answer it before anything else you were going to do; an item with a request is not settled, whatever its verdict says.
+3. **Choices**: the pick. If `followedRecommendation` is `false`, say so plainly and don't argue for your option again.
+4. **Added items**: quote the reviewer's own words. They are what you didn't know to ask.
+5. **Everything else**: verdicts, with notes quoted.
+
+## Common mistakes
+
+| Mistake | Instead |
+|---|---|
+| Calling an `unset` item "no opinion", "moot" or "fine" | It was **not answered**. List it as a gap and ask. |
+| Filing a gap as "resolved by context" | Only the reviewer resolves a gap. Recommend, then ask, or send a follow-up review. |
+| Reading an added item's verdict as the reviewer rejecting it | Added items arrive `unset`; the title, body and note are the reviewer's own statement. |
+| Deciding a new question yourself and moving on | Put it to the user as a question with your recommended default. |
+| Talking to the user as if they were the reviewer | "The product owner picked…"; ask the user to pass questions on, or send a follow-up review. |
+| Quoting an earlier decision from memory | Quote it from the earlier feedback file and run `check history`. |
+| Treating an agreed item with a request as done | They agreed *and* asked for an example or an explanation. Give it, then carry on. |
