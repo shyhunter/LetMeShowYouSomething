@@ -260,7 +260,7 @@ test('licences: every file declares one, and generated pages are MIT-0 only', as
   assert.deepEqual([...new Set(inPage)], ['MIT-0'], `generated page carries: ${[...new Set(inPage)].join(', ')}`);
 
   const toml = readFileSync(at('REUSE.toml'), 'utf8');
-  const licenceFor = (glob) => toml.match(new RegExp(`path = \\[[^\\]]*"${glob.replace(/[*.]/g, '\\$&')}"[^\\]]*\\]\\nSPDX-License-Identifier = "([\\w.-]+)"`))?.[1];
+  const licenceFor = (glob) => toml.match(new RegExp(`path = \\[[^\\]]*"${glob.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^\\]]*\\]\\nSPDX-License-Identifier = "([\\w.-]+)"`))?.[1];
   assert.equal(licenceFor('examples/**'), 'MIT-0', 'examples must be MIT-0');
   assert.equal(licenceFor('schemas/**'), 'CC0-1.0', 'schemas must be CC0-1.0');
   assert.equal(licenceFor('PROTOCOL.md'), 'CC0-1.0', 'the protocol must be CC0-1.0');
