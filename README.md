@@ -33,11 +33,12 @@ Here the answer is data:
 
 | Kind | You see | Example |
 |---|---|---|
-| Test results | Each case marked works, partially works, doesn't work or couldn't test, plus a note | [`review.example.json`](examples/review.example.json) → [page](examples/checkout-uat.html) |
-| A decision | The options, the agent's recommendation and why, and earlier decisions it would reopen | [`decision-review.example.json`](examples/decision-review.example.json) → [page](examples/decision-review.html) |
-| A user flow | The app's screens to click through, a diagram of the flow, and each step to judge | [`flow-booking.review.json`](examples/flow-booking.review.json) → [page](examples/flow-booking.html) |
+| Test results | Each case marked works, partially works, doesn't work or couldn't test, plus a note | [`review.example.json`](examples/review.example.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/checkout-uat.html) |
+| A decision | The options, the agent's recommendation and why, and earlier decisions it would reopen | [`decision-review.example.json`](examples/decision-review.example.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/decision-review.html) |
+| A user flow | The app's screens to click through, a diagram of the flow, and each step to judge | [`flow-booking.review.json`](examples/flow-booking.review.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/flow-booking.html) |
 
-Open any of the pages in a browser to try it: the pages are the product, not screenshots of it.
+Open any of them in your browser, no install: the pages are the product, not screenshots of it.
+All three are on the [project site](https://shyhunter.github.io/LetMeShowYouSomething/).
 
 The flow page draws the steps as a diagram with the sub-processes beside it. It also shows every
 screen at once, connected like a prototype, so you can judge the whole journey and not only one
@@ -75,7 +76,9 @@ It is plain files and Node, so it works the same with any agent that can run a c
 
 ## The protocol
 
-[`PROTOCOL.md`](PROTOCOL.md) is the contract; the JSON schemas are in [`schemas/`](schemas). The
+[`PROTOCOL.md`](PROTOCOL.md) is the contract; the JSON schemas are in [`schemas/`](schemas), and served at
+the address their `$id` names, for example
+[`schema/review.v1.json`](https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json). The
 page in this repo is one way to show a review. A terminal prompt, a native app or a printed sheet
 would be just as valid, as long as what comes back passes the checker.
 

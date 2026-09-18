@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LetMeShowYouSomething</title>
+<meta name="description" content="Your AI agent writes down what it needs you to judge, you answer on one offline page, and your answers go back as a file it checks before it acts.">
+<style>
+:root{--bg:#FBFAFC;--surf:#FFFFFF;--line:rgba(28,22,42,.13);--ink:#16141B;--ink2:#2C2735;--mut:#6F6880;--ac:#5B3E8C;--ac-bg:rgba(91,62,140,.10);color-scheme:light;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#121017;--surf:#1A1721;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
+main{max-width:880px;margin:0 auto;padding:48px 16px 64px}
+h1{color:var(--ink);font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.015em}
+h2{color:var(--ink);font-size:20px;margin:40px 0 12px}
+.lead{font-size:18px;max-width:62ch;margin:0}
+pre{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--mono);color:var(--ink)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:6px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
+.card:hover,.card:focus-visible{border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-bg)}
+.card b{color:var(--ink);font-size:16px}
+.card span{color:var(--mut);font-size:14px}
+.card em{margin-top:auto;padding-top:8px;color:var(--ac);font-style:normal;font-weight:600;font-size:14px}
+a{color:var(--ac)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+ul{padding-left:20px}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:14px}
+</style>
+</head><body>
+<main>
+  <h1>LetMeShowYouSomething</h1>
+  <p class="lead">Your AI agent writes down what it needs you to judge, you answer on one offline page, and your
+  answers go back to the agent as a file it checks before it acts.</p>
+<pre>agent ──► review.json ──► one HTML page ──► a person judges each item ──► Export
+agent ◄── check (PASS) ◄── feedback.json ◄────────────────────────────────┘</pre>
+
+  <h2>Try it</h2>
+  <p>Each page is the real thing: answer, then press <b>Export feedback.json</b>. Nothing leaves your browser
+  until you do.</p>
+  <div class="cards">
+    <a class="card" href="examples/checkout-uat.html"><b>Test results</b>
+      <span>Four checkout cases: works, partially works, doesn't work or couldn't test, with a note.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/decision-review.html"><b>A decision</b>
+      <span>The options, the agent's recommendation and why, and the earlier decisions it would reopen.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/flow-booking.html"><b>A user flow</b>
+      <span>Click through a booking app's screens, see the flow as a diagram, and judge every step.</span><em>Open the page →</em></a>
+  </div>
+
+  <h2>The format</h2>
+  <p>Two files and the rules between them, so any agent, script or tool can write the question or read the answer.</p>
+  <ul>
+    <li><a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/PROTOCOL.md">The protocol</a></li>
+    <li><a href="schema/review.v1.json">review.v1 schema</a> · <a href="schema/feedback.v1.json">feedback.v1 schema</a></li>
+  </ul>
+
+  <h2>Use it</h2>
+  <p>It is an agent skill with no dependencies: see the
+  <a href="https://github.com/shyhunter/LetMeShowYouSomething#readme">README</a> to install it and to run the checker.</p>
+
+  <footer>Open source on <a href="https://github.com/shyhunter/LetMeShowYouSomething">GitHub</a>.
+  Apache-2.0, MIT-0 and CC0-1.0, see <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/LICENSING.md">licensing</a>.</footer>
+</main>
+</body></html>
