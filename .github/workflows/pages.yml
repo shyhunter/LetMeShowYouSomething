@@ -27,7 +27,7 @@ jobs:
       - name: Put the site together
         run: |
           mkdir -p _site/examples _site/schema
-          cp site/index.html _site/
+          cp -R site/. _site/
           cp examples/checkout-uat.html examples/decision-review.html examples/flow-booking.html _site/examples/
           cp schemas/review.v1.schema.json _site/schema/review.v1.json
           cp schemas/feedback.v1.schema.json _site/schema/feedback.v1.json

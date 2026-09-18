@@ -46,6 +46,11 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut' };
 
+// The logo as the tab icon (D094), inlined so the page still fetches nothing. Base64, so no URL sits in
+// the page. A folder without site/ (only bin/ copied) simply renders without one.
+let favicon = '';
+try { favicon = `<link rel="icon" href="data:image/svg+xml;base64,${readFileSync(new URL('../site/logo.svg', import.meta.url)).toString('base64')}">`; } catch {}
+
 // D080/D083 — styles to pick, each in light and dark. A style's colours are written once per mode; its
 // look (fonts, corners, shadows) is written once in tokens, so it holds in both. System fonts only, so
 // the page stays offline. Dark applies with Mode "Dark", or with "Auto" when the system is dark.
@@ -136,6 +141,7 @@ const html = `<!doctype html>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(review.title)}</title>
+${favicon}
 <style>
 :root{
   --bg:#FBFAFC; --surf:#FFFFFF; --surf2:#F3F1F6; --inset:#ECE9F1;
