@@ -46,7 +46,9 @@ export async function withChrome(name, body) {
   const say = (ok, msg) => results.push([ok, msg]);
   try {
     let version;
-    for (let i = 0; i < 80 && !version; i++) { try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await sleep(100); } }
+    // A cold CI runner can take well over 8 s to start Chrome: wait up to 30 s, then say so plainly.
+    for (let i = 0; i < 300 && !version; i++) { try { version = await (await fetch(`http://127.0.0.1:${port}/json/version`)).json(); } catch { await sleep(100); } }
+    if (!version) throw new Error(`Chrome did not start within 30 s (${chromePath})`);
     const page = (await (await fetch(`http://127.0.0.1:${port}/json/list`)).json()).find((t) => t.type === 'page');
     const connect = (url) => new Promise((resolve) => {
       const ws = new WebSocket(url); let id = 0; const pending = new Map(); const listeners = [];
