@@ -1,0 +1,51 @@
+# SPDX-License-Identifier: Apache-2.0
+# The site on GitHub Pages: the examples to try, and the schemas at the address their $id names.
+# main only changes through a pull request with a passing check, so what deploys has been checked.
+name: pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deployment at a time; a newer push waits instead of cancelling one halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Put the site together
+        run: |
+          mkdir -p _site/examples _site/schema
+          cp site/index.html _site/
+          cp examples/checkout-uat.html examples/decision-review.html examples/flow-booking.html _site/examples/
+          cp schemas/review.v1.schema.json _site/schema/review.v1.json
+          cp schemas/feedback.v1.schema.json _site/schema/feedback.v1.json
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    # Only this job may write to Pages, and only with the short-lived token Pages asks for.
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
