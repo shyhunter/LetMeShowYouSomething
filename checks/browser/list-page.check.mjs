@@ -6,7 +6,8 @@ import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
 const CHECKOUT = join(REPO, 'examples/review.example.json');
 const DECISION = join(REPO, 'examples/decision-review.example.json');
-const stored = (id) => `JSON.parse(localStorage.getItem('letmeshowyousomething:${id}'))`;
+// The page's own key (id + fingerprint of the review, #38): ask the page rather than rebuild it here.
+const stored = () => `JSON.parse(localStorage.getItem(LS))`;
 
 await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key, type, exported }) => {
   const page = render(CHECKOUT, dir);

@@ -18,9 +18,20 @@
 //
 // Exit 0 only when there are zero errors. Warnings never fail the run.
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { findLayerEntry, layerEntryText } from '../lib/build-feedback.mjs';
+
+// #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
+// its answers with the example page in the same browser. Only the example itself may carry its id.
+const EXAMPLE_IDS = {};
+try {
+  const dir = new URL('../examples/', import.meta.url);
+  for (const f of readdirSync(dir).filter((n) => n.endsWith('.json'))) {
+    const x = JSON.parse(readFileSync(new URL(f, dir), 'utf8'));
+    if (x?.protocol === 'letmeshowyousomething/review' && typeof x.id === 'string') EXAMPLE_IDS[x.id] = { file: f, text: JSON.stringify(x) };
+  }
+} catch {}
 
 const UNSET = 'unset';
 const ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
@@ -46,6 +57,9 @@ function checkReview(r, rep) {
   rep.check('protocol', r?.protocol === 'letmeshowyousomething/review', `expected "letmeshowyousomething/review", got ${JSON.stringify(r?.protocol)}`);
   rep.check('schemaVersion', r?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(r?.schemaVersion)}`);
   rep.check('review id', ID.test(r?.id ?? ''), `"${r?.id}" is not a valid id`);
+  const example = EXAMPLE_IDS[r?.id];
+  rep.check('own id', !example || example.text === JSON.stringify(r),
+    `"${r?.id}" is the id of the example ${example?.file}. Give this review its own id, for example with today's date: a page with the example's id shares its answers with the example's page in the same browser`);
 
   const items = Array.isArray(r?.items) ? r.items : [];
   rep.check('has items', items.length > 0, 'a review with no items asks nothing');

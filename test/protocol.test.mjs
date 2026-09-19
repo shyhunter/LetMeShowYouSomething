@@ -149,7 +149,7 @@ const checkDecision = (feedback) => {
 };
 const history = (review) => {
   const p = join(tmp, `h-${Math.random().toString(36).slice(2)}.json`);
-  writeFileSync(p, JSON.stringify(review));
+  writeFileSync(p, JSON.stringify({ ...review, id: review.id + '-variant' }));
   return check('history', p, at(EARLIER));
 };
 
@@ -283,9 +283,11 @@ test('a pick answers its section: unrated options are not gaps', () => {
 
 // ── flows (v0.2 part 1a) ─────────────────────────────────────────────────────────────────────────
 const FLOW = 'examples/flow-booking.review.json';
+// A changed example is a new review, and gets its own id, as an agent's must (#38).
+const ownId = (review) => ({ ...review, id: review.id + '-variant' });
 const checkReviewObj = (review, ...extra) => {
   const p = join(tmp, `flow-${Math.random().toString(36).slice(2)}.json`);
-  writeFileSync(p, JSON.stringify(review));
+  writeFileSync(p, JSON.stringify(ownId(review)));
   return check('review', p, ...extra);
 };
 
@@ -989,4 +991,20 @@ test('the user flow chart begins with a Start and ends with an End', () => {
   // Nothing leaves the End, and no screen is drawn as a terminator any more.
   assert.equal(d.edges.filter((e) => e.from === 'end').length, 0);
   assert.ok(d.nodes.filter((n) => n.id.startsWith('screen:')).every((n) => n.kind === 'screen'));
+});
+
+// #38 — an agent kept the example's id; its page then shared answers with the example page.
+test('a review may not keep an example\'s id, unless it is that example', () => {
+  const copy = readJson('examples/review.example.json');
+  copy.title = 'My own checkout test';
+  const p = join(tmp, 'copied-id.review.json');
+  writeFileSync(p, JSON.stringify(copy));
+  const r = check('review', p);
+  assert.equal(r.status, 1, 'a changed review with the example\'s id must fail');
+  assert.match(r.stdout, /own id: "checkout-uat-2026-09" is the id of the example review\.example\.json\. Give this review its own id/);
+  copy.id = 'my-checkout-2026-09';
+  writeFileSync(p, JSON.stringify(copy));
+  assert.equal(check('review', p).status, 0, 'with its own id it passes');
+  for (const ex of ['review.example.json', 'decision-review.example.json', 'flow-booking.review.json'])
+    assert.equal(check('review', at('examples/' + ex)).status, 0, `${ex} itself still passes`);
 });

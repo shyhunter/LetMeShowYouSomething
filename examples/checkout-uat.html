@@ -1078,7 +1078,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':0528fccc2af8' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
