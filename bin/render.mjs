@@ -14,6 +14,7 @@
 // carried no aria or role attributes at all — in a tool whose entire purpose is collecting human
 // input. Verdicts are real radio groups inside real fieldsets, so keyboard support is not bolted on.
 
+import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -45,6 +46,10 @@ const embed = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut' };
+
+// #38 — answers are kept per review, not per id: an agent that keeps an example's id (or two reviews
+// that happen to share one) must never mix answers. The key is the id plus a fingerprint of the content.
+const fingerprint = createHash('sha256').update(JSON.stringify(review)).digest('hex').slice(0, 12);
 
 // The logo as the tab icon (D094), inlined so the page still fetches nothing. Base64, so no URL sits in
 // the page. A folder without site/ (only bin/ copied) simply renders without one.
@@ -704,7 +709,7 @@ ${drawer}
 ${diagrams}
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':${fingerprint}' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = ${embed(TONE)};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }

@@ -16,7 +16,7 @@ The agent writes a `review.json`. It becomes one offline HTML page. The human ju
 
 ## 1. Write and check the review
 
-Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing.
+Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
 
 - `ask` and `afterwards`: what you need, and what you will do with the answer.
 - Options to pick from: a section with `mode: "choose-one"` and `recommended: { itemId, why }`.

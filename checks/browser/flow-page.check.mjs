@@ -359,6 +359,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
 // ── what the agent wants from the reviewer, and what the reviewer wants back (D059, D060) ──
 await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, exported }) => {
   const review = JSON.parse(readFileSync(FLOW, 'utf8'));
+  review.id += '-brief';                                   // a changed example is its own review (#38)
   review.focus = 'user-flow';
   review.brief = {
     explains: 'Cancelling frees the slot but the money stays with us as store credit.',

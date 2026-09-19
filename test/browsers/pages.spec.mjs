@@ -117,6 +117,24 @@ test('flow: the system and data layers show with the step, and an entry can be j
   expect(fb.gaps).toContain('book/capacity-guard');
 });
 
+// #38: an agent kept the example's id. Two different reviews must never share answers, even with one id.
+test('two different reviews with the same id do not share answers', async ({ page }) => {
+  const other = JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8'));
+  other.title = 'Another checkout test, same id';                        // a different review, the example's id kept
+  const dir = mkdtempSync(join(tmpdir(), 'pw-'));
+  writeFileSync(join(dir, 'other.json'), JSON.stringify(other));
+  const otherPage = render(join(dir, 'other.json'), dir);
+  await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('label:has(input[name="v-guest-checkout"][value="fails"])').click();
+  await page.locator('textarea[data-note="guest-checkout"]').fill('Given on the example page');
+  await page.goto('file://' + otherPage);
+  await expect(page.locator('h1')).toHaveText('Another checkout test, same id');
+  expect(await page.locator('input[name="v-guest-checkout"][value="fails"]').isChecked(), 'answer crossed over').toBe(false);
+  await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('');
+  await page.goto(url('examples/checkout-uat.html'));                  // and the example keeps its own answer
+  await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('Given on the example page');
+});
+
 test('a hostile review runs no script and shows no injected markup', async ({ page }) => {
   const bad = '<img src=x onerror="window.__pwned=1">';
   const evil = JSON.parse(readFileSync(join(ROOT, 'examples/decision-review.example.json'), 'utf8'));
