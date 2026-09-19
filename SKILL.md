@@ -52,8 +52,8 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 1. **Gaps first**: every id in `gaps`. For each one, give your recommendation and ask a question, addressed to whoever can answer it. Questions about the reviewer's answers go back to the reviewer, ideally as a short follow-up review.
 2. **Requests**: every entry in `requests` — the reviewer asked you for an `example` or an `explain` on that item. Answer it before anything else you were going to do; an item with a request is not settled, whatever its verdict says.
 3. **Choices**: the pick. If `followedRecommendation` is `false`, say so plainly and don't argue for your option again.
-4. **Added items**: quote the reviewer's own words. They are what you didn't know to ask.
-5. **Everything else**: verdicts, with notes quoted.
+4. **Added items**: quote each one word for word, its title and its text in quotation marks, then say what you will do with it. Answering the substance is not enough: their words are what you didn't know to ask.
+5. **Everything else**: verdicts, with notes quoted. A doubtful verdict with no note (partly, doesn't work, couldn't test) is a question, not a result: ask the reviewer what they saw, in the same follow-up as the gaps. Never guess why.
 
 ## Common mistakes
 
