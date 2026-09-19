@@ -208,8 +208,8 @@ header{padding-block:30px 18px;border-bottom:1px solid var(--line);margin-bottom
 .pin{min-height:44px;font-size:12.5px}
 .pin[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
 .pinned{position:sticky;top:var(--pin-top,0);z-index:6;max-height:calc(80vh / var(--pins,1));overflow:auto;background:var(--bg);box-shadow:0 6px 12px -8px rgba(0,0,0,.35)}
-.flow #stage{display:contents}
-.flow #upanel:not(.full){margin-top:16px}
+.frame #stage{display:contents}
+.frame #upanel:not(.full){margin-top:16px}
 .htop{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(22px,3.4vw,30px);letter-spacing:-.015em;line-height:1.2}
 .sub{color:var(--ink3);font-size:14px;margin-top:4px}
@@ -301,11 +301,12 @@ fieldset.item.chosen{border:2px solid var(--ac)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 
 /* ── flow player (v0.2) ── */
-.wrap.flow{max-width:none;padding-inline:24px}
+/* #44 — every review in the same frame: full width, the list on the left, the open item on the right. */
+.wrap.frame{max-width:none;padding-inline:24px}
 /* The header lines up with the text inside the sections below, not with their outer border.
    On a phone every pixel of width counts, so it stays at the page edge there. */
-@media (min-width:700px){.flow header{padding-inline:20px}}
-.flow .bar{position:static}
+@media (min-width:700px){.frame header{padding-inline:20px}}
+.frame .bar{position:static}
 #player{margin-bottom:10px}
 .item .k,#brief .k{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-right:6px}
 #restart{min-height:44px;min-width:44px}
@@ -348,6 +349,7 @@ body:has(.panel.full){overflow:hidden}
 #feedback fieldset.item{padding:10px 14px;margin-bottom:8px;background:var(--bg)}
 #feedback fieldset.item.row{cursor:pointer}
 #feedback fieldset.item.open{padding:14px 16px}
+.row-sum{margin:2px 0 4px;font-size:13px;color:var(--ink3);max-width:74ch}
 .row-meta{margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--mut)}
 .row-v{margin-left:auto;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tone,var(--warn))}
 .row-open{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left;min-height:32px}
@@ -573,7 +575,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 </style>
 </head><body>
 <a class="skip" href="#items">Skip to the items</a>
-<div class="wrap${review.flow ? ' flow' : ''}">
+<div class="wrap frame">
 <header>
   <div class="htop">
     <div>
@@ -632,7 +634,7 @@ ${review.flow ? `<section id="player" aria-label="Click through the flow">
       </div>
       <div class="panel-body"><div id="screen" class="screen"></div><div id="allscreens" hidden></div></div>
     </section>
-  </div>
+  </div>` : ''}
     ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
       <div class="brief-head"><h2 id="brief-h">What I need you to decide</h2><button class="btn pin" type="button" aria-pressed="false">Pin</button></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
@@ -651,15 +653,15 @@ ${review.flow ? `<section id="player" aria-label="Click through the flow">
       <p id="overview" class="hint" aria-live="polite"></p>
       <div id="split" class="split" data-size="even">
         <div class="sizes" role="group" aria-label="How the row is shared">
-          <button class="btn" type="button" data-size="list" aria-pressed="false" aria-label="Give the steps more room">◧</button>
+          <button class="btn" type="button" data-size="list" aria-pressed="false" aria-label="Give the list more room">◧</button>
           <button class="btn" type="button" data-size="even" aria-pressed="true" aria-label="Share the row evenly">◫</button>
-          <button class="btn" type="button" data-size="detail" aria-pressed="false" aria-label="Give the open step more room">◨</button>
+          <button class="btn" type="button" data-size="detail" aria-pressed="false" aria-label="Give the open item more room">◨</button>
         </div>
         <div id="steplist"></div>
-        <aside id="detail" aria-label="The step you opened"></aside>
+        <aside id="detail" aria-label="${review.flow ? 'The step you opened' : 'The item you opened'}"></aside>
       </div>
     </section>
-  <div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
+  ${review.flow ? `<div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
     <span class="note">Where you click is never saved or sent. Only your verdicts, notes and added items are.</span></div>
   <p id="announce" class="skip" aria-live="polite"></p>
 </section>` : ''}
@@ -819,12 +821,11 @@ function render(){
   // D046 — a filter never hides silently
   $('#filterinfo').innerHTML = shown !== REVIEW.items.length ? 'Showing ' + shown + ' of ' + REVIEW.items.length + ' · <button type="button" class="btn" id="showall">Show all</button>' : '';
   renderAdded();
-  if (REVIEW.flow) {
-    $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
-    const st = STEPS.find(s => s.id === selected);
-    $('#detail').innerHTML = st ? itemHtml(st, null, true)
-      : '<p class="hint">Tap a highlighted element on the screen, or pick a step on the left. Its goal, outcomes and your answer open here.</p>';
-  }
+  $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
+  const open = REVIEW.items.find(s => s.id === selected);
+  $('#detail').innerHTML = open ? itemHtml(open, (REVIEW.sections || []).find(s => s.id === open.sectionId), true)
+    : REVIEW.flow ? '<p class="hint">Tap a highlighted element on the screen, or pick a step on the left. Its goal, outcomes and your answer open here.</p>'
+    : '<p class="hint">Pick an item on the left. It opens here, with your answer.</p>';
 }
 
 // D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
@@ -833,12 +834,15 @@ const asksRow = (id) => \`<div class="asks-row">\${ASKS.map(([kind, label]) => \
   data-ask="\${esc(kind)}" data-for="\${esc(id)}"\${(store.requests[id] || {})[kind] ? ' checked' : ''}> \${label}</label>\`).join('')}</div>\`;
 
 // D069 — a step you have not opened is one line: where it sits, and whether it is answered or still open.
-function stepRow(it, cur){
+function stepRow(it, cur, sec){
   const o = OPTS.find(x => x.value === cur);
+  const chosen = sec && sec.mode === 'choose-one' && store.choices[sec.id] === it.id;
+  const rec = sec && sec.mode === 'choose-one' && sec.recommended && sec.recommended.itemId === it.id;
   return \`<fieldset class="item row" data-v="\${cur}" data-step="\${esc(it.id)}" aria-current="\${selected === it.id}" style="--tone:var(--\${TONE[(o || {}).tone] || 'line2'})">
     <legend><button type="button" class="row-open" data-open="\${esc(it.id)}">\${esc(it.title)}</button></legend>
-    <p class="row-meta"><span class="w-journey">\${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
-      <span class="w-status">\${STATUS_LABEL[statusOf(it.step)]}</span>\${store.notes[it.id] ? '<span>· note</span>' : ''}
+    \${!it.step && (it.summary || it.body) ? \`<p class="row-sum">\${esc(String(it.summary || it.body).slice(0, 140))}\${String(it.summary || it.body).length > 140 ? '…' : ''}</p>\` : ''}
+    <p class="row-meta">\${it.step ? \`<span class="w-journey">\${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
+      <span class="w-status">\${STATUS_LABEL[statusOf(it.step)]}</span>\` : (chosen ? '<span class="w-status">Chosen</span>' : '') + (rec ? '<span class="w-journey">Recommended</span>' : '')}\${store.notes[it.id] ? '<span>· note</span>' : ''}
       <span class="row-v">\${o ? esc(o.label) : 'Open'}</span></p>
   </fieldset>\`;
 }
@@ -899,7 +903,7 @@ function examplesHtml(list){
 
 function itemHtml(it, sec, full){
   const cur = store.verdicts[it.id] || 'unset';
-  if (it.step && !full) return stepRow(it, cur);
+  if (!full && (it.step || !REVIEW.flow)) return stepRow(it, cur, sec);
   const choosing = sec && sec.mode === 'choose-one';
   const chosen = choosing && store.choices[sec.id] === it.id;
   const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
@@ -999,7 +1003,7 @@ document.addEventListener('click', e => {
     return render();
   }
   const card = e.target.closest('fieldset.item.row[data-step]');
-  if (card && FLOW && !e.target.closest('input,textarea,label,button')) return selectStep(card.dataset.step);
+  if (card && !e.target.closest('input,textarea,label,button')) return openItem(card.dataset.step);
   const d = e.target.closest('[data-del]');
   if (d){ store.added.splice(+d.dataset.del,1); save(); render(); }
 });
@@ -1038,6 +1042,15 @@ $('#reset').addEventListener('click', () => {
 const FLOW = REVIEW.flow || null;
 let at = FLOW ? FLOW.start : null, pending = null, last = null;
 let selected = null;   // the one step marked across every view; memory only (D003)
+// #44 — a list review opens on its first item; a flow waits for the first tap on the screen.
+if (!FLOW) selected = (REVIEW.items[0] || {}).id || null;
+function openItem(id){
+  if (FLOW) selectStep(id);
+  else { selected = id; render(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
+  // Stacked (under 1100 px) the open item sits below the whole list: bring it into view. Side by side
+  // it is already beside the row, and nothing moves (D079).
+  if (matchMedia('(max-width:1099px)').matches) $('#detail').scrollIntoView({ block: 'start' });
+}
 const partsById = FLOW ? Object.fromEntries((FLOW.parts || []).map(p => [p.id, p])) : {};
 const stepsFrom = (screenId) => REVIEW.items.filter(i => i.step && i.step.from === screenId);
 const STEPS = REVIEW.items.filter(i => i.step);
@@ -1183,6 +1196,24 @@ function go(st, o){
   $('#screen-title').focus({ preventScroll: true });
 }
 
+// D074, #44 — every page: filters, then the list | the open item, then your own feedback, full width.
+$('#split').before($('.bar')); $('#steplist').append($('#items'));
+if ($('.add')) $('#feedback').append($('.add'));
+// The list and the open item share the row in three steps, remembered in this browser only.
+let splitSize = 'even';
+try { splitSize = localStorage.getItem(LS + ':split') || 'even'; } catch {}
+function applySplit(){
+  $('#split').dataset.size = splitSize;
+  $('#split').querySelectorAll('.sizes [data-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === splitSize)));
+  try { localStorage.setItem(LS + ':split', splitSize); } catch {}
+}
+applySplit();
+$('#split').addEventListener('click', e => {
+  const size = e.target.closest('button[data-size]'), open = e.target.closest('[data-open]');
+  if (size) { splitSize = size.dataset.size; return applySplit(); }
+  if (open) { openItem(open.dataset.open); if (FLOW) document.querySelector('#detail [data-outcome]')?.focus(); }
+});
+
 if (FLOW) {
   showLayers();
   $('#screen').addEventListener('click', e => {
@@ -1201,9 +1232,7 @@ if (FLOW) {
     $('#screen-title').focus();
   });
   $('#split').addEventListener('click', e => {
-    const b = e.target.closest('[data-outcome]'), open = e.target.closest('[data-open]'), size = e.target.closest('button[data-size]');
-    if (size) { splitSize = size.dataset.size; return applySplit(); }
-    if (open) { selectStep(open.dataset.open); document.querySelector('#detail [data-outcome]')?.focus(); return; }
+    const b = e.target.closest('[data-outcome]');
     if (!b) return;
     const st = STEPS.find(x => x.id === b.dataset.for); if (!st) return;
     // The screen above changes height with the next screen; the feedback stays put on the window.
@@ -1211,18 +1240,6 @@ if (FLOW) {
     go(st, st.step.outcomes[+b.dataset.outcome]);
     scrollBy(0, $('#feedback').getBoundingClientRect().top - y);
   });
-  // D074 — filters, then steps | open step, then your own feedback, full width.
-  $('#split').before($('.bar')); $('#steplist').append($('#items'));
-  if ($('.add')) $('#feedback').append($('.add'));
-  // The steps and the open step share the row in three steps, remembered in this browser only.
-  let splitSize = 'even';
-  try { splitSize = localStorage.getItem(LS + ':split') || 'even'; } catch {}
-  function applySplit(){
-    $('#split').dataset.size = splitSize;
-    $('#split').querySelectorAll('.sizes [data-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === splitSize)));
-    try { localStorage.setItem(LS + ':split', splitSize); } catch {}
-  }
-  applySplit();
   // Clicking a box in the chart selects that step.
   const chartPick = (target) => {
     const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
