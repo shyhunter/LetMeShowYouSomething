@@ -156,6 +156,7 @@
             "description": "Real precedents for this item (#42), usually the answer to a reviewer's request for an example: shown on the item in the follow-up review.",
             "items": {"$ref": "#/$defs/example"}
           },
+          "approval": {"$ref": "#/$defs/approval"},
           "affects": {
             "type": "array",
             "description": "Earlier decisions this item reopens, extends, contradicts or depends on. Each quotes the decision so it is readable without the earlier file; `check history` verifies the quote against that file.",
@@ -187,6 +188,19 @@
     "brief": {"$ref": "#/$defs/brief"}
   },
   "$defs": {
+    "approval": {
+      "type": "object",
+      "description": "#54 — this item asks to approve one exact action, kept apart from agreement: it is answered approve or decline, never with the verdict set. An approval records the reviewer's intent; the agent still asks in its own host before it acts, and never after expiresAt.",
+      "required": ["action", "scope", "risk", "expiresAt"],
+      "additionalProperties": false,
+      "properties": {
+        "action": {"type": "string", "minLength": 1, "maxLength": 300, "description": "Exactly what will be done, in one sentence: \"Drop the database checkout_v1_staging\"."},
+        "scope": {"type": "string", "minLength": 1, "maxLength": 600, "description": "What it affects, and how much: which systems, records, people, money."},
+        "risk": {"enum": ["low", "medium", "high"], "description": "How bad it is if this goes wrong, and whether it can be undone."},
+        "preview": {"type": "string", "maxLength": 4000, "description": "What will happen, shown as it will be: the command, the message, the diff."},
+        "expiresAt": {"type": "string", "description": "UTC date-time. An approval given or used after it is refused by the checker."}
+      }
+    },
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
     "example": {
       "type": "object",

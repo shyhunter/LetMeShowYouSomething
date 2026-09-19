@@ -1082,3 +1082,46 @@ test('followup: gaps, added items and requests are carried into the next review'
   assert.equal(run((n) => { n.items[0].summary = 'No sign-in anywhere: pay with a test card as a stranger would.'; }, ask('explain')).status, 0);
   assert.match(run((n) => { n.id = review.id; }).stdout, /✗ next review has its own id/);
 });
+
+// #54 — an approval is one exact action, answered approve or decline, echoed, and refused once expired.
+test('approvals: well-formed, answered approve or decline, echoed exactly, never used after they end', () => {
+  const iso = (ms) => new Date(Date.now() + ms).toISOString().replace(/\.\d+Z$/, 'Z');
+  const review = () => {
+    const r = readJson('examples/decision-review.example.json');
+    r.id = 'approval-test'; r.createdAt = iso(-3600e3);
+    r.sections.push({ id: 'approve', label: 'Needs your approval' });
+    r.items.push({ id: 'drop-db', sectionId: 'approve', title: 'Drop the old staging database',
+      approval: { action: 'Drop the database checkout_v1_staging', scope: 'One staging database, no production data', risk: 'high', expiresAt: iso(7 * 864e5) } });
+    return r;
+  };
+  const files = (r, fb) => ['r', 'f'].map((k, i) => { const p = join(tmp, `${k}-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify([r, fb][i])); return p; });
+  const pair = (r, fb) => check('pair', ...files(r, fb));
+  const answer = (r, verdict, now = iso(0)) => buildFeedback(r, { verdicts: { 'drop-db': verdict } }, now);
+
+  // The review: an approval names its action, scope, risk and end, and stands in a section of its own.
+  const bad = review(); Object.assign(bad.items.at(-1).approval, { scope: ' ', risk: 'huge', expiresAt: iso(-7200e3) });
+  const refused = check('review', ...files(bad, {}).slice(0, 1)).stdout;
+  assert.match(refused, /✗ approvals well-formed: drop-db: says nothing about what it affects.*risk "huge" is not low, medium or high.*expires at .*, before the review was even written/);
+
+  // The page's own export passes; it echoes the approval, and neither approve nor decline is a gap.
+  const r = review();
+  for (const v of ['approve', 'decline']) {
+    const fb = answer(r, v);
+    assert.deepEqual(fb.responses.at(-1).approval, r.items.at(-1).approval);
+    assert.ok(!fb.gaps.includes('drop-db'), `${v} is an answer, not a gap`);
+    const ok = pair(r, fb); assert.equal(ok.status, 0, ok.stdout);
+  }
+  assert.ok(answer(r, undefined).gaps.includes('drop-db'), 'an unanswered approval is a gap');
+
+  // "Agree" is not permission: an approval takes approve or decline only.
+  assert.match(pair(r, answer(r, 'agree')).stdout, /✗ verdicts in vocabulary: .*drop-db=agree \(an approval: approve, decline or unset\)/);
+  // The file must carry the approval that was asked, word for word.
+  const changed = answer(r, 'approve'); changed.responses.at(-1).approval = { ...changed.responses.at(-1).approval, scope: 'All databases' };
+  assert.match(pair(r, changed).stdout, /✗ approvals echo the review: drop-db: the approval in the file is not the one asked \(scope differ\)/);
+  // Approved after its end, or used after its end: refused.
+  assert.match(pair(r, answer(r, 'approve', iso(8 * 864e5))).stdout, /✗ approvals still valid: "Drop the old staging database" was approved at .*, after it expired/);
+  const lapsed = review(); lapsed.items.at(-1).approval.expiresAt = iso(-60e3);
+  assert.match(pair(lapsed, answer(lapsed, 'approve', iso(-120e3))).stdout, /✗ approvals still valid: "Drop the old staging database": the approval expired at/);
+  // A declined approval that has since ended is still a valid "no".
+  assert.equal(pair(lapsed, answer(lapsed, 'decline', iso(-120e3))).status, 0);
+});
