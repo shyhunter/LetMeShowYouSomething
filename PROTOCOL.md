@@ -362,6 +362,28 @@ like an access key, API token, private key, JWT or credentials in a URL. Use a p
 Every checker error and warning says **what is wrong, what to do, and what leaving it would cause**,
 in one line. A message that only names the problem is a bug.
 
+## Comments on a diagram
+
+The reviewer can answer in the agent's own picture, not only in words (#60). With **Comment** switched
+on, a click on a box or an arrow of a drawn diagram (or Tab to it and Enter) opens a comment on that
+part. The feedback carries each one:
+
+```json
+"comments": [{ "id": "comment-1", "diagram": "checkout-path", "node": "pay",
+               "label": "Takes the payment", "note": "Say which card is charged." },
+             { "id": "comment-2", "diagram": "checkout-path", "edge": { "from": "result", "to": "declined" },
+               "label": "What happens? → Says why the card was declined (declined)", "note": "Keep the cart." }]
+```
+
+`label` says what the comment is on, in words, so the file reads without the review. `diagram` is a
+diagram id, or `user-flow` for the chart computed from a flow. An empty comment is left out.
+
+| check | refuses |
+|---|---|
+| `comments well-formed` | a comment without its own `comment-N` id, without exactly one `node` or `edge`, or without a label or words |
+| `comments resolve` | a comment on a diagram, box or arrow the review does not have, or whose label is not that part's |
+| `comments answered` (`followup`) | a follow-up review with no item whose `answers` lists the comment's id |
+
 ## Answers given in chat
 
 For one to four quick questions a page is too much, but a decision others will rely on still needs a

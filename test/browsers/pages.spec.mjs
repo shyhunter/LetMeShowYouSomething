@@ -259,3 +259,24 @@ for (const name of ['checkout-uat', 'flow-booking']) {
     await expect(page.locator('#detail')).toBeVisible();
   });
 }
+
+// #60 — the reviewer comments on a box and an arrow of the agent's diagram; the comments travel in the export.
+test('comments on the diagram: pick a box by keyboard and an arrow, export, and the file passes the checker', async ({ page }) => {
+  await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#commentmode').click();
+  await expect(page.locator('#commentmode')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#flowbeside [data-node="pay"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#comments .cmt-on')).toContainText('Takes the payment');
+  await page.keyboard.type('Say which card is charged.');
+  await page.locator('#flowbeside .dg-edge[data-from="result"][data-to="declined"]').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Keep the cart when this happens.');
+  await expect(page.locator('#flowbeside .dg-commented')).toHaveCount(2);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(mkdtempSync(join(tmpdir(), 'pw-cmt-')), 'feedback.json');
+  await download.saveAs(file);
+  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  expect(r.status, r.stdout).toBe(0);
+  expect(JSON.parse(readFileSync(file, 'utf8')).comments.map((c) => c.label)).toEqual(['Takes the payment', 'What happens? → Says why the card was declined (declined)']);
+});

@@ -21,7 +21,8 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import { findLayerEntry, layerEntryText } from '../lib/build-feedback.mjs';
+import { findLayerEntry, layerEntryText, partLabel } from '../lib/build-feedback.mjs';
+import { flowAsDiagram } from '../lib/draw-diagram.mjs';
 
 // #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
 // its answers with the example page in the same browser. Only the example itself may carry its id.
@@ -552,6 +553,17 @@ function checkFeedback(f, rep, review) {
       `${offList.join(', ')}. Use one of: ${[...allowed].filter((v) => v !== UNSET).join(', ')}; an unjudged entry is left out, never written as unset`);
   }
 
+  // #60 — comments on a box or an arrow: each has its own id, says what it is on, and says something.
+  const comments = Array.isArray(f?.comments) ? f.comments : [];
+  if (comments.length) {
+    const ids = comments.map((c) => c?.id);
+    const bad = comments.filter((c, i) => !/^comment-\d{1,4}$/.test(c?.id ?? '') || ids.indexOf(c.id) !== i
+      || (c.node === undefined) === (c.edge === undefined) || !String(c.label ?? '').trim() || !String(c.note ?? '').trim())
+      .map((c) => c?.id ?? '?');
+    rep.check('comments well-formed', bad.length === 0,
+      `${bad.join(', ')}: a comment needs its own id (comment-1), exactly one box (node) or arrow (edge), the label it is on and the reviewer's words. Export it from the page again, or the agent cannot tell what it is about`);
+  }
+
   const addedIds = added.map((a) => a?.id);
   rep.check('added ids prefixed', addedIds.every((id) => /^added-/.test(id ?? '')),
     'reviewer-added items must use the "added-" prefix so they can never be confused with items the agent asked about');
@@ -651,6 +663,21 @@ function checkFeedback(f, rep, review) {
         `${differ.join(' · ')}. Export the answer from the page again: an approval only counts for the exact action that was shown`);
     }
 
+    if (comments.length) {
+      const charts = Object.fromEntries((review.diagrams ?? []).map((d) => [d.id, d]));
+      if (review.flow) charts['user-flow'] = flowAsDiagram(review);
+      const lost = [];
+      for (const c of comments) {
+        const d = charts[c.diagram];
+        const want = d ? partLabel(d, c) : null;
+        if (!d) lost.push(`${c.id}: diagram "${c.diagram}" is not in the review`);
+        else if (want === null) lost.push(`${c.id}: "${c.label}" is no ${c.node !== undefined ? 'box' : 'arrow'} of "${d.title || d.id}"`);
+        else if (want !== c.label) lost.push(`${c.id}: says it is on "${c.label}", but that part is "${want}"`);
+      }
+      rep.check('comments resolve', lost.length === 0,
+        `${lost.join(' · ')}. Export the answer from the page again, or a comment lands on the wrong part`);
+    }
+
     const requests = Array.isArray(f?.requests) ? f.requests : [];
     if (requests.length) {
       const itemIds = new Set((review.items ?? []).map((i) => i.id));
@@ -722,6 +749,12 @@ function checkFollowup(next, review, f, rep) {
       unanswered.push(`"${q.title}" asked for an example, and no item carrying it has "examples". Add real precedents there, each with a source or marked unverified`);
     else if (q.kind === 'explain' && !c.some((i) => itemText(i) && itemText(i) !== before[q.itemId]))
       unanswered.push(`"${q.title}" asked for an explanation, and its text is unchanged. Explain it again in "summary" or "body", in other words than before`);
+  }
+  const answered = new Set((next?.items ?? []).flatMap((i) => i.answers ?? []));
+  if ((f?.comments ?? []).length) {
+    const open = f.comments.filter((c) => !answered.has(c.id)).map((c) => `${c.id} on "${c.label}"`);
+    rep.check('comments answered', open.length === 0,
+      `${open.join(', ')} ${open.length === 1 ? 'is' : 'are'} not answered. Answer each in an item of the next review and list it in that item's "answers", or the reviewer's point is dropped`);
   }
   rep.check('requests answered', unanswered.length === 0, `${unanswered.join(' · ')}, or the reviewer's question goes unanswered where they asked it`);
 }
