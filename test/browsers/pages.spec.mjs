@@ -239,3 +239,23 @@ test('an approval: the exact action, approve or decline, and the export passes t
   expect(c.status, c.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'drop-db')).toMatchObject({ verdict: 'decline', approval: { risk: 'high' } });
 });
+
+// #61 — any section folds to its title bar, comes back, and is remembered in this browser.
+for (const name of ['checkout-uat', 'flow-booking']) {
+  test(`${name}: every section can be minimised and shown again`, async ({ page }) => {
+    await page.goto(url(`examples/${name}.html`));
+    const sels = await page.locator('.min[data-min]').evaluateAll((l) => l.map((b) => b.dataset.min));
+    expect(sels.length).toBeGreaterThanOrEqual(6);
+    for (const sel of [...sels].reverse()) {                      // inner sections first: an outer one hides their buttons
+      await page.locator(`.min[data-min="${sel}"]`).click();
+      await expect(page.locator(sel)).toHaveClass(/minimised/);
+      await expect(page.locator(`.min[data-min="${sel}"]`)).toHaveAttribute('aria-expanded', 'false');
+      await expect(page.locator(`${sel} > .min-head`)).toBeVisible();   // never hidden without a title bar
+    }
+    await page.reload();
+    await expect(page.locator('.minimised')).toHaveCount(sels.length);
+    for (const sel of sels) await page.locator(`.min[data-min="${sel}"]`).click();
+    await expect(page.locator('.minimised')).toHaveCount(0);
+    await expect(page.locator('#detail')).toBeVisible();
+  });
+}

@@ -384,7 +384,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
     'the brief sits under the diagram and the screen');
   say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return f.top>=b.bottom-1&&Math.abs(b.width-f.width)<2})()`),
     'what to decide sits above your feedback, the same width (D074)');
-  say(await ev(`(()=>{const q=document.querySelector('#feedback .bar').getBoundingClientRect(),l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detail').getBoundingClientRect(),b=document.querySelector('#brief').getBoundingClientRect();return q.top>=b.bottom-1&&l.top>=q.bottom-1&&d.left>=l.right-1&&Math.abs(l.top-d.top)<4})()`),
+  say(await ev(`(()=>{const q=document.querySelector('#feedback .bar').getBoundingClientRect(),l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect(),b=document.querySelector('#brief').getBoundingClientRect();return q.top>=b.bottom-1&&l.top>=q.bottom-1&&d.left>=l.right-1&&Math.abs(l.top-d.top)<4})()`),
     'the filters sit under it, then the steps on the left and the open step on the right');
   const lw = () => ev(`[Math.round(document.querySelector('#steplist').getBoundingClientRect().width),Math.round(document.querySelector('#detail').getBoundingClientRect().width)]`);
   await ev(`document.querySelector('#split [data-size="detail"]').click()`); await sleep(150);
