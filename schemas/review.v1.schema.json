@@ -157,6 +157,11 @@
             "items": {"$ref": "#/$defs/example"}
           },
           "approval": {"$ref": "#/$defs/approval"},
+          "answers": {
+            "type": "array",
+            "description": "#60 — in a follow-up review: the reviewer's comments this item answers, by id (comment-1). `check followup` refuses a round that leaves one unanswered.",
+            "items": {"type": "string", "pattern": "^comment-[0-9]{1,4}$"}
+          },
           "affects": {
             "type": "array",
             "description": "Earlier decisions this item reopens, extends, contradicts or depends on. Each quotes the decision so it is readable without the earlier file; `check history` verifies the quote against that file.",

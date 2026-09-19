@@ -119,6 +119,26 @@
       }
     },
 
+    "comments": {
+      "type": "array",
+      "description": "#60 — the reviewer's comments on one box or one arrow of a drawn diagram. Each carries what it is on, in words (label), so it reads without the review. The next round answers each one (an item's `answers`).",
+      "items": {
+        "type": "object",
+        "required": ["id", "diagram", "label", "note"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^comment-[0-9]{1,4}$" },
+          "diagram": { "type": "string", "description": "The diagram id, or user-flow for the chart computed from a flow." },
+          "node": { "type": "string" },
+          "edge": { "type": "object", "required": ["from", "to"], "additionalProperties": false,
+            "properties": { "from": { "type": "string" }, "to": { "type": "string" } } },
+          "label": { "type": "string", "minLength": 1, "maxLength": 600 },
+          "note": { "type": "string", "minLength": 1, "maxLength": 4000 }
+        },
+        "oneOf": [{ "required": ["node"] }, { "required": ["edge"] }]
+      }
+    },
+
     "requests": {
       "type": "array",
       "description": "What the reviewer asked the agent for (D060): an example, or an explanation. The agent answers these in the next round.",

@@ -1141,3 +1141,32 @@ test('answer.mjs: confirmed chat answers become a checked feedback file; what wa
   const c = check('pair', at('examples/decision-review.example.json'), out);
   assert.equal(c.status, 0, c.stdout);
 });
+
+// #60 — comments on a box or an arrow: echoed in words, checked against the review, answered next round.
+test('comments on a diagram: labelled, resolved against the review, and answered in the follow-up', () => {
+  const review = readJson('examples/review.example.json');
+  const d = review.diagrams[0];
+  const store = { comments: [
+    { id: 'comment-1', diagram: d.id, node: 'guest', label: 'Checks out as a guest', note: 'Say who pays.' },
+    { id: 'comment-2', diagram: d.id, edge: { from: 'cart', to: 'signed-in' }, label: 'Items in the cart → Signed in?', note: 'What if the cart is empty?' },
+    { id: 'comment-3', diagram: d.id, node: 'pay', label: 'Takes the payment', note: '  ' } ] };
+  const fb = buildFeedback(review, store);
+  assert.deepEqual(fb.comments.map((c) => c.id), ['comment-1', 'comment-2'], 'an empty comment is not an answer');
+  const write = (o) => { const p = join(tmp, `c-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
+  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  assert.equal(pair(fb).status, 0, pair(fb).stdout);
+  const moved = structuredClone(fb); moved.comments[0].label = 'Picks a saved card';
+  assert.match(pair(moved).stdout, /✗ comments resolve: comment-1: says it is on "Picks a saved card", but that part is "Checks out as a guest"/);
+  const lost = structuredClone(fb); lost.comments[1].edge.to = 'confirmed';
+  assert.match(pair(lost).stdout, /✗ comments resolve: comment-2: "Items in the cart → Signed in\?" is no arrow of/);
+  const both = structuredClone(fb); both.comments[0].edge = { from: 'a', to: 'b' };
+  assert.match(pair(both).stdout, /✗ comments well-formed: comment-1: a comment needs its own id/);
+  // The next round answers every comment, by id, or the follow-up check refuses it.
+  const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
+  next.items[0].answers = ['comment-1'];
+  const fbPath = write(fb);
+  assert.match(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ comments answered: comment-2 on "Items in the cart → Signed in\?" is not answered/);
+  next.items[2].answers = ['comment-2'];
+  const ok = check('followup', write(next), at('examples/review.example.json'), fbPath);
+  assert.doesNotMatch(ok.stdout, /✗ comments answered/, ok.stdout);
+});

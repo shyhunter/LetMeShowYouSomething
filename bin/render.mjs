@@ -51,6 +51,7 @@ const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut'
 const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-head min-head">
         <span class="panel-title">Diagram</span>
+        <button class="btn" id="commentmode" type="button" aria-pressed="false">Comment</button>
         <button class="btn pin" type="button" aria-pressed="false">Pin</button>
         <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
         <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
@@ -65,6 +66,8 @@ const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
           </div>` : ''}
           <div id="flowbeside" role="tabpanel" aria-label="${review.flow ? 'The flow, with where you are' : 'The chart'}"></div>
         </div>
+        <p id="commenthint" class="hint" hidden>Pick a box or an arrow to comment on it: click it, or Tab to it and press Enter.</p>
+        <div id="comments"></div>
       </div>
     </section>
 `;
@@ -309,6 +312,15 @@ textarea::placeholder{color:var(--sub)}
 .asks b{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-bottom:2px}
 details.more{margin:-4px 0 10px}
 details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bottom:6px;padding-block:3px}
+#commentmode[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+.commenting #flowbeside :is(.dg-node,.dg-edge){cursor:crosshair}
+.dg-hit{fill:none;stroke:transparent;stroke-width:14;pointer-events:stroke}
+.dg-edge:focus-visible{outline:none}.dg-edge:focus-visible path:not(.dg-hit){stroke:var(--ac);stroke-width:3}
+.dg-node.dg-commented .dg-shape{stroke:var(--ac);stroke-width:3;stroke-dasharray:6 3}
+.dg-edge.dg-commented path:not(.dg-hit){stroke:var(--ac);stroke-width:3;stroke-dasharray:6 3}
+#comments .cmt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;display:grid;gap:6px;background:var(--surf)}
+.cmt-on{margin:0;font-size:13px;color:var(--ink3)}.cmt-on b{color:var(--ink)}
+#comments .cmt .btn{justify-self:start}
 .appr{border:1.5px solid var(--ac);background:var(--ac-bg);border-radius:10px;padding:10px 12px;margin:0 0 10px;display:grid;gap:4px}
 .appr p{margin:0;font-size:13.5px;color:var(--ink2)}
 .appr .k{display:inline-block;min-width:88px;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
@@ -742,7 +754,7 @@ ${diagrams}
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
 const LS = 'letmeshowyousomething:' + REVIEW.id + ':${fingerprint}' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = ${embed(TONE)};
-let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} };
+let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
 const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch {} };
@@ -1104,7 +1116,7 @@ $('#exporth').addEventListener('click', () => {
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
-  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} }; save(); render();
+  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[] }; save(); render();
 });
 // ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
 const FLOW = REVIEW.flow || null;
@@ -1179,7 +1191,8 @@ function drawStageChart(){
   const box = $('#flowbeside');
   const d = chartFor(chartTab);
   if (!d) { box.innerHTML = ''; return; }
-  box.innerHTML = drawDiagram(d, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight) });
+  box.innerHTML = drawDiagram(d, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });
+  markComments();
   for (const id of ((REVIEW.brief || {}).highlights || {}).nodes || [])
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-brief');
   // Keep where you are in view; the chart is wider than the panel.
@@ -1289,10 +1302,53 @@ const setFull = (panel, on) => {
   b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
   if (panel.id === 'dpanel') drawStageChart();
 };
+// #60 — the reviewer comments on a box or an arrow. Each comment keeps what it is on, in words.
+let commenting = false;
+const onKey = (c) => c.diagram + '|' + (c.node !== undefined ? 'n:' + c.node : 'e:' + c.edge.from + '>' + c.edge.to);
+function markComments(){
+  const box = $('#flowbeside'); if (!box) return;
+  for (const c of store.comments || []) {
+    if (c.diagram !== chartTab) continue;
+    const el = c.node !== undefined ? box.querySelector('[data-node="' + CSS.escape(c.node) + '"]')
+      : box.querySelector('.dg-edge[data-from="' + CSS.escape(c.edge.from) + '"][data-to="' + CSS.escape(c.edge.to) + '"]');
+    if (el) el.classList.add('dg-commented');
+  }
+}
+function renderComments(){
+  const box = $('#comments'); if (!box) return;
+  const list = store.comments || [];
+  box.innerHTML = (list.length ? '<h3 class="added-h">Your comments on the diagram</h3>' : '') + list.map(c => {
+    const title = (TABS.find(t => t[0] === c.diagram) || [0, c.diagram])[1];
+    return \`<div class="cmt"><p class="cmt-on">On <b>\${esc(c.label)}</b> · \${esc(title)}</p>
+      <label class="skip" for="cm-\${esc(c.id)}">Your comment on \${esc(c.label)}</label>
+      <textarea id="cm-\${esc(c.id)}" data-comment="\${esc(c.id)}" placeholder="What should change here, or what is wrong?">\${esc(c.note || '')}</textarea>
+      <button class="btn" type="button" data-uncomment="\${esc(c.id)}">Remove</button></div>\`;
+  }).join('');
+}
+function addComment(on){
+  const d = chartFor(chartTab); if (!d) return;
+  const c = Object.assign({ diagram: chartTab }, on);
+  const label = partLabel(d, c); if (label === null) return;
+  let found = (store.comments || []).find(x => onKey(x) === onKey(c));
+  if (!found) {
+    const n = Math.max(0, ...(store.comments || []).map(x => +String(x.id).split('-')[1] || 0)) + 1;
+    found = Object.assign(c, { id: 'comment-' + n, label, note: '' });
+    (store.comments = store.comments || []).push(found); save();
+  }
+  renderComments(); markComments();
+  document.getElementById('cm-' + found.id)?.focus();
+}
+
 // #47 — the chart panel works the same on every page that has one: tabs, full screen, a box that opens its item.
 if ($('#dpanel')) {
   // Clicking a box in the chart opens that step or item.
   const chartPick = (target) => {
+    if (commenting) {
+      const n = target.closest('#flowbeside [data-node]'), e = target.closest('#flowbeside .dg-edge');
+      if (!n && !e) return false;
+      addComment(n ? { node: n.dataset.node } : { edge: { from: e.dataset.from, to: e.dataset.to } });
+      return true;
+    }
     const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
     if (FLOW) selectStep(node.dataset.step); else openItem(node.dataset.step);
     $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
@@ -1300,6 +1356,23 @@ if ($('#dpanel')) {
   };
   $('#flowbeside').addEventListener('click', e => chartPick(e.target));
   $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
+  $('#commentmode').addEventListener('click', () => {
+    commenting = !commenting;
+    $('#commentmode').setAttribute('aria-pressed', String(commenting));
+    $('#dpanel').classList.toggle('commenting', commenting);
+    $('#commenthint').hidden = !commenting;
+    drawStageChart();
+  });
+  $('#comments').addEventListener('input', e => {
+    const t = e.target.closest('[data-comment]'); if (!t) return;
+    const c = (store.comments || []).find(x => x.id === t.dataset.comment); if (c) { c.note = t.value; save(); }
+  });
+  $('#comments').addEventListener('click', e => {
+    const b = e.target.closest('[data-uncomment]'); if (!b) return;
+    store.comments = (store.comments || []).filter(x => x.id !== b.dataset.uncomment); save();
+    renderComments(); drawStageChart();
+  });
+  renderComments();
 
   // Tabs: click or arrow keys, one chart on show at a time.
   const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };

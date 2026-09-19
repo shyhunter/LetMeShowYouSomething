@@ -37,7 +37,7 @@ node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
 
 ## 2. Hand it over
 
-Tell the user: open the HTML file (or send it to the reviewer), give each item a verdict and a note, ask back with **Show me an example** or **Explain this** where something is unclear, add anything missing, press **Export feedback.json**, and send that file back. (**Export feedback.html** is the whole page with the answers in it, for passing on to someone who will open a page but not a JSON file — it is not what you read.) Then stop and wait.
+Tell the user: open the HTML file (or send it to the reviewer), give each item a verdict and a note, press **Comment** on the diagram to comment on any box or arrow, ask back with **Show me an example** or **Explain this** where something is unclear, add anything missing, press **Export feedback.json**, and send that file back. (**Export feedback.html** is the whole page with the answers in it, for passing on to someone who will open a page but not a JSON file — it is not what you read.) Then stop and wait.
 
 For a flow, say how to use it: tap the highlighted elements on the screen to walk through, pick an outcome when asked, judge each step in "Your feedback" (the steps on the left, the open one on the right), switch on **What runs** and **What changes** to see what happens behind a step and judge any single entry, switch the diagram tabs to see the same step from another side, and check the answered/open count before exporting so none is left unanswered.
 
@@ -55,9 +55,10 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 2. **Requests**: every entry in `requests` — the reviewer asked you for an `example` or an `explain` on that item. Answer it before anything else you were going to do; an item with a request is not settled, whatever its verdict says. An **example** means real precedents of the thing this item is about, seen the way their own users see it: which product already does it, what it does, and what its users see and do there (the screen, the words, the steps), adapted to this item, one to three, each with a `source` or plainly marked unverified, never invented. A generic instruction is not an example. The reviewer is not in your chat: put the answer in the item's `examples` (and an explanation in its `summary`) in the follow-up review, so they see it where they asked.
 3. **Choices**: the pick. If `followedRecommendation` is `false`, say so plainly and don't argue for your option again.
 4. **Added items**: quote each one word for word, its title and its text in quotation marks, then say what you will do with it. Answering the substance is not enough: their words are what you didn't know to ask.
+   **Comments** on the diagram go with them: quote each word for word with the part it is on (`label`), then say what you will do.
 5. **Everything else**: verdicts, with notes quoted. A doubtful verdict with no note (partly, doesn't work, couldn't test) is a question, not a result: ask the reviewer what they saw, in the same follow-up as the gaps. Never guess why.
 
-**The follow-up review carries everything left open**: every gap, every added item, every request, each under its earlier id or quoting it in `affects`. Check it before you hand it over, and fix every ✗:
+**The follow-up review carries everything left open**: every gap, every added item, every request, each under its earlier id or quoting it in `affects`, and answers every comment in an item whose `answers` lists its id (`"answers": ["comment-1"]`). Check it before you hand it over, and fix every ✗:
 
 ```bash
 node <skill>/bin/check.mjs followup docs/<name>-2.review.json docs/<name>.review.json <returned>.feedback.json
