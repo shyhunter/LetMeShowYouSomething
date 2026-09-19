@@ -216,7 +216,7 @@ textarea::placeholder{color:var(--sub)}
 .asks p{margin:0;font-size:14px;color:var(--ink2)}
 .asks b{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-bottom:2px}
 details.more{margin:-4px 0 10px}
-details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bottom:6px}
+details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bottom:6px;padding-block:3px}
 .aff{border:1px solid var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 11px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
 .aff .k{display:block;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
 .pick{font-size:12.5px;color:var(--ac);font-weight:600;margin:-6px 0 12px}
@@ -373,6 +373,24 @@ fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
 .outcome[data-picked="true"]{border-color:var(--ac);background:var(--ac-bg)}
 .outcome p{margin:0;font-size:13px}
 .outcome [data-outcome]{min-height:44px;align-self:flex-start;margin-top:4px}
+/* D098 — the layers under an outcome: what runs, what changes, each entry with its status and its own verdict. */
+.layer-switch{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 2px}
+.layer-switch label{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 12px;border:1px solid var(--line2);border-radius:99px;font-size:12.5px;cursor:pointer;background:var(--surf)}
+.layer-switch label:has(input:checked){border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
+.layer-switch input{margin:0;accent-color:var(--ac)}
+.layer{margin-top:6px;border-top:1px dashed var(--line2);padding-top:6px}
+.layer ol,.layer ul{margin:4px 0 0;padding-left:18px;display:grid;gap:8px;font-size:12.5px}
+.lkind{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-right:2px}
+.lfields{display:flex;flex-direction:column;gap:2px;margin-top:3px}
+.lfields code,.layer li>code{font:11.5px var(--mono);color:var(--ink2);overflow-wrap:anywhere}
+.lstatus{font:600 10px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
+.lstatus[data-s="exists"]{color:var(--ok)}
+.lstatus[data-s="proposed"]{color:var(--warn)}
+.judge{margin-top:4px}
+.judge summary{cursor:pointer;font-size:12px;color:var(--ac);min-height:24px;display:inline-flex;align-items:center}
+.judge[data-judged="true"] summary{font-weight:600}
+.judge .verdicts{margin:6px 0}
+.judge textarea{width:100%;min-height:48px;font:12.5px var(--sans);border:1px solid var(--line2);border-radius:7px;padding:6px 8px;background:var(--surf);color:var(--ink)}
 .whole-filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0}
 .whole-filters label{display:flex;gap:6px;align-items:center;font-size:13px;min-height:44px}
 .whole-filters select{min-height:36px;font:13px var(--sans)}
@@ -474,7 +492,7 @@ fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
    mouse the page keeps its compact layout. The drawn app screen is a picture, not controls: .is-target
    there is 44 px already. Safari ignores a native select's height, so on touch the page draws it. */
 @media (pointer:coarse){
-  :is(button,textarea,input:not([type=radio],[type=checkbox],[type=hidden]),label:has(>input[type=radio]),label:has(>input[type=checkbox]),[role=tab]):not(.screen *,.skip){min-height:44px}
+  :is(button,summary,textarea,input:not([type=radio],[type=checkbox],[type=hidden]),label:has(>input[type=radio]),label:has(>input[type=checkbox]),[role=tab]):not(.screen *,.skip){min-height:44px}
   .chip,.row-open{min-width:44px}
   select:not(.screen *){-webkit-appearance:none;appearance:none;height:44px;padding:4px 30px 4px 10px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;
     background:linear-gradient(45deg,transparent 50%,var(--mut) 50%) right 16px center/5px 5px no-repeat,linear-gradient(135deg,var(--mut) 50%,transparent 50%) right 11px center/5px 5px no-repeat,var(--surf)}
@@ -1131,7 +1149,7 @@ function flowAsDiagram(review) {
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
 const LS = 'letmeshowyousomething:' + REVIEW.id + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
-let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{} };
+let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
 const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch {} };
@@ -1261,13 +1279,46 @@ function stepRow(it, cur){
   </fieldset>`;
 }
 // The open step shows every outcome side by side; "Show this" plays it on the screen.
+// D098 — one tap, every layer answers: under each outcome, what runs (system) and what changes (data),
+// each entry with its status and checked reference, and a verdict of its own (D006). Which layers are
+// open first is the review's choice (D005); the reviewer switches them, in memory only (D003).
+// Decided on first use: FLOW is defined further down the page.
+let layersOn = null;
+const layers = () => layersOn || (layersOn = new Set(((FLOW || {}).layers || {}).default || ['ui', 'flow']));
+const KIND_LABEL = { component: 'Runs', external: 'Calls out', guard: 'Checks' };
+const CHANGE_LABEL = { insert: 'Adds', update: 'Changes', delete: 'Removes' };
+function entryJudge(stepId, e){
+  const key = stepId + '/' + e.id, cur = (store.layerVerdicts || {})[key] || {};
+  const label = (OPTS.find(o => o.value === cur.verdict) || {}).label;
+  return `<details class="judge"${cur.verdict ? ' data-judged="true"' : ''}><summary>${label ? 'Judged: ' + esc(label) : 'Judge this'}</summary>
+    <div class="verdicts">${OPTS.map(o => `<label class="v-${TONE[o.tone] || 'neut'}"><input type="radio" name="lv-${esc(key)}" value="${esc(o.value)}"
+      data-lv="${esc(key)}"${cur.verdict === o.value ? ' checked' : ''}><span>${esc(o.label)}</span></label>`).join('')}</div>
+    <textarea data-lvnote="${esc(key)}" aria-label="Note on ${esc(e.name || e.entity)}" placeholder="What is wrong or missing here?">${esc(cur.note || '')}</textarea></details>`;
+}
+function layerHtml(stepId, x){
+  const status = (e) => `<span class="lstatus" data-s="${esc(e.status)}">${esc(STATUS_LABEL[e.status] || e.status)}</span>${e.ref ? ` <code>${esc(e.ref)}</code>` : ''}`;
+  const sys = layers().has('system') && (x.system || []).length ? `<div class="layer"><span class="k">What runs</span><ol>${x.system.map(e =>
+    `<li><span class="lkind">${esc(KIND_LABEL[e.kind] || e.kind)}</span> ${esc(e.name)}<br>${status(e)}${entryJudge(stepId, e)}</li>`).join('')}</ol></div>` : '';
+  const data = layers().has('data') && (x.data || []).length ? `<div class="layer"><span class="k">What changes</span><ul>${x.data.map(e =>
+    `<li><span class="lkind">${esc(CHANGE_LABEL[e.change] || e.change)}</span> ${esc(e.entity)}${(e.fields || []).length ? '<span class="lfields">' + e.fields.map(f =>
+      `<code>${esc(f.name)}: ${f.before !== undefined ? esc(f.before) + ' → ' : ''}${f.after !== undefined ? esc(f.after) : '—'}</code>`).join('') + '</span>' : ''}<br>${status(e)}${entryJudge(stepId, e)}</li>`).join('')}</ul></div>` : '';
+  return sys + data;
+}
+function layerSwitches(it){
+  const has = (k) => it.step.outcomes.some(o => (o[k] || []).length);
+  const sw = [['system', 'What runs'], ['data', 'What changes']].filter(([k]) => has(k));
+  return sw.length ? `<div class="layer-switch" role="group" aria-label="Layers of this step">${sw.map(([k, t]) =>
+    `<label><input type="checkbox" data-layer="${k}"${layers().has(k) ? ' checked' : ''}> ${t}</label>`).join('')}</div>` : '';
+}
+
 function outcomeCols(it){
   const o = last && last.step === it ? last.outcome : null;
   return (pending === it ? '<p class="hint">What happens? Pick one to see it.</p>' : '')
+    + layerSwitches(it)
     + `<div class="outcome-cols">${it.step.outcomes.map((x, i) => `<div class="outcome" data-picked="${x === o}">
       <b>${esc(x.label || 'Result')}</b><p><span class="k">Effect</span>${esc(x.effect)}</p>
       ${x.because ? `<p><span class="k">Why</span>${esc(x.because)}</p>` : ''}${x.canNow ? `<p><span class="k">You can now</span>${esc(x.canNow)}</p>` : ''}
-      <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>
+      <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>${layerHtml(it.id, x)}
       <button type="button" class="btn" data-outcome="${i}" data-for="${esc(it.id)}">${x === o ? 'Showing this' : 'Show this'}</button></div>`).join('')}</div>`;
 }
 
@@ -1320,6 +1371,21 @@ function renderAdded(){
 }
 
 document.addEventListener('change', e => {
+  const layer = e.target.closest('input[data-layer]');
+  if (layer) {
+    layers()[layer.checked ? 'add' : 'delete'](layer.dataset.layer); render();
+    document.querySelector('input[data-layer="' + CSS.escape(layer.dataset.layer) + '"]')?.focus();
+    return;
+  }
+  const lv = e.target.closest('input[data-lv]');
+  if (lv) {
+    const cur = store.layerVerdicts[lv.dataset.lv] || (store.layerVerdicts[lv.dataset.lv] = {});
+    cur.verdict = lv.value; save();
+    const sum = lv.closest('details').querySelector('summary');
+    sum.textContent = 'Judged: ' + ((OPTS.find(o => o.value === lv.value) || {}).label || lv.value);
+    lv.closest('details').dataset.judged = 'true';
+    return;
+  }
   const ask = e.target.closest('input[data-ask]');
   if (ask) {
     const id = ask.dataset.for, kind = ask.dataset.ask;
@@ -1340,6 +1406,8 @@ document.addEventListener('change', e => {
   if (same) same.focus();
 });
 document.addEventListener('input', e => {
+  const ln = e.target.closest('textarea[data-lvnote]');
+  if (ln) { const cur = store.layerVerdicts[ln.dataset.lvnote] || (store.layerVerdicts[ln.dataset.lvnote] = {}); cur.note = ln.value; save(); return; }
   const t = e.target.closest('textarea[data-note]');
   if (t){ store.notes[t.dataset.note] = t.value; save();
     const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
@@ -1386,7 +1454,7 @@ $('#exporth').addEventListener('click', () => {
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
-  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{} }; save(); render();
+  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} }; save(); render();
 });
 // ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
 const FLOW = REVIEW.flow || null;
@@ -1422,14 +1490,11 @@ function selectStep(id){
 }
 
 // D057 — one diagram panel with tabs, the focus tab first (D059), and an empty tab that says what it is for (D062).
-const SYSTEM_NOTE = 'System design · what runs behind these screens: services, data stores, external services. Coming with the system diagrams.';
 const TABS = [['user-flow', 'The user flow']]
-  .concat((REVIEW.diagrams || []).map(d => [d.id, d.title || d.id]))
-  .concat([['system', 'System design']]);
+  .concat((REVIEW.diagrams || []).map(d => [d.id, d.title || d.id]));
 if (REVIEW.focus && TABS.some(t => t[0] === REVIEW.focus)) TABS.unshift(TABS.splice(TABS.findIndex(t => t[0] === REVIEW.focus), 1)[0]);
 let chartTab = TABS[0][0];
 const chartFor = (id) => id === 'user-flow' ? flowAsDiagram(REVIEW)
-  : id === 'system' ? null
   : (REVIEW.diagrams || []).find(d => d.id === id) || null;
 
 function drawTabs(){
@@ -1454,7 +1519,7 @@ function drawChips(){
 function drawStageChart(){
   const box = $('#flowbeside');
   const d = chartFor(chartTab);
-  if (!d) { box.innerHTML = '<p class="dg-empty">' + esc(SYSTEM_NOTE) + '</p>'; return; }
+  if (!d) { box.innerHTML = ''; return; }
   box.innerHTML = drawDiagram(d, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight) });
   for (const id of ((REVIEW.brief || {}).highlights || {}).nodes || [])
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-brief');

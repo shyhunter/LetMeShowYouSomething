@@ -215,20 +215,18 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   const tabs = () => ev(`[...document.querySelectorAll('#dgtabs [role=tab]')].map(t=>t.textContent.trim())`);
   const selectedTab = () => ev(`document.querySelector('#dgtabs [role=tab][aria-selected="true"]').textContent.trim()`);
   const labels = await tabs();
-  say(labels[0] === 'The user flow' && !labels.includes('Parts of the process') && labels.includes('System design')
-    && labels.includes('What happens behind booking'), `tabs above the diagram, focus first, no parts tab (D070): ${labels.join(' · ')}`);
+  say(labels[0] === 'The user flow' && !labels.includes('Parts of the process') && !labels.includes('System design')
+    && labels.includes('What happens behind booking'), `tabs above the diagram, focus first, no parts tab (D070), no empty System design tab (D098): ${labels.join(' · ')}`);
   say(await selectedTab() === 'The user flow', 'the focus tab is the one that opens');
   say(await ev(`document.querySelectorAll('#flowbeside [data-node^="screen:"]').length`) > 0, 'the user flow is the chart on show');
 
   await ev(`[...document.querySelectorAll('#dgtabs [role=tab]')].find(t=>t.textContent.trim()==='What happens behind booking').click()`); await sleep(200);
   say(await ev(`document.querySelectorAll('#flowbeside .dg-lane').length`) > 0
     && await ev(`document.querySelectorAll('#flowbeside [data-node^="screen:"]').length`) === 0, 'a tab swaps the chart, it does not add a second one');
-  await ev(`[...document.querySelectorAll('#dgtabs [role=tab]')].find(t=>t.textContent.trim()==='System design').click()`); await sleep(200);
-  const empty = await ev(`document.querySelector('#flowbeside').textContent`);
-  say(/services|data stores|coming/i.test(empty) && empty.trim().length > 40, `an empty tab explains itself (D062): "${empty.replace(/\s+/g, ' ').trim().slice(0, 90)}"`);
   await ev(`document.querySelector('#dgtabs [role=tab]').focus()`);
+  const beforeKey = await selectedTab();
   await key('ArrowRight', 'ArrowRight', 39);
-  say(await ev(`document.activeElement.getAttribute('role')`) === 'tab' && await selectedTab() !== 'System design', 'arrow keys move between tabs');
+  say(await ev(`document.activeElement.getAttribute('role')`) === 'tab' && await selectedTab() !== beforeKey, 'arrow keys move between tabs');
   await ev(`[...document.querySelectorAll('#dgtabs [role=tab]')].find(t=>t.textContent.trim()==='The user flow').click()`); await sleep(200);
 
   // chips for the sub-processes, in place of a dropdown
