@@ -12,4 +12,6 @@ an `SPDX-License-Identifier` line, everything else in `REUSE.toml`. Full texts a
 The open-source version stays free and complete. Features are never removed from it or moved into a
 paid version.
 
-This project uses no third-party code. Nothing here requires a commercial licence, and nothing will.
+The skill and every page it makes contain no third-party code. The tests use Playwright (Apache-2.0),
+which is never shipped in a page; [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md) lists it and the other tools
+used to check, build and install the project. Nothing here requires a commercial licence, and nothing will.
