@@ -40,6 +40,11 @@ jobs:
       - name: Every page in Chromium, Firefox and WebKit, at desktop, tablet and phone size
         run: npx playwright test
 
+      # A failure that only happens here: print what the browser saw, so it can be read in the log.
+      - name: What the browser saw, when a page test failed
+        if: failure()
+        run: for f in test-results/*/error-context.md; do [ -f "$f" ] && { echo "::group::$f"; cat "$f"; echo "::endgroup::"; }; done; true
+
       # The page's promise, proven in the runner's Chrome: a hostile review or answer runs no script,
       # fetches nothing and cannot break out of the exported page. In CI a missing Chrome fails.
       - name: Hostile input in a real browser
