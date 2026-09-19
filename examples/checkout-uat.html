@@ -217,6 +217,14 @@ textarea::placeholder{color:var(--sub)}
 .asks b{display:block;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-bottom:2px}
 details.more{margin:-4px 0 10px}
 details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bottom:6px;padding-block:3px}
+.appr{border:1.5px solid var(--ac);background:var(--ac-bg);border-radius:10px;padding:10px 12px;margin:0 0 10px;display:grid;gap:4px}
+.appr p{margin:0;font-size:13.5px;color:var(--ink2)}
+.appr .k{display:inline-block;min-width:88px;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
+.appr-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.appr-a{font-size:15px!important;font-weight:600;color:var(--ink)!important}
+.risk{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--rt);border:1px solid var(--rt);border-radius:99px;padding:2px 8px}
+.appr-p{margin:4px 0;padding:8px 10px;background:var(--surf);border:1px solid var(--line);border-radius:6px;font:12.5px/1.5 var(--mono);white-space:pre-wrap;overflow-x:auto;color:var(--ink)}
+.appr-n{color:var(--mut)!important;font-size:12.5px!important}
 .aff{border:1px solid var(--warn);background:var(--warn-bg);border-radius:8px;padding:8px 11px;margin:0 0 10px;font-size:13px;color:var(--ink2)}
 .aff .k{display:block;font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--warn);margin-bottom:2px}
 .pick{font-size:12.5px;color:var(--ac);font-weight:600;margin:-6px 0 12px}
@@ -650,6 +658,8 @@ function buildFeedback(review, store, now = new Date().toISOString()) {
     if (item.sectionId && sectionLabel[item.sectionId]) r.sectionLabel = sectionLabel[item.sectionId];
     if (item.ref) r.ref = item.ref;
     if (item.affects?.length) r.affects = item.affects;
+    // #54 — what exactly was approved or declined travels with the answer (invariant 1).
+    if (item.approval) r.approval = item.approval;
     return r;
   });
 
@@ -1120,6 +1130,22 @@ const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } ca
 
 const $ = (s) => document.querySelector(s);
 const OPTS = REVIEW.verdictSet.options;
+// #54 — an approval is answered approve or decline, never with the verdict set: agreeing is not permitting.
+const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' }, { value: 'decline', label: 'Decline', tone: 'negative' }];
+const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
+const RISK = { low: ['ok', 'Low risk'], medium: ['warn', 'Medium risk'], high: ['bad', 'High risk'] };
+function approvalHtml(a){
+  const [tone, label] = RISK[a.risk] || ['neut', a.risk];
+  const end = new Date(a.expiresAt);
+  return `<div class="appr">
+    <p class="appr-h"><span class="k">Approval asked</span><span class="risk" style="--rt:var(--${tone})">${esc(label)}</span></p>
+    <p class="appr-a">${esc(a.action)}</p>
+    <p class="appr-s"><span class="k">Affects</span>${esc(a.scope)}</p>
+    ${a.preview ? `<pre class="appr-p">${esc(a.preview)}</pre>` : ''}
+    <p class="appr-e"><span class="k">Valid until</span>${esc(isNaN(end) ? a.expiresAt : end.toLocaleString())}. After that, a yes no longer counts.</p>
+    <p class="appr-n">Your answer records what you want. The agent still asks for permission, in its own app, right before it acts.</p>
+  </div>`;
+}
 const negative = new Set(OPTS.filter(o=>o.tone==='negative').map(o=>o.value));
 let filter = 'all', q = '';
 
@@ -1233,14 +1259,14 @@ const asksRow = (id) => `<div class="asks-row">${ASKS.map(([kind, label]) => `<l
 
 // D069 — a step you have not opened is one line: where it sits, and whether it is answered or still open.
 function stepRow(it, cur, sec){
-  const o = OPTS.find(x => x.value === cur);
+  const o = optsFor(it).find(x => x.value === cur);
   const chosen = sec && sec.mode === 'choose-one' && store.choices[sec.id] === it.id;
   const rec = sec && sec.mode === 'choose-one' && sec.recommended && sec.recommended.itemId === it.id;
   return `<fieldset class="item row" data-v="${cur}" data-step="${esc(it.id)}" aria-current="${selected === it.id}" style="--tone:var(--${TONE[(o || {}).tone] || 'line2'})">
     <legend><button type="button" class="row-open" data-open="${esc(it.id)}">${esc(it.title)}</button></legend>
     ${!it.step && (it.summary || it.body) ? `<p class="row-sum">${esc(String(it.summary || it.body).slice(0, 140))}${String(it.summary || it.body).length > 140 ? '…' : ''}</p>` : ''}
     <p class="row-meta">${it.step ? `<span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
-      <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span>` : (chosen ? '<span class="w-status">Chosen</span>' : '') + (rec ? '<span class="w-journey">Recommended</span>' : '')}${store.notes[it.id] ? '<span>· note</span>' : ''}
+      <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span>` : (chosen ? '<span class="w-status">Chosen</span>' : '') + (rec ? '<span class="w-journey">Recommended</span>' : '') + (it.approval ? '<span class="w-status">Approval</span>' : '')}${store.notes[it.id] ? '<span>· note</span>' : ''}
       <span class="row-v">${o ? esc(o.label) : 'Open'}</span></p>
   </fieldset>`;
 }
@@ -1305,7 +1331,8 @@ function itemHtml(it, sec, full){
   const choosing = sec && sec.mode === 'choose-one';
   const chosen = choosing && store.choices[sec.id] === it.id;
   const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
-  const tone = TONE[(OPTS.find(o=>o.value===cur)||{}).tone] || '';
+  const opts = optsFor(it);
+  const tone = TONE[(opts.find(o=>o.value===cur)||{}).tone] || '';
   const flds = (REVIEW.fields||[]).filter(f => (it.fields||{})[f.key]).map(f =>
     `<div class="fld"><span class="k" style="--fk:var(--${TONE[f.tone]||'mut'})">${esc(f.label)}</span><span class="val">${esc(it.fields[f.key])}</span></div>`).join('');
   const stepAttrs = it.step && !full ? ` data-step="${esc(it.id)}" aria-current="${selected === it.id}"` : '';
@@ -1327,13 +1354,14 @@ function itemHtml(it, sec, full){
     ${flds ? `<div class="flds">${flds}</div>` : ''}
     ${examplesHtml(it.examples)}
     ${it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''}
-    <div class="verdicts" role="radiogroup" aria-label="Verdict for: ${esc(it.title)}">
-      ${OPTS.map(o=>`<label class="v-${TONE[o.tone]}">
+    ${it.approval ? approvalHtml(it.approval) : ''}
+    <div class="verdicts" role="radiogroup" aria-label="${it.approval ? 'Approve or decline' : 'Verdict for'}: ${esc(it.title)}">
+      ${opts.map(o=>`<label class="v-${TONE[o.tone]}">
         <input type="radio" name="v-${esc(it.id)}" value="${esc(o.value)}" ${cur===o.value?'checked':''}
           data-item="${esc(it.id)}">\
         <span>${esc(o.label)}</span></label>`).join('')}
     </div>
-    ${(OPTS.find(o=>o.value===cur)||{}).hint ? `<p class="hint">${esc(OPTS.find(o=>o.value===cur).hint)}</p>` : ''}
+    ${(opts.find(o=>o.value===cur)||{}).hint ? `<p class="hint">${esc(opts.find(o=>o.value===cur).hint)}</p>` : ''}
     <label class="skip" for="n-${esc(it.id)}">Note for ${esc(it.title)}</label>
     <textarea id="n-${esc(it.id)}" data-note="${esc(it.id)}"
       placeholder="What did you see? Your own words are the part that gets acted on.">${esc(store.notes[it.id]||'')}</textarea>

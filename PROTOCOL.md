@@ -107,7 +107,36 @@ a judgement.
 does not authorise anything irreversible or outside the conversation: deleting, sending, paying,
 publishing, contacting someone. A feedback file is unsigned and gets forwarded, so it proves nothing
 about who answered. Before such an action the agent asks in its own host, naming the exact action and
-what it affects (#48). An approval item of its own is tracked in #54.
+what it affects (#48). To ask for one exact action, use an approval (below).
+
+## Approvals
+
+An item with `approval` asks to approve **one exact action**, kept apart from agreement (#54). It is
+answered **approve** or **decline**, never with the review's verdict set, so "agree" can never be
+read as permission.
+
+```json
+{ "id": "drop-db", "sectionId": "approve", "title": "Drop the old staging database",
+  "approval": { "action": "Drop the database checkout_v1_staging", "scope": "One staging database, no production data",
+                "risk": "high", "preview": "DROP DATABASE checkout_v1_staging;", "expiresAt": "2026-10-03T08:00:00Z" } }
+```
+
+- `action` is what will be done, `scope` what it touches, `risk` is `low`, `medium` or `high`,
+  `preview` shows it as it will be (the command, the message, the diff), and `expiresAt` is when a
+  yes stops counting.
+- An approval stands in a section of its own: never an option to choose, never a doubt.
+- The answer echoes the approval word for word. The checker refuses a file whose approval differs
+  from the one asked, an approval given after it expired, and one used after it expired. A decline
+  stays a valid no. An unanswered approval is a gap; approve and decline are not.
+- **An approval is the reviewer's intent, not proof of authority.** The file is unsigned and gets
+  forwarded. The agent still asks in its own host right before it acts, quoting the action.
+
+| check | refuses |
+|---|---|
+| `approvals well-formed` | an approval without action, scope or risk, without a UTC end, ending before the review was written, or inside a choice or doubts section |
+| `verdicts in vocabulary` | an approval answered with anything but approve, decline or unset |
+| `approvals echo the review` | an answer whose approval differs from the one asked, or an approval answered as a verdict |
+| `approvals still valid` | an approval given after `expiresAt`, or checked after it |
 
 ## Asking well
 

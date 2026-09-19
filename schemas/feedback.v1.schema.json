@@ -60,6 +60,10 @@
             "description": "Echoed from the review item, so a reader knows this answer was given about a change to an earlier decision.",
             "items": { "$ref": "https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json#/$defs/affects" }
           },
+          "approval": {
+            "$ref": "https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json#/$defs/approval",
+            "description": "Echoed from the review item (#54): what exactly was approved or declined. Its verdict is approve, decline or unset."
+          },
           "verdict": {
             "type": "string",
             "description": "A value from verdictSet, or the literal \"unset\". Unset is written explicitly and never omitted: 'they read it and had no opinion' and 'this never reached them' must not look the same to an agent deciding what to do next."

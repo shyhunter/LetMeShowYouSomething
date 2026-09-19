@@ -35,6 +35,7 @@ try {
 } catch {}
 
 const UNSET = 'unset';
+const APPROVAL_VERDICTS = new Set(['approve', 'decline', UNSET]);
 const ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
 
 const load = (p) => {
@@ -86,6 +87,24 @@ function checkReview(r, rep) {
     if (s.recommended && !options.includes(s.recommended.itemId)) badChoice.push(`${s.id}: recommends "${s.recommended.itemId}", which is not one of its options`);
   }
   rep.check('choices well-formed', badChoice.length === 0, badChoice.join(' · '));
+
+  // #54 — an approval names one exact action, what it affects, how risky it is, and when it ends.
+  if (items.some((i) => i?.approval)) {
+    const badApproval = [];
+    for (const i of items) {
+      const a = i?.approval; if (!a) continue;
+      const sec = (r?.sections ?? []).find((x) => x.id === i.sectionId);
+      if (!String(a.action ?? '').trim()) badApproval.push(`${i.id}: names no action. Write exactly what will be done, or the reviewer approves something unnamed`);
+      if (!String(a.scope ?? '').trim()) badApproval.push(`${i.id}: says nothing about what it affects. Name the systems, records, people or money it touches, or the reviewer cannot weigh it`);
+      if (!['low', 'medium', 'high'].includes(a.risk)) badApproval.push(`${i.id}: risk "${a.risk}" is not low, medium or high. Pick one, or the reviewer cannot tell a rename from a deletion`);
+      if (!UTC.test(a.expiresAt ?? '')) badApproval.push(`${i.id}: expiresAt "${a.expiresAt}" is not a UTC date-time like 2026-10-03T08:00:00Z. Give it an end, or an old yes can be used for a new situation`);
+      else if (r?.createdAt && Date.parse(a.expiresAt) <= Date.parse(r.createdAt)) badApproval.push(`${i.id}: expires at ${a.expiresAt}, before the review was even written. Give the reviewer time to answer`);
+      if (sec?.mode === 'choose-one' || sec?.kind === 'challenge') badApproval.push(`${i.id}: an approval cannot be an option or a doubt. Put it in a section of its own, or picking another option would look like declining it`);
+    }
+    rep.check('approvals well-formed', badApproval.length === 0, badApproval.join(' · '));
+    const lapsed = items.filter((i) => i?.approval && UTC.test(i.approval.expiresAt ?? '') && Date.parse(i.approval.expiresAt) < Date.now()).map((i) => i.id);
+    rep.warn('approval already expired', lapsed.length > 0, `${lapsed.join(', ')} expired before this check: an answer to it will be refused. Set a later expiresAt`);
+  }
 
   // #47 — the page loads nothing, so a Mermaid chart shows as its source text: a picture must be drawn.
   const textCharts = (r?.sections ?? []).filter((s) => s?.diagram).map((s) => s.id);
@@ -510,8 +529,21 @@ function checkFeedback(f, rep, review) {
 
   const allowed = new Set((f?.verdictSet?.options ?? []).map((o) => o.value));
   allowed.add(UNSET);
-  const bad = [...responses, ...added].filter((x) => !allowed.has(x?.verdict)).map((x) => `${x?.itemId ?? x?.id}=${x?.verdict}`);
+  // #54 — an approval is answered approve or decline, never with the verdict set: "agree" is not permission.
+  const ofSet = (x) => (x?.approval ? APPROVAL_VERDICTS : allowed);
+  const bad = [...responses, ...added].filter((x) => !ofSet(x).has(x?.verdict)).map((x) => `${x?.itemId ?? x?.id}=${x?.verdict}${x?.approval ? ' (an approval: approve, decline or unset)' : ''}`);
   rep.check('verdicts in vocabulary', bad.length === 0, `value(s) outside the declared set: ${bad.join(', ')}`);
+
+  if (responses.some((x) => x?.approval)) {
+    const late = [];
+    for (const x of responses.filter((y) => y?.approval && y.verdict === 'approve')) {
+      const end = Date.parse(x.approval.expiresAt);
+      if (!(end > Date.parse(f?.respondedAt))) late.push(`"${x.title}" was approved at ${f?.respondedAt}, after it expired at ${x.approval.expiresAt}`);
+      else if (Date.now() > end) late.push(`"${x.title}": the approval expired at ${x.approval.expiresAt}`);
+    }
+    rep.check('approvals still valid', late.length === 0,
+      `${late.join(' · ')}. Do not act on it: ask again in a new review with a new end, or an old yes is used for a new situation`);
+  }
 
   const layerVerdicts = Array.isArray(f?.layerVerdicts) ? f.layerVerdicts : [];
   if (layerVerdicts.length) {
@@ -599,6 +631,23 @@ function checkFeedback(f, rep, review) {
         else if (c.itemId !== null && c.title !== itemById[c.itemId].title) problems.push(`${s.id}: the title does not echo the chosen option`);
       }
       rep.check('every choice recorded', problems.length === 0, problems.join(' · '));
+    }
+
+    if ((review.items ?? []).some((i) => i.approval) || responses.some((x) => x?.approval)) {
+      const byId = Object.fromEntries(responses.map((x) => [x.itemId, x]));
+      const KEYS = ['action', 'scope', 'risk', 'preview', 'expiresAt'];
+      const differ = [];
+      for (const i of review.items ?? []) {
+        const x = byId[i.id]; if (!x) continue;
+        if (!i.approval && x.approval) differ.push(`${i.id}: answered as an approval, but the review asked for a verdict`);
+        else if (i.approval && !x.approval) differ.push(`${i.id}: the review asked for an approval, but the answer carries none`);
+        else if (i.approval) {
+          const keys = KEYS.filter((k) => (i.approval[k] ?? null) !== (x.approval[k] ?? null));
+          if (keys.length) differ.push(`${i.id}: the approval in the file is not the one asked (${keys.join(', ')} differ)`);
+        }
+      }
+      rep.check('approvals echo the review', differ.length === 0,
+        `${differ.join(' · ')}. Export the answer from the page again: an approval only counts for the exact action that was shown`);
     }
 
     const requests = Array.isArray(f?.requests) ? f.requests : [];

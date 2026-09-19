@@ -19,6 +19,7 @@ The agent writes a `review.json`. It becomes one offline HTML page. The human ju
 Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
 
 - `ask` and `afterwards`: what you need, and what you will do with the answer. For anything that deletes, sends, pays, publishes or contacts someone, `afterwards` says you will ask before doing it, never that you will do whatever they agree with.
+- An action that deletes, sends, pays, publishes or contacts someone: make it an `approval` item in a section of its own (`action` exactly, `scope`, `risk`, a `preview` of the command or message, and `expiresAt`). It is answered Approve or Decline, never agreed with.
 - Explaining how something works (a system, an architecture, a process) because the person wants to understand it: what you need back is **what is still unclear**, not agreement. One `brief` says what you explain; draw the whole of it in `diagrams`, one box per part, its `step` naming the item that explains that part. One item per part, in plain words. Write your own verdict set about understanding: `clear` (positive) · `partly clear` (caution) · `lost me` (negative) · `seems wrong` (negative). No choice, no `challenge` section and no `fields` unless the person asked for them: an explanation asks them to decide nothing.
 - Options to pick from: a section with `mode: "choose-one"` and `recommended: { itemId, why }`.
 - Walking someone through a user flow (an app idea, or a change to an existing app): start from `flow-booking.review.json`. Give every step a `goal`, every dead end a `canNow`, and mark each journey and step `exists`, `proposed` or `suggested` with a `basis` (code, PRD, docs, conversation or assumption), so the reviewer sees what is there and what is missing. Check with `--root <project>` so every `file:line` is proven.
@@ -62,7 +63,7 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 node <skill>/bin/check.mjs followup docs/<name>-2.review.json docs/<name>.review.json <returned>.feedback.json
 ```
 
-**A verdict is never permission.** "Agree" on an item that deletes, sends, pays, publishes or contacts someone means the reviewer thinks it is right, not that you may do it now: the file is unsigned, it gets forwarded, and it proves nothing about who answered. Before such an action, ask the user in your host (its permission prompt, or a direct question), naming the exact action and what it affects, and wait. Carry on with what is agreed and reversible.
+**A verdict is never permission.** "Agree" on an item that deletes, sends, pays, publishes or contacts someone means the reviewer thinks it is right, not that you may do it now: the file is unsigned, it gets forwarded, and it proves nothing about who answered. Before such an action, ask the user in your host (its permission prompt, or a direct question), naming the exact action and what it affects, and wait. Carry on with what is agreed and reversible. An **Approve** on an `approval` item is the reviewer's intent for that exact action until `expiresAt`: still ask in your host, quoting the action, right before you do it. A **Decline** means you don't. After `expiresAt`, ask again in a new review.
 
 ## Common mistakes
 

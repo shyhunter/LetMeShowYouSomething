@@ -214,3 +214,28 @@ test('a hostile answer cannot break out of the exported page', async ({ page }) 
   expect(await page.locator('img').count()).toBe(0);
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
 });
+
+// #54 — an approval shows its exact action, scope, risk and end, and is answered approve or decline.
+test('an approval: the exact action, approve or decline, and the export passes the checker', async ({ page }) => {
+  const dir = mkdtempSync(join(tmpdir(), 'pw-approval-'));
+  const iso = (ms) => new Date(Date.now() + ms).toISOString().replace(/\.\d+Z$/, 'Z');
+  const r = JSON.parse(readFileSync(join(ROOT, 'examples/decision-review.example.json'), 'utf8'));
+  Object.assign(r, { id: 'approval-page-test', createdAt: iso(-60e3) });
+  r.sections.push({ id: 'approve', label: 'Needs your approval' });
+  r.items.push({ id: 'drop-db', sectionId: 'approve', title: 'Drop the old staging database',
+    approval: { action: 'Drop the database checkout_v1_staging', scope: 'One staging database', risk: 'high', preview: 'DROP DATABASE checkout_v1_staging;', expiresAt: iso(864e5) } });
+  const reviewPath = join(dir, 'review.json'); writeFileSync(reviewPath, JSON.stringify(r));
+  await page.goto('file://' + render(reviewPath, dir));
+  await page.locator('[data-open="drop-db"]').click();
+  const box = page.locator('#detail .appr');
+  await expect(box).toContainText('Drop the database checkout_v1_staging');
+  await expect(box.locator('.risk')).toHaveText('High risk');
+  await expect(box).toContainText('still asks for permission');
+  await expect(page.locator('#detail input[name="v-drop-db"]')).toHaveCount(2);   // approve, decline: never the verdict set
+  await page.locator('label:has(input[name="v-drop-db"][value="decline"])').click();
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(dir, 'feedback.json'); await download.saveAs(file);
+  const c = check('pair', reviewPath, file);
+  expect(c.status, c.stdout).toBe(0);
+  expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'drop-db')).toMatchObject({ verdict: 'decline', approval: { risk: 'high' } });
+});
