@@ -12,13 +12,14 @@ The agent writes a `review.json`. It becomes one offline HTML page. The human ju
 ## When to use it
 
 - **Five or more items** to judge, **something to look at**, a reviewer **outside this session** (client, product owner, domain expert), or an answer that **must be kept**.
-- **Not** for one to four quick questions. Ask those directly, with your recommendation and what would change your mind.
+- **Not** for one to four quick questions. Ask those directly, with your recommendation and what would change your mind. If your host has a question tool where the person clicks an answer, use it, one question per decision. A question they skip, or a bare "ok", is not agreement: it stays open.
 
 ## 1. Write and check the review
 
 Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
 
-- `ask` and `afterwards`: what you need, and what you will do with the answer.
+- `ask` and `afterwards`: what you need, and what you will do with the answer. For anything that deletes, sends, pays, publishes or contacts someone, `afterwards` says you will ask before doing it, never that you will do whatever they agree with.
+- Explaining how something works (a system, an architecture, a process) because the person wants to understand it: what you need back is **what is still unclear**, not agreement. One `brief` says what you explain; draw the whole of it in `diagrams`, one box per part, its `step` naming the item that explains that part. One item per part, in plain words. Write your own verdict set about understanding: `clear` (positive) · `partly clear` (caution) · `lost me` (negative) · `seems wrong` (negative). No choice, no `challenge` section and no `fields` unless the person asked for them: an explanation asks them to decide nothing.
 - Options to pick from: a section with `mode: "choose-one"` and `recommended: { itemId, why }`.
 - Walking someone through a user flow (an app idea, or a change to an existing app): start from `flow-booking.review.json`. Give every step a `goal`, every dead end a `canNow`, and mark each journey and step `exists`, `proposed` or `suggested` with a `basis` (code, PRD, docs, conversation or assumption), so the reviewer sees what is there and what is missing. Check with `--root <project>` so every `file:line` is proven.
 - Explaining a process behind the screens: a flow chart in `diagrams` with lanes (who does what), decisions, timers, messages and data stores; link boxes to steps with `step`. The user flow is drawn for you; the parts become the sub-processes column beside it.
@@ -55,6 +56,8 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 4. **Added items**: quote each one word for word, its title and its text in quotation marks, then say what you will do with it. Answering the substance is not enough: their words are what you didn't know to ask.
 5. **Everything else**: verdicts, with notes quoted. A doubtful verdict with no note (partly, doesn't work, couldn't test) is a question, not a result: ask the reviewer what they saw, in the same follow-up as the gaps. Never guess why.
 
+**A verdict is never permission.** "Agree" on an item that deletes, sends, pays, publishes or contacts someone means the reviewer thinks it is right, not that you may do it now: the file is unsigned, it gets forwarded, and it proves nothing about who answered. Before such an action, ask the user in your host (its permission prompt, or a direct question), naming the exact action and what it affects, and wait. Carry on with what is agreed and reversible.
+
 ## Common mistakes
 
 | Mistake | Instead |
@@ -65,4 +68,5 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 | Deciding a new question yourself and moving on | Put it to the user as a question with your recommended default. |
 | Talking to the user as if they were the reviewer | "The product owner picked…"; ask the user to pass questions on, or send a follow-up review. |
 | Quoting an earlier decision from memory | Quote it from the earlier feedback file and run `check history`. |
+| Carrying out an agreed deletion, email, payment or post | Agreement is not permission. Ask in your host first, naming the exact action and what it affects. |
 | Treating an agreed item with a request as done | They agreed *and* asked for an example or an explanation. Give it, then carry on. |
