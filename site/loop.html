@@ -1,0 +1,158 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>The whole loop · LetMeShowYouSomething</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<meta name="description" content="An agent asks, a person answers on one offline page, and the agent checks the answer and acts on it. Every piece on this page is real.">
+<style>
+:root{--bg:#FBFAFC;--surf:#FFFFFF;--inset:#F2F0F6;--line:rgba(28,22,42,.13);--ink:#16141B;--ink2:#2C2735;--mut:#6F6880;--ac:#5B3E8C;--ac-bg:rgba(91,62,140,.10);--ok:#2F6B45;color-scheme:light;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#121017;--surf:#1A1721;--inset:#221E2C;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);--ok:#63B584;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
+main{max-width:880px;margin:0 auto;padding:40px 16px 64px}
+.back{font-size:14px}
+h1{color:var(--ink);font-size:clamp(28px,5vw,40px);line-height:1.15;margin:14px 0 12px;letter-spacing:-.015em}
+.lead{font-size:18px;max-width:64ch;margin:0}
+ol.loop{list-style:none;margin:36px 0 0;padding:0;display:grid;gap:40px;counter-reset:s}
+ol.loop>li{counter-increment:s;display:grid;grid-template-columns:36px minmax(0,1fr);gap:0 14px}
+ol.loop>li::before{content:counter(s);width:32px;height:32px;border-radius:50%;background:var(--ac-bg);color:var(--ac);font:700 15px var(--mono);display:grid;place-items:center;margin-top:2px}
+h2{color:var(--ink);font-size:21px;margin:0 0 6px;line-height:1.3}
+.who{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}
+p{max-width:68ch}
+video,.frame{display:block;width:100%;height:auto;border-radius:12px;border:1px solid var(--line);background:var(--surf)}
+pre{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:12.5px/1.55 var(--mono);color:var(--ink);margin:10px 0 0}
+pre .c{color:var(--mut)}
+pre .ok{color:var(--ok);font-weight:700}
+.report{background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:6px 22px 18px;margin-top:10px}
+.report h3{color:var(--ink);font-size:17px;margin:20px 0 6px}
+.report blockquote{margin:8px 0;border-left:3px solid var(--ac);padding:2px 0 2px 14px;color:var(--ink)}
+.report ul{padding-left:20px}
+.report li{margin:6px 0}
+.honest{margin-top:44px;padding:14px 16px;border:1px dashed var(--line);border-radius:12px;font-size:14px;color:var(--mut)}
+a{color:var(--ac)}
+code{font:.9em var(--mono)}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+</style>
+</head><body>
+<main>
+  <a class="back" href="./">← LetMeShowYouSomething</a>
+  <h1>The whole loop</h1>
+  <p class="lead">An agent asks, a person answers on one offline page, and the agent checks the answer and acts on it.
+  Every piece below is real: the page, the answers it exported, the checker's verdict and the agent's report.</p>
+
+  <ol class="loop">
+    <li><div>
+      <span class="who">The agent</span>
+      <h2>asks, as one page</h2>
+      <p>A proposed change to a small booking app: when someone cancels more than 24 hours before, they get store credit
+      instead of their money back. The agent wrote it as a review and rendered it as
+      <a href="examples/flow-booking.html">one offline page</a> — the screens to click through, the flow, and the question.</p>
+    </div></li>
+
+    <li><div>
+      <span class="who">A person</span>
+      <h2>answers, on that page</h2>
+      <p>They tap through the booking and the cancellation, judge each step, leave notes, ask the agent to explain one
+      step, add something nobody asked about, and press <b>Export feedback.json</b>. Thirty seconds, no account, no install.</p>
+      <video controls muted playsinline preload="metadata" poster="loop-poster.jpg" width="1280" height="800">
+        <source src="loop.mp4" type="video/mp4">
+        A recording of a person answering the booking review.
+      </video>
+    </div></li>
+
+    <li><div>
+      <span class="who">The answer</span>
+      <h2>comes back as a file</h2>
+      <p>Readable without the page: every answer carries its step's title. What is still open is listed as <code>gaps</code>,
+      and the question to the agent as a <code>request</code>. An excerpt of
+      <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/examples/flow-booking.feedback.json">the exported file</a>:</p>
+<pre>{
+  "review": "booking-flow-2026-09",
+  "summary": {
+    "total": 11,
+    "answered": 9,
+    "unset": 2,
+    "added": 1
+  },
+  "gaps": [
+    "join-waitlist",
+    "ask",
+    "send-question",
+    "added-1"
+  ],
+  "requests": [
+    {
+      "itemId": "ask",
+      "title": "Taps Ask a question",
+      "kind": "explain"
+    }
+  ],
+  "responses": [
+    {
+      "itemId": "join-waitlist",
+      "title": "Taps Join the waiting list for 10:00",
+      "verdict": "disagree",
+      "note": "Thirty minutes to book is too short when the email arrives at night."
+    },
+    <span class="c">… 10 more, one per step</span>
+  ],
+  "addedItems": [
+    {
+      "id": "added-1",
+      "title": "Show the cancellation deadline on the booking",
+      "body": "People should see \"free cancellation until Friday 10:00\" before they try, not find out when it is too late."
+    }
+  ]
+}</pre>
+    </div></li>
+
+    <li><div>
+      <span class="who">The agent</span>
+      <h2>checks it before it trusts it</h2>
+      <p>The checker recomputes the summary and the gaps and refuses a file that does not add up. The agent does not act on
+      a file that fails.</p>
+<pre><span class="c">$ node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .</span>
+  ! examples are unverified: "A studio a colleague worked with" has no source. Add one, or the page shows it as unverified; agents invent convincing examples
+
+<span class="ok">PASS</span> — 42/42 checks, 1 warning(s)</pre>
+    </div></li>
+
+    <li><div>
+      <span class="who">The agent</span>
+      <h2>acts on it — gaps first</h2>
+      <p>In the order the skill prescribes: what is still open, with a recommendation and a question; what the reviewer
+      asked for; the reviewer's own additions in their words; then everything else.</p>
+      <div class="report">
+<p>The reviewer answered 9 of the 11 steps and added one thing of their own. The review didn't record their name, so I'll call them the reviewer. Four things are open.</p>
+<h3>Gaps first</h3>
+<p><b>1. Taps Join the waiting list for 10:00 — the reviewer disagrees.</b></p>
+<blockquote>"Thirty minutes to book is too short when the email arrives at night."</blockquote>
+<p>My recommendation: keep the 30 minutes during the venue's opening hours, and when a slot frees up at night, start the clock at 8:00 the next morning. The next person still gets a fair chance, and nobody loses a slot while asleep. <i>For the reviewer:</i> does that fix it, or should the window be longer at all times (say 2 hours)? I'll send it back as a one-item follow-up review.</p>
+<p><b>2. Taps Ask a question — no answer yet, and the reviewer asked me to explain it.</b> The explanation is below under <i>Requests</i>. The step stays open until they have read it and answered.</p>
+<p><b>3. Taps Send — no answer yet.</b> It is the second half of asking a question, so it depends on (2). My recommendation: keep it as suggested and ask again together with (2), in the same follow-up.</p>
+<p><b>4. Something the reviewer added — see <i>What the reviewer added</i> below.</b> It has no verdict yet because it is new; I have to answer it, not the other way round.</p>
+<h3>Requests</h3>
+<p><b>The reviewer asked me to explain "Taps Ask a question".</b> Here is what that step is and why it is in the flow.</p>
+<p>Today customers who have a question before booking, such as "Is there parking nearby?", email the venue, and nothing in the app handles it. This step is marked <i>suggested</i>: nobody asked for it; I added it because the flow had no way to ask anything before booking. Tapping <b>Ask a question</b> opens a short form, <i>Ask the venue</i>. <b>Send</b> delivers it to the venue by email, and the person sees "Question sent: the venue replies by email, usually within a day". Nothing about the booking changes.</p>
+<p><i>The question for the reviewer:</i> should this be in the product (agree), left out for now (disagree), or done differently, for example as the venue's phone number instead of a form (partly agree, with a note)?</p>
+<h3>Choices</h3>
+<p>This review had no choose-one section, so there was no pick to report. The question I asked in the brief — <i>store credit instead of money back when someone cancels more than 24 hours before?</i> — was answered in the cancellation step below: store credit is accepted, with one change.</p>
+<h3>What the reviewer added</h3>
+<blockquote><b>Show the cancellation deadline on the booking</b><br>"People should see "free cancellation until Friday 10:00" before they try, not find out when it is too late."</blockquote>
+<p>I didn't ask about this, and it is right: today the 24-hour limit only appears when someone tries to cancel too late. I'll add the deadline to the <i>Booked</i> screen, under the date, in the next round.</p>
+<h3>Everything else</h3>
+<ul><li><b>Confirms Cancel booking — partly agree.</b><blockquote>"Store credit is fine, but say "store credit" on the button itself, not only in the text above it."</blockquote><p>So the answer to my question is yes, store credit. I'll rename the button from <i>Cancel booking</i> to <i>Cancel for €20.00 store credit</i>, and the dialog text can stay as it is. <b>Agreed, built as shown:</b> Taps Book 10:00 · Taps Cancel booking · Taps Keep it · Taps Pick another time · Taps Find a time · Taps Pick another day · Taps Show times.</p></li></ul>
+<h3>What happens next</h3>
+<p>As the review said: the seven agreed steps are built as shown. The cancellation button gets the new label, and the <i>Booked</i> screen gets the deadline. The waiting list, <i>Ask a question</i> and <i>Send</i> go back to the reviewer as one short follow-up review, with the explanation above.</p>
+      </div>
+    </div></li>
+  </ol>
+
+  <p class="honest">How this was made: the answers are demonstration answers, given by a scripted reviewer in a real browser
+  and recorded; the file is what the page exported, unedited; the checker output is its real output; the report was
+  written by an agent following <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/SKILL.md">SKILL.md</a>,
+  from that file. All of it is in <a href="https://github.com/shyhunter/LetMeShowYouSomething/tree/main/examples">examples/</a>.</p>
+</main>
+</body></html>

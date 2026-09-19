@@ -54,6 +54,7 @@ jobs:
           node bin/check.mjs review examples/flow-booking.review.json --root .
           node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
           node bin/check.mjs pair examples/review.example.json examples/feedback.example.json
+          node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .
           node bin/check.mjs history examples/decision-review.example.json examples/earlier-decisions.feedback.json
           node bin/check.mjs history examples/flow-booking.review.json examples/booking-earlier.feedback.json
 

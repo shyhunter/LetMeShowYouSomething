@@ -40,6 +40,10 @@ Here the answer is data:
 Open any of them in your browser, no install: the pages are the product, not screenshots of it.
 All three are on the [project site](https://shyhunter.github.io/LetMeShowYouSomething/).
 
+**[See the whole loop](https://shyhunter.github.io/LetMeShowYouSomething/loop.html):** a person answers the booking
+review (a 30-second recording), the file the page exported, the checker's verdict, and what the agent says back, gaps
+first. Every piece is real; the files are in [`examples/`](examples) ([the report](examples/flow-booking.report.md)).
+
 The flow page draws the steps as a diagram with the sub-processes beside it. It also shows every
 screen at once, connected like a prototype, so you can judge the whole journey and not only one
 screen. You can pin the parts you want to keep in view, and pick a style (Macintosh 1984,
