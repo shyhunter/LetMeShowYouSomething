@@ -37,7 +37,7 @@ node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
 
 Tell the user: open the HTML file (or send it to the reviewer), give each item a verdict and a note, ask back with **Show me an example** or **Explain this** where something is unclear, add anything missing, press **Export feedback.json**, and send that file back. (**Export feedback.html** is the whole page with the answers in it, for passing on to someone who will open a page but not a JSON file — it is not what you read.) Then stop and wait.
 
-For a flow, say how to use it: tap the highlighted elements on the screen to walk through, pick an outcome when asked, judge each step in "Your feedback" (the steps on the left, the open one on the right), switch the diagram tabs to see the same step from another side, and check the answered/open count before exporting so none is left unanswered.
+For a flow, say how to use it: tap the highlighted elements on the screen to walk through, pick an outcome when asked, judge each step in "Your feedback" (the steps on the left, the open one on the right), switch on **What runs** and **What changes** to see what happens behind a step and judge any single entry, switch the diagram tabs to see the same step from another side, and check the answered/open count before exporting so none is left unanswered.
 
 **Never offer "or just tell me what they picked".** A summary in chat loses the unanswered items, the added items and the overruled recommendation, and nothing can be checked.
 

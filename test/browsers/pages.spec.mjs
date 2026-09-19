@@ -35,7 +35,7 @@ for (const [name, review] of Object.entries(PAGES)) {
     // links inside running text, the skip link (it appears on focus only) and the drawn app screen,
     // which is a picture except for its targets.
     const min = info.project.use.hasTouch ? 44 : 24;
-    const small = await page.evaluate((min) => [...document.querySelectorAll('button, a[href], select, textarea, input:not([type=hidden]), [role=tab]')]
+    const small = await page.evaluate((min) => [...document.querySelectorAll('button, a[href], summary, select, textarea, input:not([type=hidden]), [role=tab]')]
       .map((el) => (el.matches('input[type=radio], input[type=checkbox]') && el.closest('label')) || el)
       .filter((el, i, all) => all.indexOf(el) === i && el.getClientRects().length && !el.matches('.skip, p a, li a, .screen *:not(.is-target)'))
       .map((el) => { const b = el.getBoundingClientRect(); return { el: el.id || el.className || el.tagName, w: Math.round(b.width), h: Math.round(b.height) }; })
@@ -87,6 +87,34 @@ test('flow: tap through, judge a step, export, and the file passes the checker',
   const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'book').verdict).toBe('agree');
+});
+
+// One tap, every layer answers (D098): what runs and what changes, shown with the step, judged on their own.
+test('flow: the system and data layers show with the step, and an entry can be judged', async ({ page }) => {
+  await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#screen [data-target="book"]').click();
+  const detail = page.locator('#detail');
+  await expect(detail.locator('.layer').first()).toBeHidden();           // the review opens on UI + flow
+  await detail.locator('input[data-layer="system"]').check();
+  await detail.locator('input[data-layer="data"]').check();
+  const first = detail.locator('.outcome').first();
+  await expect(first.locator('.layer').first()).toContainText('What runs');
+  await expect(first).toContainText('Slot still has capacity');
+  await expect(first).toContainText('test/fixtures/booking-app/src/booking.mjs:4');
+  await expect(first).toContainText('capacity_left: 1 → 0');
+  await first.locator('details.judge').first().locator('summary').click();
+  // No force: like a person, the test scrolls until nothing (the sticky export bar) covers the choice.
+  await first.locator('input[data-lv="book/capacity-guard"][value="disagree"]').check();
+  await first.locator('textarea[data-lvnote="book/capacity-guard"]').fill('Two people can pass this check at once.');
+  await expect(first.locator('details.judge').first().locator('summary')).toHaveText('Judged: Disagree');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.json');
+  await download.saveAs(file);
+  const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file);
+  expect(r.status, r.stdout).toBe(0);
+  const fb = JSON.parse(readFileSync(file, 'utf8'));
+  expect(fb.layerVerdicts).toEqual([expect.objectContaining({ id: 'book/capacity-guard', layer: 'system', verdict: 'disagree', note: 'Two people can pass this check at once.' })]);
+  expect(fb.gaps).toContain('book/capacity-guard');
 });
 
 test('a hostile review runs no script and shows no injected markup', async ({ page }) => {
