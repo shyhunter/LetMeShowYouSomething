@@ -62,9 +62,29 @@ for (const name of ['index', 'loop']) {
   });
 }
 
+// #44 — a list review in the same frame as a flow: the list on the left, the open item on the right.
+test('a list review: list and open item side by side, width buttons, the first item open', async ({ page }, info) => {
+  await page.goto(url('examples/checkout-uat.html'));
+  await expect(page.locator('#steplist fieldset.item.row')).toHaveCount(4);
+  await expect(page.locator('#detail legend')).toHaveText('A guest can buy without creating an account');
+  await page.locator('[data-open="saved-card"]').click();
+  await expect(page.locator('#detail legend')).toHaveText('A returning customer can pay with a saved card');
+  await expect(page.locator('#steplist [data-step="saved-card"]')).toHaveAttribute('aria-current', 'true');
+  if (info.project.use.viewport.width >= 1100) {
+    const l = await page.locator('#steplist').boundingBox(), d = await page.locator('#detail').boundingBox();
+    expect(d.x, 'the open item sits to the right of the list').toBeGreaterThan(l.x + l.width - 1);
+    await page.locator('button[data-size="detail"]').click();
+    expect((await page.locator('#detail').boundingBox()).width, 'more room for the open item').toBeGreaterThan(d.width + 50);
+  } else {
+    await expect(page.locator('#detail')).toBeInViewport();              // stacked: the opened item is brought into view
+  }
+});
+
 test('checkout: answer, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
+  // #44 — the first item is open; the others open from the list on the left.
   await page.locator('label:has(input[name="v-guest-checkout"][value="works"])').click();
+  await page.locator('[data-open="declined-card"]').click();
   await page.locator('label:has(input[name="v-declined-card"][value="fails"])').click();
   await page.locator('textarea[data-note="declined-card"]').fill('Customer sees error 51.');
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
@@ -146,7 +166,7 @@ test('item examples show who, what, what people see, and the source or "unverifi
   const dir = mkdtempSync(join(tmpdir(), 'pw-'));
   writeFileSync(join(dir, 'ex.json'), JSON.stringify(r));
   await page.goto('file://' + render(join(dir, 'ex.json'), dir));
-  const item = page.locator('fieldset.item').first();
+  const item = page.locator('#detail fieldset.item');                   // the first item opens by itself
   await expect(item.locator('.brief-h3')).toHaveText('Where this has been done before');
   await expect(item).toContainText('What people see: A "Continue as guest" choice next to "Sign in".');
   await expect(item.locator('.brief-ex a')).toHaveAttribute('target', '_blank');
@@ -171,12 +191,14 @@ test('a hostile review runs no script and shows no injected markup', async ({ pa
 test('a hostile answer cannot break out of the exported page', async ({ page }) => {
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('[data-open="declined-card"]').click();
   await page.locator('textarea[data-note="declined-card"]').fill(bad);
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#exporth').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.html');
   await download.saveAs(file);
   await page.evaluate(() => localStorage.clear());
   await page.goto('file://' + file);
+  await page.locator('[data-open="declined-card"]').click();
   await expect(page.locator('textarea[data-note="declined-card"]')).toHaveValue(bad);
   expect(await page.locator('img').count()).toBe(0);
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
