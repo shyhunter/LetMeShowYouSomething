@@ -56,6 +56,12 @@ Do not act on a file that fails. The person who answered (the **reviewer**, see 
 4. **Added items**: quote each one word for word, its title and its text in quotation marks, then say what you will do with it. Answering the substance is not enough: their words are what you didn't know to ask.
 5. **Everything else**: verdicts, with notes quoted. A doubtful verdict with no note (partly, doesn't work, couldn't test) is a question, not a result: ask the reviewer what they saw, in the same follow-up as the gaps. Never guess why.
 
+**The follow-up review carries everything left open**: every gap, every added item, every request, each under its earlier id or quoting it in `affects`. Check it before you hand it over, and fix every ✗:
+
+```bash
+node <skill>/bin/check.mjs followup docs/<name>-2.review.json docs/<name>.review.json <returned>.feedback.json
+```
+
 **A verdict is never permission.** "Agree" on an item that deletes, sends, pays, publishes or contacts someone means the reviewer thinks it is right, not that you may do it now: the file is unsigned, it gets forwarded, and it proves nothing about who answered. Before such an action, ask the user in your host (its permission prompt, or a direct question), naming the exact action and what it affects, and wait. Carry on with what is agreed and reversible.
 
 ## Common mistakes
