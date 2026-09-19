@@ -1035,3 +1035,15 @@ test('checker refuses a Mermaid section diagram, and a list chart may point at i
   r.diagrams[0].nodes[2].step = 'nowhere';
   assert.match(checkReviewObj(r).stdout, /step "nowhere" is not an item in this review/);
 });
+
+// #48 — an explanation asks nothing: its brief is headed as one.
+test('the brief is headed by what it does: a decision, or an explanation', () => {
+  const page = (brief) => {
+    const src = join(tmp, `brief-${Math.random().toString(36).slice(2)}.json`), out = src.replace(/json$/, 'html');
+    writeFileSync(src, JSON.stringify(ownId(withBrief((r) => Object.assign(r.brief, brief)))));
+    spawnSync(process.execPath, [at('bin/render.mjs'), src, out]);
+    return readFileSync(out, 'utf8').match(/id="brief-h">([^<]*)/)[1];
+  };
+  assert.equal(page({ question: 'Store credit or refund?' }), 'What I need you to decide');
+  assert.equal(page({ question: undefined }), 'What this explains');
+});

@@ -640,7 +640,7 @@ ${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
   </div>` : (review.diagrams || []).length ? `<div id="stage" class="stage">
 ${DPANEL}</div>` : ''}
     ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
-      <div class="brief-head"><h2 id="brief-h">What I need you to decide</h2><button class="btn pin" type="button" aria-pressed="false">Pin</button></div>
+      <div class="brief-head"><h2 id="brief-h">${review.brief.question ? 'What I need you to decide' : 'What this explains'}</h2><button class="btn pin" type="button" aria-pressed="false">Pin</button></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
       ${review.brief.explains ? `<p class="brief-explains">${esc(review.brief.explains)}</p>` : ''}
       ${review.brief.recommendation ? `<p class="brief-rec"><span class="k">My recommendation</span>${esc(review.brief.recommendation)}</p>` : ''}

@@ -103,6 +103,12 @@ for a review that consists only of challenges.
 `unset` is reserved and may never be an option — it means the reviewer did not answer, which is not
 a judgement.
 
+**A verdict is an opinion, never permission.** "Agree" says the reviewer thinks an item is right. It
+does not authorise anything irreversible or outside the conversation: deleting, sending, paying,
+publishing, contacting someone. A feedback file is unsigned and gets forwarded, so it proves nothing
+about who answered. Before such an action the agent asks in its own host, naming the exact action and
+what it affects (#48). An approval item of its own is tracked in #54.
+
 ## Asking well
 
 Optional fields that tell the reviewer what is going on before they read a single item:
@@ -366,7 +372,7 @@ failing at once.
 - the **diagram**, full width, with the **screen** under it, also full width (D068);
 - the **screen**, drawn from its components by `lib/draw-components.mjs` (also inlined verbatim).
   Only elements a step points at are buttons; everything else is a still wireframe;
-- **What I need you to decide**, full width, then **your feedback** under it (D074): the filters,
+- **What I need you to decide** (or **What this explains**, when the brief asks no `question`), full width, then **your feedback** under it (D074): the filters,
   then the steps on the left — one row each, answered or open, with a count of both on top — and the
   open step on the right: its goal, every outcome side by side, the verdict, the note, and "Show me an
   example" / "Explain this" as checkboxes. The two share the row in three steps (◧ ◫ ◨), remembered
