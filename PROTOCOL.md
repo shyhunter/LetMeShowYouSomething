@@ -405,7 +405,7 @@ node bin/render.mjs examples/review.example.json out.html
 ```
 
 One self-contained page that fetches nothing — a URL appears only as a source the reviewer may
-choose to click — light, dark and a few styles to pick (D080), sections that can be pinned (D079), verdicts as real radio groups
+choose to click — light, dark and a few styles to pick (D080), sections that can be pinned (D079) and minimised to their title bar (#61), verdicts as real radio groups
 inside real fieldsets so keyboard support is not bolted on. Answers autosave to `localStorage`;
 **Export feedback.json** writes a file that passes `bin/check.mjs`.
 

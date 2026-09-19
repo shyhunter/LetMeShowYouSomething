@@ -49,10 +49,11 @@ const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut'
 
 // #47 — the diagram panel: above the screen on a flow page, above the list on any page that has charts.
 const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
-      <div class="panel-head">
+      <div class="panel-head min-head">
         <span class="panel-title">Diagram</span>
         <button class="btn pin" type="button" aria-pressed="false">Pin</button>
         <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
+        <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
       </div>
       <div class="panel-body">
         <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
@@ -219,7 +220,7 @@ h1,h2,h3{color:var(--ink);margin:0;text-wrap:balance}
 .skip:focus{left:8px;top:8px;z-index:9;background:var(--surf);border:1px solid var(--ac);padding:8px 12px;border-radius:6px}
 
 header{padding-block:30px 18px;border-bottom:1px solid var(--line);margin-bottom:22px}
-.htools{display:flex;gap:8px;align-items:center}
+.htools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .style-pick{font:500 12.5px var(--sans);color:var(--mut);display:flex;gap:6px;align-items:center}
 /* Safari ignores min-height on a native select: drawn by the page, it keeps the 44px target (D091). */
 .style-pick select{-webkit-appearance:none;appearance:none;height:44px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 30px 4px 10px;font:inherit;
@@ -370,7 +371,18 @@ body:has(.panel.full){overflow:hidden}
 .split>.sizes{grid-column:1/-1;display:flex;justify-content:flex-end;gap:6px}
 .sizes button{min-width:44px;min-height:44px;font-size:15px}
 .sizes button[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
-#detail{position:sticky;top:calc(var(--pins-h,0px) + 12px);min-width:0}
+#detailbox{position:sticky;top:calc(var(--pins-h,0px) + 12px);min-width:0}
+#detail{min-width:0}
+/* #61 — any section folds to its title bar; nothing is hidden without a bar that says what is there. */
+.sec-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sec-bar :is(h2,h3){margin:0}
+.head-btns{display:flex;gap:6px}
+.btn.min{min-height:32px;font-size:12.5px}
+.minimised>:not(.min-head){display:none!important}
+.minimised{padding-bottom:8px}
+.split[data-min~="#steplist"]{grid-template-columns:minmax(0,14rem) minmax(0,1fr)}
+.split[data-min~="#detailbox"]{grid-template-columns:minmax(0,1fr) minmax(0,14rem)}
+.split[data-min~="#steplist"][data-min~="#detailbox"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 @media (max-width:1099px){.split,.split[data-size]{grid-template-columns:minmax(0,1fr)}.split>.sizes{display:none}}
 #feedback>h2{font-size:15px;margin-bottom:2px}
 #feedback .bar{position:static;margin-bottom:10px;padding-block:8px}
@@ -606,7 +618,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <a class="skip" href="#items">Skip to the items</a>
 <div class="wrap frame">
 <header>
-  <div class="htop">
+  <div class="htop min-head">
     <div>
       <h1>${esc(review.title)}</h1>
       ${review.subtitle ? `<p class="sub">${esc(review.subtitle)}</p>` : ''}
@@ -620,6 +632,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
         <option value="">Auto</option><option value="light">Light</option><option value="dark">Dark</option>
       </select></label>
       <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+      <button class="btn min" type="button" data-min="header" aria-expanded="true" aria-label="Minimise the header">Minimise</button>
     </div>
   </div>
   ${review.intro ? `<div class="intro" id="intro"></div>` : ''}
@@ -632,7 +645,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 ${review.flow ? `<section id="player" aria-label="Click through the flow">
   <div id="stage" class="stage">
 ${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
-      <div class="panel-head">
+      <div class="panel-head min-head">
         <span class="panel-title">Screen</span>
         <div class="seg" role="group" aria-label="How many screens to show">
           <button class="btn" type="button" data-screens="one" aria-pressed="true">This screen</button>
@@ -642,13 +655,14 @@ ${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
         <button type="button" id="linkswitch" class="switch" role="switch" aria-checked="true" hidden>
           <span class="switch-box"></span>Connections</button>
         <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+        <button class="btn min" type="button" data-min="#upanel" aria-expanded="true" aria-label="Minimise the screen">Minimise</button>
       </div>
       <div class="panel-body"><div id="screen" class="screen"></div><div id="allscreens" hidden></div></div>
     </section>
   </div>` : (review.diagrams || []).length ? `<div id="stage" class="stage">
 ${DPANEL}</div>` : ''}
     ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
-      <div class="brief-head"><h2 id="brief-h">${review.brief.question ? 'What I need you to decide' : 'What this explains'}</h2><button class="btn pin" type="button" aria-pressed="false">Pin</button></div>
+      <div class="brief-head min-head"><h2 id="brief-h">${review.brief.question ? 'What I need you to decide' : 'What this explains'}</h2><span class="head-btns"><button class="btn pin" type="button" aria-pressed="false">Pin</button><button class="btn min" type="button" data-min="#brief" aria-expanded="true" aria-label="Minimise the brief">Minimise</button></span></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
       ${review.brief.explains ? `<p class="brief-explains">${esc(review.brief.explains)}</p>` : ''}
       ${review.brief.recommendation ? `<p class="brief-rec"><span class="k">My recommendation</span>${esc(review.brief.recommendation)}</p>` : ''}
@@ -661,7 +675,7 @@ ${DPANEL}</div>` : ''}
       <ul class="brief-risks">${review.brief.risks.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
     </section>` : ''}
     <section id="feedback" aria-labelledby="fb-h">
-      <h2 id="fb-h">Your feedback</h2>
+      <div class="min-head sec-bar"><h2 id="fb-h">Your feedback</h2><button class="btn min" type="button" data-min="#feedback" aria-expanded="true" aria-label="Minimise your feedback">Minimise</button></div>
       <p id="overview" class="hint" aria-live="polite"></p>
       <div id="split" class="split" data-size="even">
         <div class="sizes" role="group" aria-label="How the row is shared">
@@ -669,8 +683,9 @@ ${DPANEL}</div>` : ''}
           <button class="btn" type="button" data-size="even" aria-pressed="true" aria-label="Share the row evenly">◫</button>
           <button class="btn" type="button" data-size="detail" aria-pressed="false" aria-label="Give the open item more room">◨</button>
         </div>
-        <div id="steplist"></div>
-        <aside id="detail" aria-label="${review.flow ? 'The step you opened' : 'The item you opened'}"></aside>
+        <div id="steplist"><div class="min-head sec-bar"><h3>${review.flow ? 'Steps' : 'Items'}</h3><button class="btn min" type="button" data-min="#steplist" aria-expanded="true" aria-label="Minimise the list">Minimise</button></div></div>
+        <div id="detailbox"><div class="min-head sec-bar"><h3>${review.flow ? 'The open step' : 'The open item'}</h3><button class="btn min" type="button" data-min="#detailbox" aria-expanded="true" aria-label="Minimise the open item">Minimise</button></div>
+        <aside id="detail" aria-label="${review.flow ? 'The step you opened' : 'The item you opened'}"></aside></div>
       </div>
     </section>
   ${review.flow ? `<div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
@@ -693,7 +708,7 @@ ${DPANEL}</div>` : ''}
 
 ${review.allowAddedItems === false ? '' : `
 <section class="add" aria-labelledby="addh">
-  <h2 id="addh">Add your own feedback</h2>
+  <div class="min-head sec-bar"><h2 id="addh">Add your own feedback</h2><button class="btn min" type="button" data-min=".add" aria-expanded="true" aria-label="Minimise add your own">Minimise</button></div>
   <p class="d">Anything you want to say: ${/^[aeiou]/i.test(review.addNoun || 'item') ? 'an' : 'a'} ${esc(review.addNoun || 'item')} nobody asked about, an idea, or something unrelated. It goes back with your answers.</p>
   <label class="skip" for="at">Title</label>
   <input type="text" id="at" placeholder="What is it about?">
@@ -767,6 +782,29 @@ for (const [key, attr] of [['style', 'data-style'], ['theme', 'data-theme']]) {
 
 // D079 — pins: the header, the diagram, the screen and the brief can each stay on screen.
 // Which ones are pinned is remembered in this browser only.
+// #61 — every section can be minimised to its title bar and shown again; remembered in this browser only.
+const MINIMISABLE = ['header', '#dpanel', '#upanel', '#brief', '#feedback', '#steplist', '#detailbox', '.add'];
+let mins = [];
+try { mins = JSON.parse(localStorage.getItem(LS + ':min') || '[]').filter(s => MINIMISABLE.includes(s)); } catch {}
+function applyMins(){
+  for (const sel of MINIMISABLE) {
+    const el = $(sel); if (!el) continue;
+    const on = mins.includes(sel);
+    el.classList.toggle('minimised', on);
+    const b = el.querySelector('.min[data-min="' + sel + '"]');
+    if (b) { b.setAttribute('aria-expanded', String(!on)); b.textContent = on ? 'Show' : 'Minimise'; }
+  }
+  if ($('#split')) $('#split').dataset.min = mins.filter(s => s === '#steplist' || s === '#detailbox').join(' ');
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('.min[data-min]'); if (!b) return;
+  const sel = b.dataset.min;
+  mins = mins.includes(sel) ? mins.filter(s => s !== sel) : mins.concat(sel);
+  try { localStorage.setItem(LS + ':min', JSON.stringify(mins)); } catch {}
+  applyMins();
+  if (typeof stackPins === 'function') stackPins();
+});
+applyMins();
 const PINNABLE = ['header', '#dpanel', '#upanel', '#brief'];
 let pins = [];
 try { pins = JSON.parse(localStorage.getItem(LS + ':pins') || '[]'); } catch {}
