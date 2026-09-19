@@ -942,7 +942,7 @@ test('a review with a focus and a brief passes', () => {
 
 const briefFaults = {
   'focus resolves': [(r) => { r.focus = 'nope'; }, /focus "nope" is neither the computed user flow \(user-flow\) nor a diagram in this review\. Use one of/],
-  'brief is honest': [(r) => { delete r.brief.examples[0].what; }, /example "Class passes at gyms" says what it is called but not what happened\. Add "what"/],
+  'examples are honest': [(r) => { delete r.brief.examples[0].what; }, /example "Class passes at gyms" says who but not what they did\. Add "what"/],
   'brief highlights resolve': [(r) => { r.brief.highlights.screens = ['nowhere']; }, /highlights screen "nowhere", which does not exist\. Use one of/],
 };
 for (const [check, [inject, advice]] of Object.entries(briefFaults)) {
@@ -1007,4 +1007,19 @@ test('a review may not keep an example\'s id, unless it is that example', () => 
   assert.equal(check('review', p).status, 0, 'with its own id it passes');
   for (const ex of ['review.example.json', 'decision-review.example.json', 'flow-booking.review.json'])
     assert.equal(check('review', at('examples/' + ex)).status, 0, `${ex} itself still passes`);
+});
+
+// #42 — an item can carry real precedents, held to the same rule as the brief's.
+test('item examples: who and what are required, a missing source is a warning, not a refusal', () => {
+  const r = readJson('examples/review.example.json');
+  r.id = 'examples-on-items';
+  r.items[0].examples = [{ name: 'Shopify checkout', what: 'Lets people pay without an account; offers one after the order.', shows: 'A "Continue as guest" choice next to "Sign in".', source: 'https://help.shopify.com/en/manual/checkout-settings/customer-accounts' },
+    { name: 'A shop a colleague ran', what: 'Asked for the account only after payment.' }];
+  let res = checkReviewObj(r);
+  assert.equal(res.status, 0, res.stdout);
+  assert.match(res.stdout, /examples are unverified: "A shop a colleague ran" on guest-checkout has no source/);
+  delete r.items[0].examples[1].what;
+  res = checkReviewObj(r);
+  assert.equal(res.status, 1);
+  assert.match(res.stdout, /example "A shop a colleague ran" on guest-checkout says who but not what they did/);
 });

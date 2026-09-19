@@ -30,6 +30,8 @@ for (const [name, review] of Object.entries(PAGES)) {
   test(`${name}: loads, fits the screen, every target can be hit`, async ({ page }, info) => {
     await page.goto(url(`examples/${name}.html`));
     await expect(page.locator('h1')).toHaveText(JSON.parse(readFileSync(join(ROOT, 'examples', review), 'utf8')).title);
+    // #43 — the audience is for the agent; the person reading the page knows who they are.
+    await expect(page.locator('header')).not.toContainText('Written for');
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
     // With a mouse, WCAG 2.2 AA (2.5.8): 24 × 24 px. On a touch screen, 44 × 44 px (D092). Exempt:
     // links inside running text, the skip link (it appears on focus only) and the drawn app screen,
@@ -133,6 +135,23 @@ test('two different reviews with the same id do not share answers', async ({ pag
   await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('');
   await page.goto(url('examples/checkout-uat.html'));                  // and the example keeps its own answer
   await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('Given on the example page');
+});
+
+// #42 — an example is a real precedent, shown on the item where the reviewer asked for it.
+test('item examples show who, what, what people see, and the source or "unverified"', async ({ page }) => {
+  const r = JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8'));
+  r.id = 'examples-on-items';
+  r.items[0].examples = [{ name: 'Shopify checkout', what: 'Lets people pay without an account.', shows: 'A "Continue as guest" choice next to "Sign in".', source: 'https://help.shopify.com/' },
+    { name: 'A shop a colleague ran', what: 'Asked for the account only after payment.' }];
+  const dir = mkdtempSync(join(tmpdir(), 'pw-'));
+  writeFileSync(join(dir, 'ex.json'), JSON.stringify(r));
+  await page.goto('file://' + render(join(dir, 'ex.json'), dir));
+  const item = page.locator('fieldset.item').first();
+  await expect(item.locator('.brief-h3')).toHaveText('Where this has been done before');
+  await expect(item).toContainText('What people see: A "Continue as guest" choice next to "Sign in".');
+  await expect(item.locator('.brief-ex a')).toHaveAttribute('target', '_blank');
+  await expect(item.locator('.brief-ex a')).toHaveText('help.shopify.com');
+  await expect(item.locator('.unverified')).toHaveText('unverified · I could not find a source');
 });
 
 test('a hostile review runs no script and shows no injected markup', async ({ page }) => {

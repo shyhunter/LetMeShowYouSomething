@@ -401,6 +401,8 @@ body:has(.panel.full){overflow:hidden}
 .brief-rec{margin-top:8px}
 .brief-ex,.brief-risks{margin:0;padding-left:18px;font-size:13.5px}
 .brief-ex li,.brief-risks li{margin:3px 0}
+.ex-shows{display:block;font-size:13px;color:var(--ink3);margin:2px 0}
+.item .brief-ex{margin-bottom:10px}
 .unverified{color:var(--warn);font-size:12.5px}
 .dg-brief .dg-shape{stroke:var(--warn);stroke-width:3;stroke-dasharray:3 3}
 #upanel.brief-here{border-color:var(--warn)}
@@ -577,7 +579,6 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
     <div>
       <h1>${esc(review.title)}</h1>
       ${review.subtitle ? `<p class="sub">${esc(review.subtitle)}</p>` : ''}
-      ${review.audience ? `<p class="meta">Written for: ${esc(review.audience)}</p>` : ''}
     </div>
     <div class="htools">
       <label class="style-pick">Style <select id="style">
@@ -639,7 +640,8 @@ ${review.flow ? `<section id="player" aria-label="Click through the flow">
       ${review.brief.recommendation ? `<p class="brief-rec"><span class="k">My recommendation</span>${esc(review.brief.recommendation)}</p>` : ''}
       ${(review.brief.examples || []).length ? `<h3 class="brief-h3">Where this has been done before</h3>
       <ul class="brief-ex">${review.brief.examples.map((x) => `<li><b>${esc(x.name)}</b> ${esc(x.what)}
-        ${x.source ? `<a href="${esc(x.source)}" rel="noreferrer">${esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0])}</a>`
+        ${x.shows ? `<span class="ex-shows">What people see: ${esc(x.shows)}</span>` : ''}
+        ${x.source ? `<a href="${esc(x.source)}" target="_blank" rel="noopener noreferrer">${esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0])}</a>`
           : '<span class="unverified">unverified · I could not find a source</span>'}</li>`).join('')}</ul>` : ''}
       ${(review.brief.risks || []).length ? `<h3 class="brief-h3">What could go wrong</h3>
       <ul class="brief-risks">${review.brief.risks.map((r) => `<li>${esc(r)}</li>`).join('')}</ul>` : ''}
@@ -885,6 +887,16 @@ function outcomeCols(it){
       <button type="button" class="btn" data-outcome="\${i}" data-for="\${esc(it.id)}">\${x === o ? 'Showing this' : 'Show this'}</button></div>\`).join('')}</div>\`;
 }
 
+// #42 — real precedents on an item, as in the brief: who, what they did, what people see, and the source
+// (or an honest "unverified"). Usually the agent's answer to "Show me an example" in the next round.
+function examplesHtml(list){
+  if (!(list || []).length) return '';
+  return \`<h3 class="brief-h3">Where this has been done before</h3><ul class="brief-ex">\${list.map(x => \`<li><b>\${esc(x.name)}</b> \${esc(x.what || '')}
+    \${x.shows ? \`<span class="ex-shows">What people see: \${esc(x.shows)}</span>\` : ''}
+    \${x.source ? \`<a href="\${esc(x.source)}" target="_blank" rel="noopener noreferrer">\${esc(String(x.source).replace(/^https?:\\/\\//, '').split('/')[0])}</a>\`
+      : '<span class="unverified">unverified · I could not find a source</span>'}</li>\`).join('')}</ul>\`;
+}
+
 function itemHtml(it, sec, full){
   const cur = store.verdicts[it.id] || 'unset';
   if (it.step && !full) return stepRow(it, cur);
@@ -911,6 +923,7 @@ function itemHtml(it, sec, full){
     \${(it.affects || []).map(a => \`<p class="aff"><span class="k">Previously decided · \${esc(a.effect)}</span>
       "\${esc(a.decision.title)}" was answered \${esc(a.decision.verdict)}. \${esc(a.why)}</p>\`).join('')}
     \${flds ? \`<div class="flds">\${flds}</div>\` : ''}
+    \${examplesHtml(it.examples)}
     \${it.ref ? \`<p class="ref">\${esc(it.ref)}</p>\` : ''}
     <div class="verdicts" role="radiogroup" aria-label="Verdict for: \${esc(it.title)}">
       \${OPTS.map(o=>\`<label class="v-\${TONE[o.tone]}">
