@@ -603,7 +603,8 @@ function checkFeedback(f, rep, review) {
     rep.check('choices are derived', lies.length === 0, `followedRecommendation does not match the pick in: ${lies.join(', ')}`);
   }
 
-  rep.warn('nothing answered', responses.length > 0 && responses.every((x) => x.verdict === UNSET),
+  // A pick in a choose-one section is an answer too (#53: a chat record can be picks alone).
+  rep.warn('nothing answered', responses.length > 0 && responses.every((x) => x.verdict === UNSET) && !choices.some((c) => c?.itemId),
     'every item is unset — this is a blank form, not feedback');
   rep.warn('no notes', responses.length > 3 && responses.every((x) => !x.note),
     'verdicts with no notes anywhere: usable, but the reviewer\'s own words are the part an agent can actually act on');

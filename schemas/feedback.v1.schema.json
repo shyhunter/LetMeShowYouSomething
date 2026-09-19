@@ -23,6 +23,10 @@
     },
 
     "respondedAt": { "type": "string", "format": "date-time" },
+    "via": {
+      "enum": ["page", "chat"],
+      "description": "#53 — how the answers were given. Absent or \"page\": exported from the review page. \"chat\": asked in the agent's chat, read back to the person and confirmed, then written by bin/answer.mjs."
+    },
     "respondent": {
       "type": "object",
       "description": "Optional and minimal by design. A review is about the work, not the reviewer; nothing here is required and no identifier is implied.",

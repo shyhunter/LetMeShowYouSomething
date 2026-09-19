@@ -32,8 +32,9 @@ Here the answer is data:
 ## What it does not do
 
 - **Quick questions.** One to four simple questions are faster in chat, with the agent's
-  recommendation. The page is for several things at once, something to look at, a reviewer outside
-  the chat, or an answer that must be kept.
+  recommendation. The page is for several things at once, something to look at, or a reviewer outside
+  the chat. When quick answers must be kept, the agent reads them back for you to confirm and records
+  them as the same checked file (`bin/answer.mjs`).
 - **Identity or approval rights.** The checker proves an answer is complete and fits its review. It
   does not prove who answered, or that they may approve. That comes from how the file travels:
   your repo, your email, your ticket system.

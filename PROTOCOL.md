@@ -362,6 +362,15 @@ like an access key, API token, private key, JWT or credentials in a URL. Use a p
 Every checker error and warning says **what is wrong, what to do, and what leaving it would cause**,
 in one line. A message that only names the problem is a bug.
 
+## Answers given in chat
+
+For one to four quick questions a page is too much, but a decision others will rely on still needs a
+record (#53). The agent writes the questions as a small review, asks them in its chat, reads the
+answers back one line per question, and the person confirms or corrects them. Only then does
+`bin/answer.mjs <review.json> <answers.json>` write the feedback, with the same builder the page uses,
+marked `"via": "chat"`. It passes the same checker. What the person did not answer is left out of the
+answers file and arrives as `unset`, a gap: never agreement.
+
 ## Checking
 
 ```bash

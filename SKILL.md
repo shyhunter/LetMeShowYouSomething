@@ -12,7 +12,7 @@ The agent writes a `review.json`. It becomes one offline HTML page. The human ju
 ## When to use it
 
 - **Five or more items** to judge, **something to look at**, a reviewer **outside this session** (client, product owner, domain expert), or an answer that **must be kept**.
-- **Not** for one to four quick questions. Ask those directly, with your recommendation and what would change your mind. If your host has a question tool where the person clicks an answer, use it, one question per decision. A question they skip, or a bare "ok", is not agreement: it stays open.
+- **Not** for one to four quick questions. Ask those directly, with your recommendation and what would change your mind. If your host has a question tool where the person clicks an answer, use it, one question per decision. A question they skip, or a bare "ok", is not agreement: it stays open. When those answers must be kept (a decision others will rely on): write the questions as a small review and check it, ask them in chat, then show your reading back, one line per question, and let the person confirm or correct it. Only what they confirmed goes into an answers file (`verdicts`, `notes`, `choices` by id); "I guess" is a note, not a verdict, and a skipped question is left out. Then `node <skill>/bin/answer.mjs <review.json> <answers.json>` writes the feedback, and `check pair` checks it like any other.
 
 ## 1. Write and check the review
 

@@ -1125,3 +1125,19 @@ test('approvals: well-formed, answered approve or decline, echoed exactly, never
   // A declined approval that has since ended is still a valid "no".
   assert.equal(pair(lapsed, answer(lapsed, 'decline', iso(-120e3))).status, 0);
 });
+
+// #53 — answers given in chat become a feedback file through the page's own builder, and pass the checker.
+test('answer.mjs: confirmed chat answers become a checked feedback file; what was not answered stays open', () => {
+  const answers = join(tmp, 'answers.json'), out = join(tmp, 'chat.feedback.json');
+  writeFileSync(answers, JSON.stringify({ choices: { storage: 'opt-db' }, verdicts: { 'autosave-local': 'agree' },
+    notes: { 'opt-db': 'Only if backups are daily.', 'challenge-forgotten-file': 'Ask Sam.' } }));
+  const w = spawnSync(process.execPath, [at('bin/answer.mjs'), at('examples/decision-review.example.json'), answers, out], { encoding: 'utf8' });
+  assert.equal(w.status, 0, w.stderr);
+  const fb = JSON.parse(readFileSync(out, 'utf8'));
+  assert.equal(fb.via, 'chat');
+  assert.equal(fb.choices.find((c) => c.sectionId === 'storage').itemId, 'opt-db');
+  assert.equal(fb.responses.find((r) => r.itemId === 'challenge-forgotten-file').verdict, 'unset', 'a note alone is not an answer');
+  assert.ok(fb.gaps.includes('challenge-forgotten-file'));
+  const c = check('pair', at('examples/decision-review.example.json'), out);
+  assert.equal(c.status, 0, c.stdout);
+});
