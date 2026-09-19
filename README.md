@@ -29,6 +29,21 @@ Here the answer is data:
 - **The reviewer needs nothing:** no AI account, no install, no internet. The page is one file that
   loads nothing from the network. Send it to a client, a product owner or a colleague.
 
+## What it does not do
+
+- **Quick questions.** One to four simple questions are faster in chat, with the agent's
+  recommendation. The page is for several things at once, something to look at, a reviewer outside
+  the chat, or an answer that must be kept.
+- **Identity or approval rights.** The checker proves an answer is complete and fits its review. It
+  does not prove who answered, or that they may approve. That comes from how the file travels:
+  your repo, your email, your ticket system.
+- **Data-loss prevention.** The checker refuses a review holding a well-known key or token format
+  (AWS, GitHub, Slack, API keys, private keys, JWTs) or a password inside a URL. That is a
+  guardrail, not a scanner for every kind of sensitive data. A review gets forwarded: keep
+  customer data and private notes out of it.
+- **Every agent, proven.** The format is open, so any agent or tool can use it. The skill itself needs
+  an agent that can write files and run Node. So far it is tested with Claude Code and Codex.
+
 ## What it can ask
 
 | Kind | You see | Example |
@@ -77,7 +92,7 @@ npx skills add shyhunter/LetMeShowYouSomething -g
 
 That installs it for every agent on your machine that reads skills, through the
 [skills](https://github.com/vercel-labs/skills) installer (it needs Node.js 22.20 or newer). Tested
-with Claude Code, where it lands in `~/.claude/skills/letmeshowyousomething/`. The installer also
+with Claude Code and Codex. In Claude Code it lands in `~/.claude/skills/letmeshowyousomething/`. The installer also
 supports many other agents; we have not tried each one.
 
 Or copy this folder into your agent's skills folder yourself, for example
