@@ -149,6 +149,12 @@
           },
           "body": {"type": "string", "maxLength": 4000},
           "step": {"$ref": "#/$defs/step"},
+          "examples": {
+            "type": "array",
+            "maxItems": 5,
+            "description": "Real precedents for this item (#42), usually the answer to a reviewer's request for an example: shown on the item in the follow-up review.",
+            "items": {"$ref": "#/$defs/example"}
+          },
           "affects": {
             "type": "array",
             "description": "Earlier decisions this item reopens, extends, contradicts or depends on. Each quotes the decision so it is readable without the earlier file; `check history` verifies the quote against that file.",
@@ -181,6 +187,18 @@
   },
   "$defs": {
     "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$"},
+    "example": {
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "description": "A real case of the same problem solved elsewhere (#42): who, what they did, what the person sees there, and where it can be checked. Without a source it is shown as unverified; never invented.",
+      "properties": {
+        "name": {"type": "string", "minLength": 1, "maxLength": 160},
+        "what": {"type": "string", "maxLength": 600},
+        "shows": {"type": "string", "maxLength": 600, "description": "What the person sees or does there, so the reviewer can picture it."},
+        "source": {"type": "string", "maxLength": 300}
+      }
+    },
     "ref": {
       "type": "string",
       "pattern": "^[^:\\s]+:[1-9][0-9]*$",
@@ -833,19 +851,7 @@
           }
         },
         "recommendation": {"type": "string", "maxLength": 1200},
-        "examples": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["name"],
-            "additionalProperties": false,
-            "properties": {
-              "name": {"type": "string", "minLength": 1, "maxLength": 160},
-              "what": {"type": "string", "maxLength": 600},
-              "source": {"type": "string", "maxLength": 300}
-            }
-          }
-        },
+        "examples": {"type": "array", "items": {"$ref": "#/$defs/example"}},
         "risks": {"type": "array", "items": {"type": "string", "maxLength": 400}}
       }
     }

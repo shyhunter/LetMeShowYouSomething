@@ -100,7 +100,7 @@ function checkReview(r, rep) {
 
   if (r?.flow) checkFlow(r, rep);
   if (Array.isArray(r?.diagrams)) checkDiagrams(r, rep);
-  if (r?.focus !== undefined || r?.brief) checkBrief(r, rep);
+  if (r?.focus !== undefined || r?.brief || items.some((i) => i?.examples)) checkBrief(r, rep);
 
   const fieldKeys = new Set((r?.fields ?? []).map((f) => f.key));
   const strayFields = items.flatMap((i) => Object.keys(i?.fields ?? {}).filter((k) => !fieldKeys.has(k)).map((k) => `${i.id}.${k}`));
@@ -459,17 +459,21 @@ function checkBrief(r, rep) {
     rep.check('focus resolves', false, `focus "${r.focus}" is neither the computed user flow (user-flow) nor a diagram in this review. Use one of: ${[...computed, ...diagramIds].join(', ')}, or the page opens on something else than you meant`);
   else rep.check('focus resolves', true, '');
 
+  // Examples in the brief and on items (#42) are held to the same rule: who, what they did, and a source
+  // or an honest "unverified".
   const b = r.brief;
-  if (!b) return;
   const wrong = [], unverified = [];
-  for (const [i, e] of (b.examples ?? []).entries()) {
+  const lists = [['brief', b?.examples], ...(r.items ?? []).map((it) => [it?.id, it?.examples])];
+  for (const [where, list] of lists) for (const [i, e] of (list ?? []).entries()) {
+    const at = where === 'brief' ? '' : ` on ${where}`;
     const who = e?.name ? `"${e.name}"` : `example ${i + 1}`;
-    if (!e?.name) wrong.push(`example ${i + 1} has no name. Say who did it, or the reviewer can't weigh it`);
-    else if (!e.what) wrong.push(`example ${who} says what it is called but not what happened. Add "what", or it is a name without a lesson`);
-    if (e?.name && !e.source) unverified.push(`${who} has no source. Add one, or the page shows it as unverified; agents invent convincing examples`);
+    if (!e?.name) wrong.push(`example ${i + 1}${at} has no name. Say who did it, or the reviewer can't weigh it`);
+    else if (!e.what) wrong.push(`example ${who}${at} says who but not what they did. Add "what", or it is a name without a lesson`);
+    if (e?.name && !e.source) unverified.push(`${who}${at} has no source. Add one, or the page shows it as unverified; agents invent convincing examples`);
   }
-  rep.check('brief is honest', wrong.length === 0, wrong.join(' · '));
+  rep.check('examples are honest', wrong.length === 0, wrong.join(' · '));
   rep.warn('examples are unverified', unverified.length > 0, unverified.join(' · '));
+  if (!b) return;
 
   const screens = (r.flow?.screens ?? []).map((s) => s.id);
   const nodes = (r.diagrams ?? []).flatMap((d) => (d.nodes ?? []).map((n) => n.id))

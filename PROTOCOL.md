@@ -155,6 +155,18 @@ come back in the feedback as `requests`, checked against the review's items in `
 An item with a request is **not settled**, whatever its verdict says. The agent answers the requests
 straight after the gaps, before anything else it planned to do.
 
+**What an example is.** A request for an `example` asks: *who has already solved this, how, and what
+does it look like?*, adapted to this item, and seen the way that product's own users see it: the
+screen, the words, the steps. Not how it was built or tested. The answer is one to three real precedents, each with a
+`name`, `what` they did, what people see there (`shows`) and a `source`. It goes where the reviewer
+will read it: in the item's `examples` in the follow-up review, shown like the brief's examples. An
+example without a source is shown as unverified; an invented one is never acceptable. A generic
+instruction ("use a test code") is not an example.
+
+```jsonc
+"examples": [{ "name": "…", "what": "…", "shows": "…", "source": "https://…" }]
+```
+
 ## Choosing one
 
 A section with `mode: "choose-one"` asks the reviewer to pick exactly one of its items. It may carry
