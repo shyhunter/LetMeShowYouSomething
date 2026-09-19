@@ -94,7 +94,7 @@ test('flow: the system and data layers show with the step, and an entry can be j
   await page.goto(url('examples/flow-booking.html'));
   await page.locator('#screen [data-target="book"]').click();
   const detail = page.locator('#detail');
-  await expect(detail.locator('.layer')).toHaveCount(0);                 // the review opens on UI + flow
+  await expect(detail.locator('.layer').first()).toBeHidden();           // the review opens on UI + flow
   await detail.locator('input[data-layer="system"]').check();
   await detail.locator('input[data-layer="data"]').check();
   const first = detail.locator('.outcome').first();

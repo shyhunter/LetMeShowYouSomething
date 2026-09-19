@@ -444,6 +444,7 @@ fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
 .layer-switch label:has(input:checked){border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
 .layer-switch input{margin:0;accent-color:var(--ac)}
 .layer{margin-top:6px;border-top:1px dashed var(--line2);padding-top:6px}
+body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:none}
 .layer ol,.layer ul{margin:4px 0 0;padding-left:18px;display:grid;gap:8px;font-size:12.5px}
 .lkind{font:600 10px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin-right:2px}
 .lfields{display:flex;flex-direction:column;gap:2px;margin-top:3px}
@@ -853,13 +854,14 @@ function entryJudge(stepId, e){
 }
 function layerHtml(stepId, x){
   const status = (e) => \`<span class="lstatus" data-s="\${esc(e.status)}">\${esc(STATUS_LABEL[e.status] || e.status)}</span>\${e.ref ? \` <code>\${esc(e.ref)}</code>\` : ''}\`;
-  const sys = layers().has('system') && (x.system || []).length ? \`<div class="layer"><span class="k">What runs</span><ol>\${x.system.map(e =>
+  const sys = (x.system || []).length ? \`<div class="layer layer-system"><span class="k">What runs</span><ol>\${x.system.map(e =>
     \`<li><span class="lkind">\${esc(KIND_LABEL[e.kind] || e.kind)}</span> \${esc(e.name)}<br>\${status(e)}\${entryJudge(stepId, e)}</li>\`).join('')}</ol></div>\` : '';
-  const data = layers().has('data') && (x.data || []).length ? \`<div class="layer"><span class="k">What changes</span><ul>\${x.data.map(e =>
+  const data = (x.data || []).length ? \`<div class="layer layer-data"><span class="k">What changes</span><ul>\${x.data.map(e =>
     \`<li><span class="lkind">\${esc(CHANGE_LABEL[e.change] || e.change)}</span> \${esc(e.entity)}\${(e.fields || []).length ? '<span class="lfields">' + e.fields.map(f =>
       \`<code>\${esc(f.name)}: \${f.before !== undefined ? esc(f.before) + ' → ' : ''}\${f.after !== undefined ? esc(f.after) : '—'}</code>\`).join('') + '</span>' : ''}<br>\${status(e)}\${entryJudge(stepId, e)}</li>\`).join('')}</ul></div>\` : '';
   return sys + data;
 }
+function showLayers(){ for (const k of ['system', 'data']) document.body.classList.toggle('show-' + k, layers().has(k)); }
 function layerSwitches(it){
   const has = (k) => it.step.outcomes.some(o => (o[k] || []).length);
   const sw = [['system', 'What runs'], ['data', 'What changes']].filter(([k]) => has(k));
@@ -929,8 +931,10 @@ function renderAdded(){
 document.addEventListener('change', e => {
   const layer = e.target.closest('input[data-layer]');
   if (layer) {
-    layers()[layer.checked ? 'add' : 'delete'](layer.dataset.layer); render();
-    document.querySelector('input[data-layer="' + CSS.escape(layer.dataset.layer) + '"]')?.focus();
+    // Shown or hidden, never redrawn: the switch the reviewer just used stays where it is.
+    const k = layer.dataset.layer;
+    layers()[layer.checked ? 'add' : 'delete'](k); showLayers();
+    document.querySelectorAll('input[data-layer="' + CSS.escape(k) + '"]').forEach(x => { x.checked = layer.checked; });
     return;
   }
   const lv = e.target.closest('input[data-lv]');
@@ -1162,6 +1166,7 @@ function go(st, o){
 }
 
 if (FLOW) {
+  showLayers();
   $('#screen').addEventListener('click', e => {
     const t = e.target.closest('[data-target]'); if (!t) return;
     const st = stepsFrom(at).find(i => i.step.on === t.dataset.target); if (!st) return;
