@@ -14,6 +14,7 @@
 //   node bin/check.mjs feedback <feedback.json> [review.json]
 //   node bin/check.mjs pair     <review.json> <feedback.json>
 //   node bin/check.mjs history  <review.json> <earlier-feedback.json>...
+//   node bin/check.mjs followup <next-review.json> <review.json> <feedback.json>
 //   add --root <project folder> to prove every file:line reference in a flow
 //
 // Exit 0 only when there are zero errors. Warnings never fail the run.
@@ -644,13 +645,44 @@ function checkHistory(r, earlier, rep) {
   rep.check('earlier decisions quoted truthfully', misquotes.length === 0, misquotes.join(' · '));
 }
 
+// ── followup: nothing the reviewer left open is dropped in the next round (#52) ────────────────────
+// An earlier item is carried when the next review has an item with the same id, or one whose `affects`
+// quotes it. No status field: the files already hold the state, and a second copy could disagree.
+function checkFollowup(next, review, f, rep) {
+  const carriers = (id) => (next?.items ?? []).filter((i) => i.id === id
+    || (i.affects ?? []).some((a) => a?.decision?.review === review?.id && a?.decision?.itemId === id));
+  const title = (id) => [...(f?.responses ?? []), ...(f?.addedItems ?? []).map((x) => ({ ...x, itemId: x.id }))].find((x) => x.itemId === id)?.title ?? id;
+  const how = `Add it to the next review with the same id, or as an item whose "affects" quotes it`;
+  rep.check('next review has its own id', next?.id !== review?.id,
+    `the next review keeps the id "${review?.id}". Give it its own id, or the reviewer's new answers and the old ones are hard to tell apart`);
+  const addedIds = new Set((f?.addedItems ?? []).map((x) => x.id));   // reported on their own below
+  const dropped = (f?.gaps ?? []).filter((id) => !addedIds.has(id) && !carriers(id).length);
+  rep.check('gaps carried', dropped.length === 0,
+    `${dropped.map((id) => `"${title(id)}"`).join(', ')} ${dropped.length === 1 ? 'is a gap' : 'are gaps'} the next review drops. ${how}, or the reviewer never sees their open point answered`);
+  const addedDropped = (f?.addedItems ?? []).filter((x) => !carriers(x.id).length).map((x) => `"${x.title}"`);
+  rep.check('added items carried', addedDropped.length === 0,
+    `the reviewer added ${addedDropped.join(', ')}, and the next review drops ${addedDropped.length === 1 ? 'it' : 'them'}. ${how}, or what they raised unasked is lost`);
+  const itemText = (i) => `${i?.summary ?? ''}\n${i?.body ?? ''}`.trim();
+  const before = Object.fromEntries((review?.items ?? []).map((i) => [i.id, itemText(i)]));
+  const unanswered = [];
+  for (const q of f?.requests ?? []) {
+    const c = carriers(q.itemId);
+    if (!c.length) unanswered.push(`"${q.title}" asked for ${q.kind === 'example' ? 'an example' : 'an explanation'}, and the next review drops the item. ${how}`);
+    else if (q.kind === 'example' && !c.some((i) => (i.examples ?? []).length))
+      unanswered.push(`"${q.title}" asked for an example, and no item carrying it has "examples". Add real precedents there, each with a source or marked unverified`);
+    else if (q.kind === 'explain' && !c.some((i) => itemText(i) && itemText(i) !== before[q.itemId]))
+      unanswered.push(`"${q.title}" asked for an explanation, and its text is unchanged. Explain it again in "summary" or "body", in other words than before`);
+  }
+  rep.check('requests answered', unanswered.length === 0, `${unanswered.join(' · ')}, or the reviewer's question goes unanswered where they asked it`);
+}
+
 // ── run ─────────────────────────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const rootAt = argv.indexOf('--root');
 const ROOT = rootAt >= 0 ? resolve(argv.splice(rootAt, 2)[1] ?? '.') : null;
 const [mode, a, b] = argv;
 if (!mode || !a) {
-  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...');
+  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...\n       check.mjs followup <next-review.json> <review.json> <feedback.json>');
   process.exit(2);
 }
 const rep = new Report();
@@ -660,6 +692,12 @@ else if (mode === 'pair') { const r = load(a); checkReview(r, rep); checkFeedbac
 else if (mode === 'history') {
   if (!b) fail('history needs at least one earlier feedback file');
   const r = load(a); checkReview(r, rep); checkHistory(r, argv.slice(2).map(load), rep);
+}
+else if (mode === 'followup') {
+  const c = argv[3];
+  if (!b || !c) fail('followup needs the next review, the earlier review and its feedback');
+  const next = load(a), r = load(b), f = load(c);
+  checkReview(next, rep); checkFeedback(f, rep, r); checkHistory(next, [f], rep); checkFollowup(next, r, f, rep);
 }
 else fail(`unknown mode "${mode}"`);
 

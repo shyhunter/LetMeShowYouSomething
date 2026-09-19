@@ -340,8 +340,16 @@ node bin/check.mjs review   examples/review.example.json
 node bin/check.mjs feedback examples/feedback.example.json examples/review.example.json
 node bin/check.mjs pair     examples/review.example.json examples/feedback.example.json
 node bin/check.mjs history  <review.json> <earlier-feedback.json>...
+node bin/check.mjs followup <next-review.json> <review.json> <feedback.json>
 node bin/check.mjs review   examples/flow-booking.review.json --root .   # a flow, with every file:line proven
 ```
+
+**The next round drops nothing** (`followup`, #52). A follow-up review must carry everything the
+reviewer left open: every gap, every item they added, every request. An earlier item is carried by an
+item with the same id, or by one whose `affects` quotes it. An `example` request is answered by that
+item's `examples`, and an `explain` request by a `summary` or `body` that says it differently. The next
+review needs its own id. There is no status field: the files already hold the state, and a second copy
+could disagree with them.
 
 The checker prints every check it ran; the number depends on what the files use (a review with a
 choose-one section gets its choices checked). Exit `0` only at zero errors; warnings never fail a

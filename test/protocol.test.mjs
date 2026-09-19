@@ -235,7 +235,7 @@ test('SKILL.md frontmatter is valid and every path it names exists', async () =>
   assert.ok(paths.length >= 4, `expected SKILL.md to reference its tools, found ${paths.length}`);
   for (const p of paths) assert.ok(existsSync(at(p.replace(/\/$/, ''))), `SKILL.md names ${p}, which does not exist`);
   for (const mode of skill.matchAll(/check\.mjs (\w+)/g))
-    assert.ok(['review', 'feedback', 'pair', 'history'].includes(mode[1]), `SKILL.md uses unknown checker mode "${mode[1]}"`);
+    assert.ok(['review', 'feedback', 'pair', 'history', 'followup'].includes(mode[1]), `SKILL.md uses unknown checker mode "${mode[1]}"`);
 });
 
 // Licensing (LICENSING.md): a generated page must carry no obligation, so everything copied into it is
@@ -1046,4 +1046,39 @@ test('the brief is headed by what it does: a decision, or an explanation', () =>
   };
   assert.equal(page({ question: 'Store credit or refund?' }), 'What I need you to decide');
   assert.equal(page({ question: undefined }), 'What this explains');
+});
+
+// #52 — the next round carries everything the reviewer left open.
+test('followup: gaps, added items and requests are carried into the next review', () => {
+  const review = readJson('examples/review.example.json');
+  const base = readJson('examples/feedback.example.json');
+  const run = (editNext, editFb) => {
+    const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
+    next.items.push({ id: 'added-currency', title: 'Prices switch currency halfway through', summary: 'You found this one: which country did you switch to?' });
+    const fb = structuredClone(base);
+    if (editFb) editFb(fb);
+    if (editNext) editNext(next);
+    const [pn, pf] = ['next', 'fb'].map((k) => join(tmp, `${k}-${Math.random().toString(36).slice(2)}.json`));
+    writeFileSync(pn, JSON.stringify(next)); writeFileSync(pf, JSON.stringify(fb));
+    return check('followup', pn, at('examples/review.example.json'), pf);
+  };
+  const ok = run();
+  assert.equal(ok.status, 0, ok.stdout);
+  assert.match(run((n) => { n.items = n.items.filter((i) => i.id !== 'declined-card'); }).stdout, /✗ gaps carried: "A declined card explains itself" is a gap the next review drops/);
+  // Carried under a new id, quoting the earlier item truthfully.
+  const byAffects = run((n) => {
+    n.items = n.items.filter((i) => i.id !== 'declined-card');
+    n.diagrams[0].nodes.find((x) => x.step === 'declined-card').step = 'decline-message';
+    n.items.push({ id: 'decline-message', title: 'The decline message says what to do next',
+      affects: [{ effect: 'extends', why: 'You saw error 51.', decision: { review: review.id, itemId: 'declined-card', title: 'A declined card explains itself', verdict: 'fails' } }] });
+  });
+  assert.equal(byAffects.status, 0, byAffects.stdout);
+  assert.match(run((n) => { n.items = n.items.filter((i) => i.id !== 'added-currency'); }).stdout, /✗ added items carried: the reviewer added "Prices switch currency/);
+  const ask = (kind) => (fb) => { fb.requests = [{ itemId: 'guest-checkout', title: 'A guest can buy without creating an account', kind }]; };
+  assert.match(run(null, ask('example')).stdout, /✗ requests answered: "A guest can buy without creating an account" asked for an example, and no item carrying it has "examples"/);
+  const withEx = run((n) => { n.items[0].examples = [{ name: 'Shop', what: 'Guest checkout on the first page', source: 'https://example.org/guest' }]; }, ask('example'));
+  assert.equal(withEx.status, 0, withEx.stdout);
+  assert.match(run(null, ask('explain')).stdout, /asked for an explanation, and its text is unchanged/);
+  assert.equal(run((n) => { n.items[0].summary = 'No sign-in anywhere: pay with a test card as a stranger would.'; }, ask('explain')).status, 0);
+  assert.match(run((n) => { n.id = review.id; }).stdout, /✗ next review has its own id/);
 });
