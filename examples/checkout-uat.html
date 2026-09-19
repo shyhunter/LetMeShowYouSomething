@@ -527,7 +527,22 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
   
 </header>
 
-
+<div id="stage" class="stage">
+    <section id="dpanel" class="panel" aria-label="The diagram">
+      <div class="panel-head">
+        <span class="panel-title">Diagram</span>
+        <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+        <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
+      </div>
+      <div class="panel-body">
+        <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
+        <div class="dg-body">
+          
+          <div id="flowbeside" role="tabpanel" aria-label="The chart"></div>
+        </div>
+      </div>
+    </section>
+</div>
     
     <section id="feedback" aria-labelledby="fb-h">
       <h2 id="fb-h">Your feedback</h2>
@@ -580,7 +595,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 // D076 — the page as it arrived, before anything is drawn: "Export feedback.html" saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
-const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"checkout-uat-2026-09","title":"Checkout rebuild — acceptance pass","subtitle":"Four flows, before we open it to real payments","intro":"Work through each flow on the staging build. **A note matters more than a verdict** — if something is off, say what you saw rather than grading it. Anything missing from this list, add it at the bottom.","createdAt":"2026-09-16T09:00:00Z","createdBy":{"agent":"claude-code","note":"Derived from the acceptance criteria in issue #218."},"verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"fields":[{"key":"expect","label":"Expected","tone":"positive"},{"key":"watch","label":"Watch for","tone":"caution"}],"allowAddedItems":true,"addNoun":"flow","sections":[{"id":"happy","label":"The path most people take","description":"If any of these are wrong, nothing below matters.","diagram":{"kind":"mermaid","source":"flowchart LR\n  Cart --> Address --> Pay --> Confirm"}},{"id":"edges","label":"Where it usually breaks","description":"Declines, timeouts, and the back button."}],"items":[{"id":"guest-checkout","sectionId":"happy","title":"A guest can buy without creating an account","body":"Add one item, check out without signing in, pay with a test card.","fields":{"expect":"Order confirmed, receipt emailed, no account created.","watch":"A sign-in prompt appearing anywhere in the flow."},"ref":"src/checkout/guest.ts:44"},{"id":"saved-card","sectionId":"happy","title":"A returning customer can pay with a saved card","fields":{"expect":"Card shown masked, one tap to pay."},"ref":"src/checkout/wallet.ts:112"},{"id":"declined-card","sectionId":"edges","title":"A declined card explains itself","body":"Use the test card that always declines.","fields":{"expect":"Plain-language reason, cart intact, retry without re-entering the address.","watch":"A raw gateway error code reaching the customer."}},{"id":"back-button","sectionId":"edges","title":"The back button mid-payment does not double-charge","fields":{"expect":"One charge, one order, whatever the customer does."}}]};
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"checkout-uat-2026-09","title":"Checkout rebuild — acceptance pass","subtitle":"Four flows, before we open it to real payments","intro":"Work through each flow on the staging build. **A note matters more than a verdict** — if something is off, say what you saw rather than grading it. Anything missing from this list, add it at the bottom.","createdAt":"2026-09-16T09:00:00Z","createdBy":{"agent":"claude-code","note":"Derived from the acceptance criteria in issue #218."},"verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"fields":[{"key":"expect","label":"Expected","tone":"positive"},{"key":"watch","label":"Watch for","tone":"caution"}],"allowAddedItems":true,"addNoun":"flow","sections":[{"id":"happy","label":"The path most people take","description":"If any of these are wrong, nothing below matters."},{"id":"edges","label":"Where it usually breaks","description":"Declines, timeouts, and the back button."}],"diagrams":[{"id":"checkout-path","kind":"flowchart","title":"The checkout, start to finish","nodes":[{"id":"cart","kind":"start","label":"Items in the cart","icon":"cart"},{"id":"signed-in","kind":"decision","label":"Signed in?"},{"id":"guest","kind":"user-action","label":"Checks out as a guest","step":"guest-checkout"},{"id":"saved","kind":"user-action","label":"Picks a saved card","step":"saved-card"},{"id":"pay","kind":"system-action","label":"Takes the payment","icon":"card"},{"id":"result","kind":"decision","label":"What happens?"},{"id":"confirmed","kind":"end","label":"Order confirmed"},{"id":"declined","kind":"error","label":"Says why the card was declined","step":"declined-card"},{"id":"back","kind":"end-failed","label":"Back pressed: charged once at most","step":"back-button"}],"edges":[{"from":"cart","to":"signed-in"},{"from":"signed-in","to":"guest","kind":"conditional","label":"no"},{"from":"signed-in","to":"saved","kind":"conditional","label":"yes"},{"from":"guest","to":"pay"},{"from":"saved","to":"pay"},{"from":"pay","to":"result"},{"from":"result","to":"confirmed","kind":"conditional","label":"accepted"},{"from":"result","to":"declined","kind":"conditional","label":"declined"},{"from":"result","to":"back","kind":"conditional","label":"Back pressed"},{"from":"declined","to":"pay","label":"tries another card"}]}],"items":[{"id":"guest-checkout","sectionId":"happy","title":"A guest can buy without creating an account","body":"Add one item, check out without signing in, pay with a test card.","fields":{"expect":"Order confirmed, receipt emailed, no account created.","watch":"A sign-in prompt appearing anywhere in the flow."},"ref":"src/checkout/guest.ts:44"},{"id":"saved-card","sectionId":"happy","title":"A returning customer can pay with a saved card","fields":{"expect":"Card shown masked, one tap to pay."},"ref":"src/checkout/wallet.ts:112"},{"id":"declined-card","sectionId":"edges","title":"A declined card explains itself","body":"Use the test card that always declines.","fields":{"expect":"Plain-language reason, cart intact, retry without re-entering the address.","watch":"A raw gateway error code reaching the customer."}},{"id":"back-button","sectionId":"edges","title":"The back button mid-payment does not double-charge","fields":{"expect":"One charge, one order, whatever the customer does."}}]};
 const SEED = null;
 // SPDX-License-Identifier: MIT-0
 // The single source of truth for what a completed review exports.
@@ -1096,7 +1111,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':0528fccc2af8' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':234a4b760485' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{} };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
@@ -1429,7 +1444,7 @@ let selected = null;   // the one step marked across every view; memory only (D0
 if (!FLOW) selected = (REVIEW.items[0] || {}).id || null;
 function openItem(id){
   if (FLOW) selectStep(id);
-  else { selected = id; render(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
+  else { selected = id; render(); if ($('#dpanel')) drawStageChart(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
   // Stacked (under 1100 px) the open item sits below the whole list: bring it into view. Side by side
   // it is already beside the row, and nothing moves (D079).
   if (matchMedia('(max-width:1099px)').matches) $('#detail').scrollIntoView({ block: 'start' });
@@ -1464,10 +1479,10 @@ function selectStep(id){
 }
 
 // D057 — one diagram panel with tabs, the focus tab first (D059), and an empty tab that says what it is for (D062).
-const TABS = [['user-flow', 'The user flow']]
+const TABS = (FLOW ? [['user-flow', 'The user flow']] : [])
   .concat((REVIEW.diagrams || []).map(d => [d.id, d.title || d.id]));
 if (REVIEW.focus && TABS.some(t => t[0] === REVIEW.focus)) TABS.unshift(TABS.splice(TABS.findIndex(t => t[0] === REVIEW.focus), 1)[0]);
-let chartTab = TABS[0][0];
+let chartTab = (TABS[0] || [])[0];
 const chartFor = (id) => id === 'user-flow' ? flowAsDiagram(REVIEW)
   : (REVIEW.diagrams || []).find(d => d.id === id) || null;
 
@@ -1597,6 +1612,50 @@ $('#split').addEventListener('click', e => {
   if (open) { openItem(open.dataset.open); if (FLOW) document.querySelector('#detail [data-outcome]')?.focus(); }
 });
 
+// D073 — either panel opens full screen, and Esc or the same button brings it back.
+const setFull = (panel, on) => {
+  panel.classList.toggle('full', on);
+  const b = panel.querySelector('.panel-full');
+  b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
+  if (panel.id === 'dpanel') drawStageChart();
+};
+// #47 — the chart panel works the same on every page that has one: tabs, full screen, a box that opens its item.
+if ($('#dpanel')) {
+  // Clicking a box in the chart opens that step or item.
+  const chartPick = (target) => {
+    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
+    if (FLOW) selectStep(node.dataset.step); else openItem(node.dataset.step);
+    $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
+    return true;
+  };
+  $('#flowbeside').addEventListener('click', e => chartPick(e.target));
+  $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
+
+  // Tabs: click or arrow keys, one chart on show at a time.
+  const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };
+  $('#dgtabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) pickTab(t.dataset.tab); });
+  $('#dgtabs').addEventListener('keydown', e => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+    const i = TABS.findIndex(t => t[0] === chartTab);
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1
+      : (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+    e.preventDefault(); pickTab(TABS[next][0]);
+    $('#dgtabs [aria-selected="true"]').focus();
+  });
+
+  // D073 — either panel opens full screen, and Esc or the same button brings it back.
+  $('#stage').addEventListener('click', e => {
+    const b = e.target.closest('.panel-full'); if (!b) return;
+    const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
+  });
+  document.addEventListener('keydown', e => {
+    const open = $('.panel.full'); if (e.key !== 'Escape' || !open) return;
+    setFull(open, false); open.querySelector('.panel-full').focus();
+  });
+
+  if (!FLOW) { drawTabs(); drawStageChart(); }
+}
+
 if (FLOW) {
   showLayers();
   $('#screen').addEventListener('click', e => {
@@ -1623,14 +1682,6 @@ if (FLOW) {
     go(st, st.step.outcomes[+b.dataset.outcome]);
     scrollBy(0, $('#feedback').getBoundingClientRect().top - y);
   });
-  // Clicking a box in the chart selects that step.
-  const chartPick = (target) => {
-    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
-    selectStep(node.dataset.step); $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
-    return true;
-  };
-  $('#flowbeside').addEventListener('click', e => chartPick(e.target));
-  $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
   $('#f-journey').insertAdjacentHTML('beforeend', JOURNEYS.map(j => `<option value="${esc(j.id)}">${esc(j.title)}</option>`).join(''));
   for (const id of ['#f-journey', '#f-status', '#f-problems']) $(id).addEventListener('change', render);
 
@@ -1677,39 +1728,11 @@ if (FLOW) {
     $('#screen-title').focus();
   });
 
-  // Tabs: click or arrow keys, one chart on show at a time.
-  const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };
-  $('#dgtabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) pickTab(t.dataset.tab); });
-  $('#dgtabs').addEventListener('keydown', e => {
-    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
-    const i = TABS.findIndex(t => t[0] === chartTab);
-    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1
-      : (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
-    e.preventDefault(); pickTab(TABS[next][0]);
-    $('#dgtabs [aria-selected="true"]').focus();
-  });
-
   // Chips instead of a dropdown (D057): press one to highlight its sub-process, press it again to clear.
   $('#chips').addEventListener('click', e => {
     const c = e.target.closest('[data-part]'); if (!c) return;
     partHighlight = partHighlight === c.dataset.part ? '' : c.dataset.part;
     drawAll();
-  });
-
-  // D073 — either panel opens full screen, and Esc or the same button brings it back.
-  const setFull = (panel, on) => {
-    panel.classList.toggle('full', on);
-    const b = panel.querySelector('.panel-full');
-    b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
-    if (panel.id === 'dpanel') drawStageChart();
-  };
-  $('#stage').addEventListener('click', e => {
-    const b = e.target.closest('.panel-full'); if (!b) return;
-    const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
-  });
-  document.addEventListener('keydown', e => {
-    const open = $('.panel.full'); if (e.key !== 'Escape' || !open) return;
-    setFull(open, false); open.querySelector('.panel-full').focus();
   });
 
   // D055 — the reviewer arranges the page: sections collapse and move, remembered in this browser only.

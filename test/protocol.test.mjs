@@ -1023,3 +1023,15 @@ test('item examples: who and what are required, a missing source is a warning, n
   assert.equal(res.status, 1);
   assert.match(res.stdout, /example "A shop a colleague ran" on guest-checkout says who but not what they did/);
 });
+
+// #47 — a picture must be drawn: Mermaid on an offline page is only its source text.
+test('checker refuses a Mermaid section diagram, and a list chart may point at items', () => {
+  const r = readJson('examples/review.example.json');
+  r.sections[0].diagram = { kind: 'mermaid', source: 'flowchart LR\n  A --> B' };
+  const bad = checkReviewObj(r);
+  assert.equal(bad.status, 1, bad.stdout);
+  assert.match(bad.stdout, /✗ pictures are drawn: section\(s\) happy carry a Mermaid "diagram"/);
+  delete r.sections[0].diagram;
+  r.diagrams[0].nodes[2].step = 'nowhere';
+  assert.match(checkReviewObj(r).stdout, /step "nowhere" is not an item in this review/);
+});

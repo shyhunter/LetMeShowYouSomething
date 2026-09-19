@@ -47,6 +47,27 @@ const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 
 const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut' };
 
+// #47 — the diagram panel: above the screen on a flow page, above the list on any page that has charts.
+const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
+      <div class="panel-head">
+        <span class="panel-title">Diagram</span>
+        <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+        <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
+      </div>
+      <div class="panel-body">
+        <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
+        <div class="dg-body">
+          ${review.flow ? `<div id="subproc">
+            <button type="button" id="subswitch" class="switch" role="switch" aria-checked="true">
+              <span class="switch-box"></span>Sub-processes</button>
+            <div id="chips" role="group" aria-label="Highlight a sub-process"></div>
+          </div>` : ''}
+          <div id="flowbeside" role="tabpanel" aria-label="${review.flow ? 'The flow, with where you are' : 'The chart'}"></div>
+        </div>
+      </div>
+    </section>
+`;
+
 // #38 — answers are kept per review, not per id: an agent that keeps an example's id (or two reviews
 // that happen to share one) must never mix answers. The key is the id plus a fingerprint of the content.
 const fingerprint = createHash('sha256').update(JSON.stringify(review)).digest('hex').slice(0, 12);
@@ -602,25 +623,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 
 ${review.flow ? `<section id="player" aria-label="Click through the flow">
   <div id="stage" class="stage">
-    <section id="dpanel" class="panel" aria-label="The diagram">
-      <div class="panel-head">
-        <span class="panel-title">Diagram</span>
-        <button class="btn pin" type="button" aria-pressed="false">Pin</button>
-        <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
-      </div>
-      <div class="panel-body">
-        <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
-        <div class="dg-body">
-          <div id="subproc">
-            <button type="button" id="subswitch" class="switch" role="switch" aria-checked="true">
-              <span class="switch-box"></span>Sub-processes</button>
-            <div id="chips" role="group" aria-label="Highlight a sub-process"></div>
-          </div>
-          <div id="flowbeside" role="tabpanel" aria-label="The flow, with where you are"></div>
-        </div>
-      </div>
-    </section>
-    <section id="upanel" class="panel" aria-label="The screen">
+${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
       <div class="panel-head">
         <span class="panel-title">Screen</span>
         <div class="seg" role="group" aria-label="How many screens to show">
@@ -634,7 +637,8 @@ ${review.flow ? `<section id="player" aria-label="Click through the flow">
       </div>
       <div class="panel-body"><div id="screen" class="screen"></div><div id="allscreens" hidden></div></div>
     </section>
-  </div>` : ''}
+  </div>` : (review.diagrams || []).length ? `<div id="stage" class="stage">
+${DPANEL}</div>` : ''}
     ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
       <div class="brief-head"><h2 id="brief-h">What I need you to decide</h2><button class="btn pin" type="button" aria-pressed="false">Pin</button></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
@@ -1046,7 +1050,7 @@ let selected = null;   // the one step marked across every view; memory only (D0
 if (!FLOW) selected = (REVIEW.items[0] || {}).id || null;
 function openItem(id){
   if (FLOW) selectStep(id);
-  else { selected = id; render(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
+  else { selected = id; render(); if ($('#dpanel')) drawStageChart(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
   // Stacked (under 1100 px) the open item sits below the whole list: bring it into view. Side by side
   // it is already beside the row, and nothing moves (D079).
   if (matchMedia('(max-width:1099px)').matches) $('#detail').scrollIntoView({ block: 'start' });
@@ -1081,10 +1085,10 @@ function selectStep(id){
 }
 
 // D057 — one diagram panel with tabs, the focus tab first (D059), and an empty tab that says what it is for (D062).
-const TABS = [['user-flow', 'The user flow']]
+const TABS = (FLOW ? [['user-flow', 'The user flow']] : [])
   .concat((REVIEW.diagrams || []).map(d => [d.id, d.title || d.id]));
 if (REVIEW.focus && TABS.some(t => t[0] === REVIEW.focus)) TABS.unshift(TABS.splice(TABS.findIndex(t => t[0] === REVIEW.focus), 1)[0]);
-let chartTab = TABS[0][0];
+let chartTab = (TABS[0] || [])[0];
 const chartFor = (id) => id === 'user-flow' ? flowAsDiagram(REVIEW)
   : (REVIEW.diagrams || []).find(d => d.id === id) || null;
 
@@ -1214,6 +1218,50 @@ $('#split').addEventListener('click', e => {
   if (open) { openItem(open.dataset.open); if (FLOW) document.querySelector('#detail [data-outcome]')?.focus(); }
 });
 
+// D073 — either panel opens full screen, and Esc or the same button brings it back.
+const setFull = (panel, on) => {
+  panel.classList.toggle('full', on);
+  const b = panel.querySelector('.panel-full');
+  b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
+  if (panel.id === 'dpanel') drawStageChart();
+};
+// #47 — the chart panel works the same on every page that has one: tabs, full screen, a box that opens its item.
+if ($('#dpanel')) {
+  // Clicking a box in the chart opens that step or item.
+  const chartPick = (target) => {
+    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
+    if (FLOW) selectStep(node.dataset.step); else openItem(node.dataset.step);
+    $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
+    return true;
+  };
+  $('#flowbeside').addEventListener('click', e => chartPick(e.target));
+  $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
+
+  // Tabs: click or arrow keys, one chart on show at a time.
+  const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };
+  $('#dgtabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) pickTab(t.dataset.tab); });
+  $('#dgtabs').addEventListener('keydown', e => {
+    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
+    const i = TABS.findIndex(t => t[0] === chartTab);
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1
+      : (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
+    e.preventDefault(); pickTab(TABS[next][0]);
+    $('#dgtabs [aria-selected="true"]').focus();
+  });
+
+  // D073 — either panel opens full screen, and Esc or the same button brings it back.
+  $('#stage').addEventListener('click', e => {
+    const b = e.target.closest('.panel-full'); if (!b) return;
+    const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
+  });
+  document.addEventListener('keydown', e => {
+    const open = $('.panel.full'); if (e.key !== 'Escape' || !open) return;
+    setFull(open, false); open.querySelector('.panel-full').focus();
+  });
+
+  if (!FLOW) { drawTabs(); drawStageChart(); }
+}
+
 if (FLOW) {
   showLayers();
   $('#screen').addEventListener('click', e => {
@@ -1240,14 +1288,6 @@ if (FLOW) {
     go(st, st.step.outcomes[+b.dataset.outcome]);
     scrollBy(0, $('#feedback').getBoundingClientRect().top - y);
   });
-  // Clicking a box in the chart selects that step.
-  const chartPick = (target) => {
-    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
-    selectStep(node.dataset.step); $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
-    return true;
-  };
-  $('#flowbeside').addEventListener('click', e => chartPick(e.target));
-  $('#flowbeside').addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && chartPick(e.target)) e.preventDefault(); });
   $('#f-journey').insertAdjacentHTML('beforeend', JOURNEYS.map(j => \`<option value="\${esc(j.id)}">\${esc(j.title)}</option>\`).join(''));
   for (const id of ['#f-journey', '#f-status', '#f-problems']) $(id).addEventListener('change', render);
 
@@ -1294,39 +1334,11 @@ if (FLOW) {
     $('#screen-title').focus();
   });
 
-  // Tabs: click or arrow keys, one chart on show at a time.
-  const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };
-  $('#dgtabs').addEventListener('click', e => { const t = e.target.closest('[data-tab]'); if (t) pickTab(t.dataset.tab); });
-  $('#dgtabs').addEventListener('keydown', e => {
-    if (!['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) return;
-    const i = TABS.findIndex(t => t[0] === chartTab);
-    const next = e.key === 'Home' ? 0 : e.key === 'End' ? TABS.length - 1
-      : (i + (e.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length;
-    e.preventDefault(); pickTab(TABS[next][0]);
-    $('#dgtabs [aria-selected="true"]').focus();
-  });
-
   // Chips instead of a dropdown (D057): press one to highlight its sub-process, press it again to clear.
   $('#chips').addEventListener('click', e => {
     const c = e.target.closest('[data-part]'); if (!c) return;
     partHighlight = partHighlight === c.dataset.part ? '' : c.dataset.part;
     drawAll();
-  });
-
-  // D073 — either panel opens full screen, and Esc or the same button brings it back.
-  const setFull = (panel, on) => {
-    panel.classList.toggle('full', on);
-    const b = panel.querySelector('.panel-full');
-    b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
-    if (panel.id === 'dpanel') drawStageChart();
-  };
-  $('#stage').addEventListener('click', e => {
-    const b = e.target.closest('.panel-full'); if (!b) return;
-    const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
-  });
-  document.addEventListener('keydown', e => {
-    const open = $('.panel.full'); if (e.key !== 'Escape' || !open) return;
-    setFull(open, false); open.querySelector('.panel-full').focus();
   });
 
   // D055 — the reviewer arranges the page: sections collapse and move, remembered in this browser only.

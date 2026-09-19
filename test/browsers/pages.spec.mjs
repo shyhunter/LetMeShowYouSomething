@@ -80,6 +80,17 @@ test('a list review: list and open item side by side, width buttons, the first i
   }
 });
 
+test('a list review draws its chart, and a box opens its item (#47)', async ({ page }) => {
+  await page.goto(url('examples/checkout-uat.html'));
+  await expect(page.locator('#dpanel svg')).toBeVisible();
+  await expect(page.locator('.mmd')).toHaveCount(0);                  // never Mermaid source text
+  // By keyboard: Firefox cannot scroll a box inside the sideways-scrolling chart into view for a pointer click.
+  await page.locator('#flowbeside [data-step="declined-card"]').focus();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#detail legend')).toHaveText('A declined card explains itself');
+  await expect(page.locator('#steplist [data-step="declined-card"]')).toHaveAttribute('aria-current', 'true');
+});
+
 test('checkout: answer, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
   // #44 — the first item is open; the others open from the list on the left.

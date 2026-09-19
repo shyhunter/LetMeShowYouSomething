@@ -281,7 +281,10 @@ The checker proves a flow before anyone sees it:
 
 ## Diagrams
 
-A review can carry **flow charts** in `diagrams`. One more is computed for every flow and never
+A review can carry **flow charts** in `diagrams`. Every page draws them, not only a flow page: on a
+list page the chart sits above the list, and a box with `step` naming an item opens that item (#47).
+A picture is always drawn this way. A section `diagram` of kind `mermaid` is refused by the checker
+(`pictures are drawn`): the page loads nothing, so Mermaid would reach the reviewer as source text. One more is computed for every flow and never
 written by hand, so it can't disagree with it: **the user flow** (screens, and the steps between
 them). The parts of the process are not a chart: they are the sub-processes column beside it (D070). The user flow opens on a `start` and closes on a single `end`: every
 screen marked `end`, and every screen no step leaves, leads into it, so a reader can see where each
@@ -311,6 +314,7 @@ underneath, and arrows only in the space between boxes. If a chart comes out awk
 | `diagrams resolve` | a repeated id; an arrow, lane, step, part or subflow that points at nothing; an unknown kind or icon |
 | `diagrams make sense` | no start or no end; a box nobody can reach; arrows into a start or out of an end; a decision with fewer than two ways out or an unlabelled one; a parallel start or join with too few paths; a message inside one lane |
 | `diagram pins don't collide` | two pinned boxes in the same place |
+| `pictures are drawn` | a section `diagram` (Mermaid), which the offline page can only show as text |
 
 ## No secrets
 
@@ -413,9 +417,9 @@ node checks/browser/list-page.check.mjs
 node checks/browser/flow-page.check.mjs
 ```
 
-**Known gap:** section diagrams render as Mermaid *source text*, not as pictures. Full offline was
-chosen over a CDN script tag. Inlining Mermaid would add roughly 2 MB to every form, so rendered
-diagrams should become an opt-in flag rather than the default.
+Pictures are drawn by the page's own code, never by Mermaid: a CDN script would break "offline", and
+inlining Mermaid would add roughly 2 MB to every page. A section `diagram` stays in the v1 schema so
+old files still parse, but the checker refuses it (#47).
 
 ## Extending it
 

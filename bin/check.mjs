@@ -86,6 +86,11 @@ function checkReview(r, rep) {
   }
   rep.check('choices well-formed', badChoice.length === 0, badChoice.join(' · '));
 
+  // #47 — the page loads nothing, so a Mermaid chart shows as its source text: a picture must be drawn.
+  const textCharts = (r?.sections ?? []).filter((s) => s?.diagram).map((s) => s.id);
+  rep.check('pictures are drawn', textCharts.length === 0,
+    `section(s) ${textCharts.join(', ')} carry a Mermaid "diagram", which the page shows as source text, not a picture. Draw it in "diagrams" instead (boxes, arrows, lanes; PROTOCOL.md → Diagrams), and point a box at an item with "step"`);
+
   const EFFECTS = new Set(['reopens', 'extends', 'contradicts', 'depends-on']);
   const badAffects = items.filter((i) => (i?.affects ?? []).some((a) =>
     !EFFECTS.has(a?.effect) || !a?.why || !a?.decision?.review || !a?.decision?.itemId || !a?.decision?.title || !a?.decision?.verdict));
@@ -385,7 +390,8 @@ const ICONS = ["envelope", "phone", "lock", "clock", "warning", "person", "datab
 const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // need not be reachable
 
 function checkDiagrams(r, rep) {
-  const stepIds = new Set((r.items ?? []).filter((i) => i?.step).map((i) => i.id));
+  // Without a flow, a box may point at any item (#47): tapping it opens that item.
+  const stepIds = new Set((r.items ?? []).filter((i) => i?.step || !r.flow).map((i) => i.id));
   const partIds = new Set((r.flow?.parts ?? []).map((p) => p.id));
   const diagramIds = r.diagrams.map((d) => d?.id);
   const unresolved = [], senseless = [], collisions = [];
@@ -402,7 +408,7 @@ function checkDiagrams(r, rep) {
       if (!NODE_KINDS.has(n.kind)) unresolved.push(`${w}: unknown kind "${n.kind}". Use one of: ${[...NODE_KINDS].join(', ')}, or it can't be drawn`);
       if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
       if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
-      if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not a step in this review. Point at a step id or drop the link, or selecting it highlights nothing`);
+      if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${r.flow ? 'a step' : 'an item'} in this review. Point at ${r.flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
       if (n.part !== undefined && !partIds.has(n.part)) unresolved.push(`${w}: part "${n.part}" is not a part of this flow. Point at a part id or drop the link`);
       if (n.subflow !== undefined && !diagramIds.includes(n.subflow) && !partIds.has(n.subflow)) unresolved.push(`${w}: subflow "${n.subflow}" is neither a diagram nor a part. Point at one, or the reader can't open it`);
       if (n.component) {
@@ -477,7 +483,7 @@ function checkBrief(r, rep) {
 
   const screens = (r.flow?.screens ?? []).map((s) => s.id);
   const nodes = (r.diagrams ?? []).flatMap((d) => (d.nodes ?? []).map((n) => n.id))
-    .concat((r.flow?.screens ?? []).map((s) => `screen:${s.id}`), (r.items ?? []).filter((i) => i.step).map((i) => `step:${i.id}`));
+    .concat((r.flow?.screens ?? []).map((s) => `screen:${s.id}`), (r.items ?? []).filter((i) => i.step || !r.flow).map((i) => `step:${i.id}`));
   const lost = [];
   for (const id of b.highlights?.screens ?? []) if (!screens.includes(id)) lost.push(`highlights screen "${id}", which does not exist. Use one of: ${screens.join(', ')}`);
   for (const id of b.highlights?.nodes ?? []) if (!nodes.includes(id)) lost.push(`highlights node "${id}", which is in no chart. Use a node id from a diagram, or screen:<id> / step:<id>`);

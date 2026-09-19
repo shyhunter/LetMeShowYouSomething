@@ -124,6 +124,7 @@
           },
           "diagram": {
             "type": "object",
+            "description": "Kept so v1 files still parse. The checker refuses it (pictures are drawn): the offline page shows Mermaid as source text. Draw the chart in the review's diagrams instead.",
             "required": ["kind", "source"],
             "additionalProperties": false,
             "properties": {"kind": {"enum": ["mermaid"]}, "source": {"type": "string", "minLength": 1}}
