@@ -1,0 +1,158 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": {
+    "id": "booking-flow-2026-09",
+    "title": "Booking and cancelling a slot",
+    "schemaVersion": 1
+  },
+  "respondedAt": "2026-09-19T08:17:23.827Z",
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      },
+      {
+        "value": "changed-mind",
+        "label": "Changed my mind",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "responses": [
+    {
+      "itemId": "book",
+      "title": "Taps Book 10:00",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "back",
+      "title": "Taps Pick another time",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "cancel",
+      "title": "Taps Cancel booking",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "confirm",
+      "title": "Confirms Cancel booking",
+      "verdict": "partly-agree",
+      "note": "Store credit is fine, but say \"store credit\" on the button itself, not only in the text above it.",
+      "affects": [
+        {
+          "decision": {
+            "review": "booking-rules-2026-09",
+            "itemId": "no-refunds",
+            "title": "Customers never get money back after booking",
+            "verdict": "agree"
+          },
+          "effect": "extends",
+          "why": "Store credit is not money back, so the rule still holds."
+        }
+      ]
+    },
+    {
+      "itemId": "keep",
+      "title": "Taps Keep it",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "find",
+      "title": "Taps Find a time",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "another-day",
+      "title": "Taps Pick another day",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "show-times",
+      "title": "Taps Show times",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "join-waitlist",
+      "title": "Taps Join the waiting list for 10:00",
+      "verdict": "disagree",
+      "note": "Thirty minutes to book is too short when the email arrives at night."
+    },
+    {
+      "itemId": "ask",
+      "title": "Taps Ask a question",
+      "verdict": "unset",
+      "note": null
+    },
+    {
+      "itemId": "send-question",
+      "title": "Taps Send",
+      "verdict": "unset",
+      "note": null
+    }
+  ],
+  "summary": {
+    "total": 11,
+    "answered": 9,
+    "unset": 2,
+    "added": 1,
+    "byVerdict": {
+      "unset": 2,
+      "agree": 7,
+      "partly-agree": 1,
+      "disagree": 1,
+      "revisit": 0,
+      "changed-mind": 0
+    }
+  },
+  "gaps": [
+    "join-waitlist",
+    "ask",
+    "send-question",
+    "added-1"
+  ],
+  "addedItems": [
+    {
+      "id": "added-1",
+      "title": "Show the cancellation deadline on the booking",
+      "verdict": "unset",
+      "note": null,
+      "body": "People should see \"free cancellation until Friday 10:00\" before they try, not find out when it is too late."
+    }
+  ],
+  "requests": [
+    {
+      "itemId": "ask",
+      "title": "Taps Ask a question",
+      "kind": "explain",
+      "note": null
+    }
+  ]
+}

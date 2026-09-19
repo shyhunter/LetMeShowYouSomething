@@ -15,5 +15,5 @@ path = ["README.md", "SKILL.md", "LICENSING.md", ".gitignore", "REUSE.toml", "pa
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["site/social-preview.png"]
+path = ["site/social-preview.png", "site/loop.mp4", "site/loop-poster.jpg"]
 SPDX-License-Identifier = "Apache-2.0"

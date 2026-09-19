@@ -12,7 +12,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
 main{max-width:880px;margin:0 auto;padding:48px 16px 64px}
-h1{color:var(--ink);font-size:clamp(28px,5vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.015em}
+h1{color:var(--ink);font-size:clamp(22px,6.4vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.015em;overflow-wrap:anywhere}
 h2{color:var(--ink);font-size:20px;margin:40px 0 12px}
 .lead{font-size:18px;max-width:62ch;margin:0}
 pre{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--mono);color:var(--ink)}
@@ -34,6 +34,8 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:v
   answers go back to the agent as a file it checks before it acts.</p>
 <pre>agent ──► review.json ──► one HTML page ──► a person judges each item ──► Export
 agent ◄── check (PASS) ◄── feedback.json ◄────────────────────────────────┘</pre>
+  <p><a href="loop.html"><b>See the whole loop →</b></a> A person answers, the page exports the answer, the checker
+  verifies it, and the agent reports back, gaps first. Every piece is real.</p>
 
   <h2>Try it</h2>
   <p>Each page is the real thing: answer, then press <b>Export feedback.json</b>. Nothing leaves your browser

@@ -50,6 +50,16 @@ for (const [name, review] of Object.entries(PAGES)) {
   });
 }
 
+// The site's own pages: offline too, and fit every screen. The loop page carries its recording.
+for (const name of ['index', 'loop']) {
+  test(`site ${name}: loads, fits the screen`, async ({ page }) => {
+    await page.goto(url(`site/${name}.html`));
+    await expect(page.locator('h1')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
+    if (name === 'loop') await expect(page.locator('video source')).toHaveAttribute('src', 'loop.mp4');
+  });
+}
+
 test('checkout: answer, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
   await page.locator('label:has(input[name="v-guest-checkout"][value="works"])').click();
