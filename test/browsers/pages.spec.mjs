@@ -103,7 +103,8 @@ test('flow: the system and data layers show with the step, and an entry can be j
   await expect(first).toContainText('test/fixtures/booking-app/src/booking.mjs:4');
   await expect(first).toContainText('capacity_left: 1 → 0');
   await first.locator('details.judge').first().locator('summary').click();
-  await first.locator('input[data-lv="book/capacity-guard"][value="disagree"]').check({ force: true });
+  // No force: like a person, the test scrolls until nothing (the sticky export bar) covers the choice.
+  await first.locator('input[data-lv="book/capacity-guard"][value="disagree"]').check();
   await first.locator('textarea[data-lvnote="book/capacity-guard"]').fill('Two people can pass this check at once.');
   await expect(first.locator('details.judge').first().locator('summary')).toHaveText('Judged: Disagree');
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
