@@ -30,13 +30,38 @@
     {
       "id": "happy",
       "label": "The path most people take",
-      "description": "If any of these are wrong, nothing below matters.",
-      "diagram": {
-        "kind": "mermaid",
-        "source": "flowchart LR\n  Cart --> Address --> Pay --> Confirm"
-      }
+      "description": "If any of these are wrong, nothing below matters."
     },
     { "id": "edges", "label": "Where it usually breaks", "description": "Declines, timeouts, and the back button." }
+  ],
+
+  "diagrams": [
+    {
+      "id": "checkout-path", "kind": "flowchart", "title": "The checkout, start to finish",
+      "nodes": [
+        { "id": "cart", "kind": "start", "label": "Items in the cart", "icon": "cart" },
+        { "id": "signed-in", "kind": "decision", "label": "Signed in?" },
+        { "id": "guest", "kind": "user-action", "label": "Checks out as a guest", "step": "guest-checkout" },
+        { "id": "saved", "kind": "user-action", "label": "Picks a saved card", "step": "saved-card" },
+        { "id": "pay", "kind": "system-action", "label": "Takes the payment", "icon": "card" },
+        { "id": "result", "kind": "decision", "label": "What happens?" },
+        { "id": "confirmed", "kind": "end", "label": "Order confirmed" },
+        { "id": "declined", "kind": "error", "label": "Says why the card was declined", "step": "declined-card" },
+        { "id": "back", "kind": "end-failed", "label": "Back pressed: charged once at most", "step": "back-button" }
+      ],
+      "edges": [
+        { "from": "cart", "to": "signed-in" },
+        { "from": "signed-in", "to": "guest", "kind": "conditional", "label": "no" },
+        { "from": "signed-in", "to": "saved", "kind": "conditional", "label": "yes" },
+        { "from": "guest", "to": "pay" },
+        { "from": "saved", "to": "pay" },
+        { "from": "pay", "to": "result" },
+        { "from": "result", "to": "confirmed", "kind": "conditional", "label": "accepted" },
+        { "from": "result", "to": "declined", "kind": "conditional", "label": "declined" },
+        { "from": "result", "to": "back", "kind": "conditional", "label": "Back pressed" },
+        { "from": "declined", "to": "pay", "label": "tries another card" }
+      ]
+    }
   ],
 
   "items": [
