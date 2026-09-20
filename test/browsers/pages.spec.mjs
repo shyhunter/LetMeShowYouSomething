@@ -323,3 +323,17 @@ test('a proposed change: rename a box, see it drawn, export it, and the checker 
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).proposals[0]).toMatchObject({ op: 'rename', node: 'pay', text: 'Charges the card', why: 'Say what is charged.' });
 });
+
+// #32 — a system diagram is drawn with its own boxes, and the flow's sub-processes stay out of it.
+test('the system diagram tab: lanes, a store, an outside system, and no sub-process column', async ({ page }) => {
+  await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#dgtabs [data-tab="booking-system"]').click();
+  await expect(page.locator('#flowbeside .dg-lane')).toHaveCount(3);
+  await expect(page.locator('#flowbeside .dg-node')).toHaveCount(9);
+  await expect(page.locator('#flowbeside .dg-k-data-store')).toHaveCount(1);
+  await expect(page.locator('#flowbeside .dg-k-external')).toHaveCount(2);
+  await expect(page.locator('#flowbeside .dg-k-guard')).toHaveCount(1);
+  await expect(page.locator('#subproc')).toBeHidden();               // sub-processes belong to a flow
+  await page.locator('#dgtabs [data-tab="user-flow"]').click();
+  await expect(page.locator('#subproc')).toBeVisible();
+});

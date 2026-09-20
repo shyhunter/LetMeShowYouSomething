@@ -325,6 +325,17 @@ them). The parts of the process are not a chart: they are the sub-processes colu
 screen marked `end`, and every screen no step leaves, leads into it, so a reader can see where each
 journey stops. The end stands alone in the last column, as the start does in the first (D077).
 
+Two kinds of chart, each with its own boxes and its own rules (#32):
+
+- **`flowchart`** — what happens, in order. It needs a start and an end, every box must be reachable,
+  and a decision needs at least two labelled ways out.
+- **`system`** — what runs and what it talks to. It has no start and no end. Its rule instead:
+  **nothing floats** — every box is on at least one arrow — and a check (`guard`) sits on a path,
+  with something reaching it and something leaving it. Its boxes are `client` (what a person uses),
+  `service`, `component`, `guard`, `queue`, `data-store`, `external` (someone else's system), plus
+  `note`, `group`, `connector` and `off-page`. A flow-chart box in a system diagram is refused, and
+  the other way round.
+
 A written chart has `lanes` (who does what), `nodes` and `edges`:
 
 - **Node kinds** — start and end: `start` `end` `end-failed` `entry` `exit` · steps: `process`
@@ -334,7 +345,8 @@ A written chart has `lanes` (who does what), `nodes` and `edges`:
   `escalate` `cancel` · messages: `send` `receive` `signal` `callback` · data: `data` `data-store` ·
   structure: `group` `connector` `off-page` `note` `loop`.
 - **Edge kinds** — `sequence` (default) · `conditional` (with a label) · `default` · `message`
-  (between lanes) · `association` (a note to what it explains).
+  (between lanes) · `async` (sent now, handled later: a queue, an event) · `association` (a note to
+  what it explains).
 - **Icons** — our own: `envelope` `phone` `lock` `clock` `warning` `person` `database` `cloud` `gear`
   `card` `calendar` `bell` `document` `search` `check` `cross` `chat` `cart` `key` `globe`.
 - **Links** — a node's `step` or `part` ties it to the flow: selecting either highlights the other.

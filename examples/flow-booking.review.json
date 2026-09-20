@@ -954,6 +954,127 @@
           "kind": "message"
         }
       ]
+    },
+    {
+      "id": "booking-system",
+      "kind": "system",
+      "title": "What the booking system runs on",
+      "lanes": [
+        {
+          "id": "people",
+          "title": "Who uses it"
+        },
+        {
+          "id": "ours",
+          "title": "What we run"
+        },
+        {
+          "id": "outside",
+          "title": "Someone else's"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "member",
+          "kind": "client",
+          "lane": "people",
+          "label": "The member's phone"
+        },
+        {
+          "id": "venue-staff",
+          "kind": "client",
+          "lane": "people",
+          "label": "The venue's tablet"
+        },
+        {
+          "id": "signin",
+          "kind": "guard",
+          "lane": "ours",
+          "label": "Signed in as a member?"
+        },
+        {
+          "id": "booking-api",
+          "kind": "service",
+          "lane": "ours",
+          "label": "Booking service",
+          "icon": "gear"
+        },
+        {
+          "id": "slots",
+          "kind": "data-store",
+          "lane": "ours",
+          "label": "Slots and bookings"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "lane": "ours",
+          "label": "Emails waiting to go"
+        },
+        {
+          "id": "mailer",
+          "kind": "external",
+          "lane": "outside",
+          "label": "Email provider",
+          "icon": "envelope"
+        },
+        {
+          "id": "calendar",
+          "kind": "external",
+          "lane": "outside",
+          "label": "The venue's calendar",
+          "icon": "calendar"
+        },
+        {
+          "id": "note-retry",
+          "kind": "note",
+          "lane": "outside",
+          "label": "A failed email is tried again for an hour, then the member sees it in the app"
+        }
+      ],
+      "edges": [
+        {
+          "from": "member",
+          "to": "signin",
+          "label": "books a slot"
+        },
+        {
+          "from": "venue-staff",
+          "to": "signin",
+          "label": "cancels for a member"
+        },
+        {
+          "from": "signin",
+          "to": "booking-api"
+        },
+        {
+          "from": "booking-api",
+          "to": "slots",
+          "label": "holds the slot"
+        },
+        {
+          "from": "booking-api",
+          "to": "outbox",
+          "kind": "async",
+          "label": "confirmation"
+        },
+        {
+          "from": "outbox",
+          "to": "mailer",
+          "kind": "async"
+        },
+        {
+          "from": "booking-api",
+          "to": "calendar",
+          "kind": "message",
+          "label": "writes the booking"
+        },
+        {
+          "from": "mailer",
+          "to": "note-retry",
+          "kind": "association"
+        }
+      ]
     }
   ]
 }

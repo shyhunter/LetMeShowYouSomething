@@ -1233,3 +1233,32 @@ test('proposals: applied, refused when they break the diagram, and answered in t
   next.items[1].answers = ['proposal-2'];
   assert.doesNotMatch(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ proposals answered/);
 });
+
+// #32 — a system diagram: its own boxes, its own rules. No start and no end, but nothing floats.
+test('system diagrams: their own catalogue of boxes, and nothing unconnected', () => {
+  const base = () => ({ id: 'sys', kind: 'system', title: 'What runs',
+    lanes: [{ id: 'ours', title: 'What we run' }, { id: 'out', title: "Someone else's" }],
+    nodes: [{ id: 'app', kind: 'service', lane: 'ours', label: 'Booking service' },
+      { id: 'db', kind: 'data-store', lane: 'ours', label: 'Bookings' },
+      { id: 'mail', kind: 'external', lane: 'out', label: 'Email provider' }],
+    edges: [{ from: 'app', to: 'db' }, { from: 'app', to: 'mail', kind: 'async' }] });
+  const withDiagram = (d) => { const r = readJson('examples/decision-review.example.json'); r.diagrams = [d]; return r; };
+  const run = (d) => checkReviewObj(withDiagram(d));
+  const ok = run(base());
+  assert.equal(ok.status, 0, ok.stdout);                        // no start, no end: that is right for a system diagram
+
+  const floating = base(); floating.nodes.push({ id: 'cache', kind: 'data-store', lane: 'ours', label: 'A cache' });
+  assert.match(run(floating).stdout, /✗ diagrams make sense: sys\.cache: nothing calls it and it calls nothing/);
+
+  const wrongBox = base(); wrongBox.nodes.push({ id: 'pick', kind: 'decision', lane: 'ours', label: 'Which one?' });
+  assert.match(run(wrongBox).stdout, /✗ diagrams resolve: sys\.pick: "decision" is a flow-chart box, not a system one/);
+
+  const halfGuard = base();
+  halfGuard.nodes.push({ id: 'auth', kind: 'guard', lane: 'ours', label: 'Signed in?' });
+  halfGuard.edges.push({ from: 'auth', to: 'app' });
+  assert.match(run(halfGuard).stdout, /✗ diagrams make sense: sys\.auth: a check sits on a path/);
+
+  // A flow chart keeps its own rules: it still needs a start and an end.
+  const flow = base(); flow.kind = 'flowchart';
+  assert.match(run(flow).stdout, /sys: has no start/);
+});
