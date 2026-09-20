@@ -216,7 +216,8 @@ test('page escapes every agent-written field', () => {
   writeFileSync(src, JSON.stringify(review));
   spawnSync(process.execPath, [at('bin/render.mjs'), src, out]);
   const html = readFileSync(out, 'utf8');
-  assert.doesNotMatch(html, /<img/i, 'raw markup from the review reached the static HTML');
+  // The page's own code draws pictures (#60); what must never appear is the review's markup, unescaped.
+  assert.doesNotMatch(html, /<img src=x onerror/i, 'raw markup from the review reached the static HTML');
   // the embedded data must not be able to close the script tag either
   assert.doesNotMatch(html.slice(html.indexOf('<script>')), /<\/script>[\s\S]*<\/script>/, 'embedded data closed the script tag');
 });
@@ -1169,4 +1170,32 @@ test('comments on a diagram: labelled, resolved against the review, and answered
   next.items[2].answers = ['comment-2'];
   const ok = check('followup', write(next), at('examples/review.example.json'), fbPath);
   assert.doesNotMatch(ok.stdout, /✗ comments answered/, ok.stdout);
+});
+
+// #60 — pictures: really PNG, JPEG or WebP by their own bytes, attached to something in the file, small enough.
+test('pictures: kept on what they are attached to, refused when they are not really pictures', () => {
+  const review = readJson('examples/review.example.json');
+  const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
+  const store = { notes: { 'declined-card': 'See the picture.' }, pictures: [
+    { id: 'picture-1', on: 'declined-card', type: 'image/png', width: 1, height: 1, data: PNG },
+    { id: 'picture-2', on: 'comment-9', type: 'image/png', width: 1, height: 1, data: PNG } ] };
+  const fb = buildFeedback(review, store);
+  assert.deepEqual(fb.pictures.map((p) => [p.id, p.onTitle]), [['picture-1', 'A declined card explains itself']], 'a picture on nothing is left out');
+  const write = (o) => { const p = join(tmp, `p-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
+  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  assert.equal(pair(fb).status, 0, pair(fb).stdout);
+  const svg = structuredClone(fb); svg.pictures[0].data = Buffer.from('<svg onload="alert(1)"/>').toString('base64');
+  assert.match(pair(svg).stdout, /✗ pictures are pictures: picture-1: says image\/png, but its bytes are not that kind of picture/);
+  const kind = structuredClone(fb); kind.pictures[0].type = 'image/svg+xml';
+  assert.match(pair(kind).stdout, /picture-1: "image\/svg\+xml" is not PNG, JPEG or WebP/);
+  const big = structuredClone(fb); big.pictures[0].data = Buffer.concat([Buffer.from(PNG, 'base64'), Buffer.alloc(1100 * 1024)]).toString('base64');
+  assert.match(pair(big).stdout, /picture-1: 1\.1 MB, more than 1 MB/);
+  const lost = structuredClone(fb); lost.pictures[0].on = 'nowhere';
+  assert.match(pair(lost).stdout, /picture-1: is attached to "nowhere", which is no item, added item or comment in this file/);
+  // The agent looks at them as files.
+  const dir = join(tmp, 'pics');
+  const w = spawnSync(process.execPath, [at('bin/pictures.mjs'), write(fb), dir], { encoding: 'utf8' });
+  assert.equal(w.status, 0, w.stderr);
+  assert.match(w.stdout, /picture-1\.png {2}on "A declined card explains itself"/);
+  assert.deepEqual(readFileSync(join(dir, 'picture-1.png')), Buffer.from(PNG, 'base64'));
 });

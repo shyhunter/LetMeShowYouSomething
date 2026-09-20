@@ -226,6 +226,11 @@ details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bott
 #comments .cmt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;display:grid;gap:6px;background:var(--surf)}
 .cmt-on{margin:0;font-size:13px;color:var(--ink3)}.cmt-on b{color:var(--ink)}
 #comments .cmt .btn{justify-self:start}
+.pics{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:6px}
+.pic{margin:0;display:grid;gap:4px;justify-items:start}
+.pic img{display:block;max-width:180px;max-height:140px;width:auto;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--surf)}
+.pic-msg{flex-basis:100%;margin:0}
+.pic-note{font-size:12.5px;color:var(--mut);align-self:center}
 .appr{border:1.5px solid var(--ac);background:var(--ac-bg);border-radius:10px;padding:10px 12px;margin:0 0 10px;display:grid;gap:4px}
 .appr p{margin:0;font-size:13.5px;color:var(--ink2)}
 .appr .k{display:inline-block;min-width:88px;font:600 10.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
@@ -795,6 +800,14 @@ function buildFeedback(review, store, now = new Date().toISOString()) {
     return o;
   });
   if (comments.length) out.comments = comments;
+  // #60 — pictures the reviewer attached to a note or a comment. The page re-saves each one, so hidden
+  // details such as a photo's location are gone. Each says what it is attached to (invariant 1); a
+  // picture on something that is not in the file is left out.
+  const onTitle = Object.fromEntries([...responses.map((r) => [r.itemId, r.title]), ...addedItems.map((a) => [a.id, a.title]),
+    ...comments.map((c) => [c.id, c.label])]);
+  const pictures = (store.pictures || []).filter((p) => onTitle[p.on] !== undefined).map((p) => ({
+    id: p.id, on: p.on, onTitle: onTitle[p.on], type: p.type, width: p.width, height: p.height, data: p.data }));
+  if (pictures.length) out.pictures = pictures;
   if (store.respondent && (store.respondent.name || store.respondent.role)) {
     out.respondent = {};
     if (store.respondent.name) out.respondent.name = store.respondent.name;
@@ -1170,16 +1183,71 @@ function flowAsDiagram(review) {
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
 const LS = 'letmeshowyousomething:' + REVIEW.id + ':234a4b760485' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
-let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[] };
+let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
-const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch {} };
+// Answers are kept in this browser as you go. When it cannot keep them all (pictures take room), say so:
+// exporting keeps everything, and nothing is lost silently.
+const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); return true; }
+  catch { const f = document.getElementById('footnote'); if (f) f.textContent = 'This browser cannot keep all your answers (pictures take room). Export now so nothing is lost.'; return false; } };
 
 const $ = (s) => document.querySelector(s);
 const OPTS = REVIEW.verdictSet.options;
 // #54 — an approval is answered approve or decline, never with the verdict set: agreeing is not permitting.
 const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' }, { value: 'decline', label: 'Decline', tone: 'negative' }];
 const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
+// #60 — pictures on a note or a comment. The page redraws each one, at most 1600 px, and saves it again:
+// hidden details such as a photo's location are gone, and the size stays small enough to send.
+const PIC_TYPES = ['image/png', 'image/jpeg', 'image/webp'];
+const PIC_MAX = 1024 * 1024, PIC_TOTAL = 5 * 1024 * 1024, PIC_COUNT = 10;
+const picBytes = (p) => Math.floor(p.data.length * 3 / 4);
+const picSrc = (p) => PIC_TYPES.includes(p.type) && /^[A-Za-z0-9+/]+={0,2}$/.test(p.data) ? 'data:' + p.type + ';base64,' + p.data : '';
+function picsHtml(on){
+  const list = (store.pictures || []).filter(p => p.on === on);
+  return `<div class="pics" data-pics="${esc(on)}">${list.map(p => `<figure class="pic"><img alt="Your picture" src="${picSrc(p)}" width="${+p.width}" height="${+p.height}">
+    <button class="btn" type="button" data-unpic="${esc(p.id)}">Remove picture</button></figure>`).join('')}
+    <button class="btn" type="button" data-picadd="${esc(on)}">Add a picture</button>
+    <span class="pic-note">It goes into the file you send back.</span>
+    <span class="pic-msg hint" aria-live="polite"></span></div>`;
+}
+async function addPicture(on, file){
+  const msg = (t) => { const m = document.querySelector('[data-pics="' + CSS.escape(on) + '"] .pic-msg'); if (m) m.textContent = t; };
+  if (!file || !PIC_TYPES.includes(file.type)) return msg('Only PNG, JPEG or WebP pictures.');
+  if ((store.pictures || []).length >= PIC_COUNT) return msg('At most ' + PIC_COUNT + ' pictures in one answer.');
+  let bmp; try { bmp = await createImageBitmap(file); } catch { return msg('That file could not be read as a picture.'); }
+  const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
+  const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);
+  let url = c.toDataURL('image/webp', 0.82);
+  if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/jpeg', 0.85);
+  const type = url.slice(5, url.indexOf(';')), data = url.slice(url.indexOf(',') + 1);
+  const p = { on, type, width: c.width, height: c.height, data };
+  if (picBytes(p) > PIC_MAX) return msg('That picture is too large, even made smaller. Crop it and try again.');
+  if ((store.pictures || []).reduce((n, x) => n + picBytes(x), picBytes(p)) > PIC_TOTAL) return msg('Your pictures together are too large. Remove one first.');
+  p.id = 'picture-' + (Math.max(0, ...(store.pictures || []).map(x => +String(x.id).split('-')[1] || 0)) + 1);
+  (store.pictures = store.pictures || []).push(p); save();
+  const box = document.querySelector('[data-pics="' + CSS.escape(on) + '"]'); if (box) box.outerHTML = picsHtml(on);
+  msg('Added. Re-saved without hidden details such as location.');
+}
+const picInput = Object.assign(document.createElement('input'), { type: 'file', id: 'picfile', accept: PIC_TYPES.join(','), hidden: true });
+const picLabel = Object.assign(document.createElement('label'), { htmlFor: 'picfile', className: 'skip', textContent: 'Choose a picture' });
+document.body.append(picLabel, picInput);
+let picFor = null;
+picInput.addEventListener('change', () => { const f = picInput.files[0]; picInput.value = ''; if (f && picFor) addPicture(picFor, f); });
+document.addEventListener('click', e => {
+  const add = e.target.closest('[data-picadd]');
+  if (add) { picFor = add.dataset.picadd; picInput.click(); return; }
+  const rm = e.target.closest('[data-unpic]'); if (!rm) return;
+  const p = (store.pictures || []).find(x => x.id === rm.dataset.unpic); if (!p) return;
+  store.pictures = store.pictures.filter(x => x !== p); save();
+  const box = document.querySelector('[data-pics="' + CSS.escape(p.on) + '"]'); if (box) box.outerHTML = picsHtml(p.on);
+});
+// Paste a picture straight into a note or a comment.
+document.addEventListener('paste', e => {
+  const t = e.target.closest('textarea[data-note], textarea[data-comment]'); if (!t) return;
+  const f = [...(e.clipboardData?.files || [])].find(x => PIC_TYPES.includes(x.type)); if (!f) return;
+  e.preventDefault(); addPicture(t.dataset.note || t.dataset.comment, f);
+});
 const RISK = { low: ['ok', 'Low risk'], medium: ['warn', 'Medium risk'], high: ['bad', 'High risk'] };
 function approvalHtml(a){
   const [tone, label] = RISK[a.risk] || ['neut', a.risk];
@@ -1435,6 +1503,7 @@ function itemHtml(it, sec, full){
     <label class="skip" for="n-${esc(it.id)}">Note for ${esc(it.title)}</label>
     <textarea id="n-${esc(it.id)}" data-note="${esc(it.id)}"
       placeholder="What did you see? Your own words are the part that gets acted on.">${esc(store.notes[it.id]||'')}</textarea>
+    ${picsHtml(it.id)}
     ${asksRow(it.id)}
   </fieldset>`;
 }
@@ -1532,7 +1601,7 @@ $('#exporth').addEventListener('click', () => {
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
-  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[] }; save(); render();
+  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[] }; save(); render();
 });
 // ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
 const FLOW = REVIEW.flow || null;
@@ -1738,7 +1807,8 @@ function renderComments(){
     return `<div class="cmt"><p class="cmt-on">On <b>${esc(c.label)}</b> · ${esc(title)}</p>
       <label class="skip" for="cm-${esc(c.id)}">Your comment on ${esc(c.label)}</label>
       <textarea id="cm-${esc(c.id)}" data-comment="${esc(c.id)}" placeholder="What should change here, or what is wrong?">${esc(c.note || '')}</textarea>
-      <button class="btn" type="button" data-uncomment="${esc(c.id)}">Remove</button></div>`;
+      ${picsHtml(c.id)}
+      <button class="btn" type="button" data-uncomment="${esc(c.id)}">Remove comment</button></div>`;
   }).join('');
 }
 function addComment(on){
