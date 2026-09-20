@@ -384,6 +384,24 @@ diagram id, or `user-flow` for the chart computed from a flow. An empty comment 
 | `comments resolve` | a comment on a diagram, box or arrow the review does not have, or whose label is not that part's |
 | `comments answered` (`followup`) | a follow-up review with no item whose `answers` lists the comment's id |
 
+### Pictures
+
+The reviewer can attach a picture (a screenshot, a photo of a sketch) to an item's note or to a
+comment. The page redraws it at most 1600 px wide and saves it again as WebP (JPEG where the browser
+cannot write WebP): hidden details such as a photo's location are gone, and the size stays small.
+
+```json
+"pictures": [{ "id": "picture-1", "on": "declined-card", "onTitle": "A declined card explains itself",
+               "type": "image/webp", "width": 1280, "height": 640, "data": "UklGR…" }]
+```
+
+`on` is the item, added item or comment it belongs to; `onTitle` echoes it. `bin/pictures.mjs
+<feedback.json>` writes them out as files to look at.
+
+| check | refuses |
+|---|---|
+| `pictures are pictures` | a picture that is not really PNG, JPEG or WebP (judged by its own first bytes, not by its name), one attached to nothing in the file, one over 1 MB, more than 10, or more than 5 MB together |
+
 ## Answers given in chat
 
 For one to four quick questions a page is too much, but a decision others will rely on still needs a

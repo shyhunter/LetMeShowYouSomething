@@ -564,6 +564,33 @@ function checkFeedback(f, rep, review) {
       `${bad.join(', ')}: a comment needs its own id (comment-1), exactly one box (node) or arrow (edge), the label it is on and the reviewer's words. Export it from the page again, or the agent cannot tell what it is about`);
   }
 
+  // #60 — pictures: really PNG, JPEG or WebP (by their own first bytes, not only by name), attached to
+  // something in this file, and small enough to forward.
+  const pictures = Array.isArray(f?.pictures) ? f.pictures : [];
+  if (pictures.length) {
+    const on = new Set([...responses.map((x) => x?.itemId), ...added.map((x) => x?.id), ...comments.map((c) => c?.id)]);
+    const MAGIC = { 'image/png': (b) => b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])),
+      'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+      'image/webp': (b) => b.subarray(0, 4).toString('latin1') === 'RIFF' && b.subarray(8, 12).toString('latin1') === 'WEBP' };
+    const bad = []; let total = 0;
+    const pids = pictures.map((x) => x?.id);
+    for (const [i, x] of pictures.entries()) {
+      const w = x?.id ?? `picture #${i + 1}`;
+      if (!/^picture-\d{1,4}$/.test(x?.id ?? '') || pids.indexOf(x.id) !== i) { bad.push(`${w}: needs its own id like picture-1`); continue; }
+      if (!on.has(x.on)) bad.push(`${w}: is attached to "${x.on}", which is no item, added item or comment in this file`);
+      if (!MAGIC[x.type]) { bad.push(`${w}: "${x.type}" is not PNG, JPEG or WebP`); continue; }
+      const raw = typeof x.data === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(x.data) ? Buffer.from(x.data, 'base64') : null;
+      if (!raw) { bad.push(`${w}: its data is not base64`); continue; }
+      if (!MAGIC[x.type](raw)) bad.push(`${w}: says ${x.type}, but its bytes are not that kind of picture`);
+      if (raw.length > 1024 * 1024) bad.push(`${w}: ${(raw.length / 1048576).toFixed(1)} MB, more than 1 MB`);
+      total += raw.length;
+    }
+    if (pictures.length > 10) bad.push(`${pictures.length} pictures, more than 10`);
+    if (total > 5 * 1024 * 1024) bad.push(`${(total / 1048576).toFixed(1)} MB of pictures, more than 5 MB`);
+    rep.check('pictures are pictures', bad.length === 0,
+      `${bad.join(' · ')}. Attach them from the page again: it keeps only real PNG, JPEG or WebP pictures, re-saved and small enough to forward`);
+  }
+
   const addedIds = added.map((a) => a?.id);
   rep.check('added ids prefixed', addedIds.every((id) => /^added-/.test(id ?? '')),
     'reviewer-added items must use the "added-" prefix so they can never be confused with items the agent asked about');

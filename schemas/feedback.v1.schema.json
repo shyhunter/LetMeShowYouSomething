@@ -119,6 +119,26 @@
       }
     },
 
+    "pictures": {
+      "type": "array",
+      "maxItems": 10,
+      "description": "#60 — pictures the reviewer attached to a note (an item or an added item) or to a comment. PNG, JPEG or WebP only, base64, at most 1 MB each and 5 MB together; re-saved by the page, so hidden details such as location are gone.",
+      "items": {
+        "type": "object",
+        "required": ["id", "on", "onTitle", "type", "width", "height", "data"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^picture-[0-9]{1,4}$" },
+          "on": { "type": "string", "description": "The item, added item or comment id it is attached to." },
+          "onTitle": { "type": "string", "description": "Echoed title or label of what it is attached to." },
+          "type": { "enum": ["image/png", "image/jpeg", "image/webp"] },
+          "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
+          "height": { "type": "integer", "minimum": 1, "maximum": 4096 },
+          "data": { "type": "string", "contentEncoding": "base64", "maxLength": 1400000 }
+        }
+      }
+    },
+
     "comments": {
       "type": "array",
       "description": "#60 — the reviewer's comments on one box or one arrow of a drawn diagram. Each carries what it is on, in words (label), so it reads without the review. The next round answers each one (an item's `answers`).",

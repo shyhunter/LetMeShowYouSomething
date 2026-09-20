@@ -280,3 +280,23 @@ test('comments on the diagram: pick a box by keyboard and an arrow, export, and 
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).comments.map((c) => c.label)).toEqual(['Takes the payment', 'What happens? → Says why the card was declined (declined)']);
 });
+
+// #60 — a picture on a note: re-saved by the page (WebP, or JPEG where WebP cannot be written), exported, checked.
+test('a picture on a note: attached, re-saved, kept across a reload, and the export passes the checker', async ({ page }) => {
+  const dir = mkdtempSync(join(tmpdir(), 'pw-pic-'));
+  const png = join(ROOT, 'site/social-preview.png');                // a real 1280 × 640 PNG from the repo
+  await page.goto(url('examples/checkout-uat.html'));
+  const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#detail [data-picadd]').click()]);
+  await chooser.setFiles(png);
+  await expect(page.locator('#detail .pic img')).toHaveCount(1);
+  await expect(page.locator('#detail .pic-msg')).toContainText('without hidden details');
+  await page.reload();
+  await expect(page.locator('#detail .pic img')).toHaveCount(1);
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(dir, 'feedback.json'); await download.saveAs(file);
+  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  expect(r.status, r.stdout).toBe(0);
+  const pic = JSON.parse(readFileSync(file, 'utf8')).pictures[0];
+  expect(pic).toMatchObject({ on: 'guest-checkout', width: 1280, height: 640 });
+  expect(['image/webp', 'image/jpeg']).toContain(pic.type);
+});
