@@ -566,6 +566,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-e-message path{stroke-dasharray:6 4}
 .dg-e-async path{stroke-dasharray:5 5}
+.dg-e-return path{stroke-dasharray:4 4}
+.dg-life{stroke:var(--line2);stroke-width:1.5;stroke-dasharray:4 5;fill:none}
 .dg-shape.dg-dashed{stroke-dasharray:6 4}
 .dg-e-association path{stroke-dasharray:2 3}
 .dg-back path{stroke:var(--warn)}
@@ -1387,7 +1389,8 @@ function markComments(){
   for (const c of store.comments || []) {
     if (c.diagram !== chartTab) continue;
     const el = c.node !== undefined ? box.querySelector('[data-node="' + CSS.escape(c.node) + '"]')
-      : box.querySelector('.dg-edge[data-from="' + CSS.escape(c.edge.from) + '"][data-to="' + CSS.escape(c.edge.to) + '"]');
+      : box.querySelector('.dg-edge[data-from="' + CSS.escape(c.edge.from) + '"][data-to="' + CSS.escape(c.edge.to) + '"]'
+        + (c.edge.nth === undefined ? '' : '[data-nth="' + c.edge.nth + '"]'));
     if (el) el.classList.add('dg-commented');
   }
 }
@@ -1429,7 +1432,7 @@ function addProposal(c, op, text, to){
   const p = { id: 'proposal-' + (Math.max(0, ...(store.proposals || []).map(x => +String(x.id).split('-')[1] || 0)) + 1),
     diagram: c.diagram, op, label: c.label, comment: c.id };
   if (c.node !== undefined) { if (op === 'add-node' || op === 'add-edge') p.from = c.node; else p.node = c.node; }
-  else { p.from = c.edge.from; p.to = c.edge.to; }
+  else { p.from = c.edge.from; p.to = c.edge.to; if (c.edge.nth !== undefined) p.nth = c.edge.nth; }
   if (op === 'add-edge') p.to = to;
   if (text) p.text = text;
   (store.proposals = store.proposals || []).push(p); save();
@@ -1475,7 +1478,9 @@ if ($('#dpanel')) {
     if (commenting) {
       const n = target.closest('#flowbeside [data-node]'), e = target.closest('#flowbeside .dg-edge');
       if (!n && !e) return false;
-      addComment(n ? { node: n.dataset.node } : { edge: { from: e.dataset.from, to: e.dataset.to } });
+      // The same pair can be joined more than once (a sequence): keep which arrow was picked.
+      const edge = e && (e.dataset.nth !== undefined ? { from: e.dataset.from, to: e.dataset.to, nth: +e.dataset.nth } : { from: e.dataset.from, to: e.dataset.to });
+      addComment(n ? { node: n.dataset.node } : { edge });
       return true;
     }
     const node = target.closest('#flowbeside [data-step]'); if (!node) return false;

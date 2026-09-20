@@ -337,3 +337,23 @@ test('the system diagram tab: lanes, a store, an outside system, and no sub-proc
   await page.locator('#dgtabs [data-tab="user-flow"]').click();
   await expect(page.locator('#subproc')).toBeVisible();
 });
+
+// #32 — a sequence diagram on the page, and a comment that lands on the right message.
+test('the sequence tab: participants with lifelines, and a comment on the fifth message', async ({ page }) => {
+  await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#dgtabs [data-tab="booking-calls"]').click();
+  await expect(page.locator('#flowbeside .dg-life')).toHaveCount(5);
+  await expect(page.locator('#flowbeside .dg-edge')).toHaveCount(9);
+  await expect(page.locator('#flowbeside .dg-k-client')).toHaveCount(1);
+  await page.locator('#commentmode').click();
+  await page.locator('#flowbeside .dg-edge[data-nth="4"]').focus();   // the fifth message: held
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#comments .cmt-on')).toContainText('held');
+  await page.keyboard.type('Say what the member sees while this happens.');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(mkdtempSync(join(tmpdir(), 'pw-seq-')), 'feedback.json');
+  await download.saveAs(file);
+  const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file);
+  expect(r.status, r.stdout).toBe(0);
+  expect(JSON.parse(readFileSync(file, 'utf8')).comments[0].edge).toEqual({ from: 'slots', to: 'booking', nth: 4 });
+});
