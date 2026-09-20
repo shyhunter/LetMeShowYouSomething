@@ -159,8 +159,8 @@
           "approval": {"$ref": "#/$defs/approval"},
           "answers": {
             "type": "array",
-            "description": "#60 — in a follow-up review: the reviewer's comments this item answers, by id (comment-1). `check followup` refuses a round that leaves one unanswered.",
-            "items": {"type": "string", "pattern": "^comment-[0-9]{1,4}$"}
+            "description": "#60 — in a follow-up review: the reviewer's comments and proposed changes this item answers, by id (comment-1, proposal-2). `check followup` refuses a round that leaves one unanswered.",
+            "items": {"type": "string", "pattern": "^(comment|proposal)-[0-9]{1,4}$"}
           },
           "affects": {
             "type": "array",

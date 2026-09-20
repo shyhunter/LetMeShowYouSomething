@@ -384,6 +384,30 @@ diagram id, or `user-flow` for the chart computed from a flow. An empty comment 
 | `comments resolve` | a comment on a diagram, box or arrow the review does not have, or whose label is not that part's |
 | `comments answered` (`followup`) | a follow-up review with no item whose `answers` lists the comment's id |
 
+### Proposed changes
+
+The reviewer can also change the picture (#60). On a box: rename it, remove it, add a box after it,
+or add an arrow to another box. On an arrow: relabel it or remove it. Each change travels as a
+proposal, with the reviewer's words from the comment on the same part:
+
+```json
+"proposals": [{ "id": "proposal-1", "diagram": "checkout-path", "op": "rename", "node": "pay",
+                "label": "Takes the payment", "text": "Charges the card", "why": "Say what is charged." }]
+```
+
+`op` is one of `rename`, `remove-node`, `add-node`, `add-edge`, `remove-edge`, `relabel-edge`. The
+checker applies every proposal to a **copy** of the diagram and judges the result with the same rules
+as any diagram, so a set of changes that would leave a box unreachable, a start with arrows in, or a
+decision with one way out is refused rather than drawn. The page shows the same copy under **Show my
+changes**. The agent's own diagram is never altered by the file; the next round draws the change, or
+says why not.
+
+| check | refuses |
+|---|---|
+| `proposals well-formed` | a proposal without its own `proposal-N` id, without a known `op`, or without the part it is on in words |
+| `proposals fit the diagram` | a change on a part that is not there, one that cannot be applied, or a result that breaks the diagram's own rules |
+| `proposals answered` (`followup`) | a follow-up review with no item whose `answers` lists the proposal's id |
+
 ### Pictures
 
 The reviewer can attach a picture (a screenshot, a photo of a sketch) to an item's note or to a

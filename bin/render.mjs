@@ -52,6 +52,7 @@ const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-head min-head">
         <span class="panel-title">Diagram</span>
         <button class="btn" id="commentmode" type="button" aria-pressed="false">Comment</button>
+        <button class="btn" id="showchanges" type="button" aria-pressed="false" hidden>Show my changes</button>
         <button class="btn pin" type="button" aria-pressed="false">Pin</button>
         <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
         <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
@@ -321,6 +322,13 @@ details.more summary{cursor:pointer;font-size:12.5px;color:var(--ac);margin-bott
 #comments .cmt{border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-top:8px;display:grid;gap:6px;background:var(--surf)}
 .cmt-on{margin:0;font-size:13px;color:var(--ink3)}.cmt-on b{color:var(--ink)}
 #comments .cmt .btn{justify-self:start}
+.props{display:grid;gap:6px;margin-top:4px;justify-items:start}
+.prow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;width:100%}
+.prow :is(input,select){flex:1 1 200px;min-width:0;min-height:40px;border:1px solid var(--line2);border-radius:8px;background:var(--surf);color:var(--ink);font:inherit;padding:0 8px}
+.proplist{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:4px}
+.proplist li{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--ink2)}
+.dg-proposed .dg-shape{stroke:var(--ok);stroke-width:3}
+#showchanges[aria-pressed="true"]{border-color:var(--ok);background:var(--ok-bg);color:var(--ink)}
 .pics{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:6px}
 .pic{margin:0;display:grid;gap:4px;justify-items:start}
 .pic img{display:block;max-width:180px;max-height:140px;width:auto;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--surf)}
@@ -759,7 +767,7 @@ ${diagrams}
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
 const LS = 'letmeshowyousomething:' + REVIEW.id + ':${fingerprint}' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = ${embed(TONE)};
-let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[] };
+let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
 // Answers are kept in this browser as you go. When it cannot keep them all (pictures take room), say so:
@@ -1177,7 +1185,7 @@ $('#exporth').addEventListener('click', () => {
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
-  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[] }; save(); render();
+  store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] }; save(); render();
 });
 // ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
 const FLOW = REVIEW.flow || null;
@@ -1252,7 +1260,11 @@ function drawStageChart(){
   const box = $('#flowbeside');
   const d = chartFor(chartTab);
   if (!d) { box.innerHTML = ''; return; }
-  box.innerHTML = drawDiagram(d, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });
+  const mine = (store.proposals || []).filter(p => p.diagram === chartTab);
+  const shown = showChanges && mine.length ? applyProposals(d, mine) : { diagram: d, added: [] };
+  box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });
+  if (showChanges) for (const id of shown.added.concat(mine.map(p => p.node).filter(Boolean)))
+    box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-proposed');
   markComments();
   for (const id of ((REVIEW.brief || {}).highlights || {}).nodes || [])
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-brief');
@@ -1375,6 +1387,56 @@ function markComments(){
     if (el) el.classList.add('dg-commented');
   }
 }
+// #60 part 3 — changes the reviewer proposes on the part they are commenting on.
+let showChanges = false;
+function nodesOf(diagramId){ const d = chartFor(diagramId); return (d && d.nodes) || []; }
+function proposalText(p){
+  const name = (id) => (nodesOf(p.diagram).find(n => n.id === id) || {}).label || id;
+  return p.op === 'rename' ? 'Rename to "' + p.text + '"'
+    : p.op === 'remove-node' ? 'Remove this box'
+    : p.op === 'add-node' ? 'Add a box after it: "' + p.text + '"'
+    : p.op === 'add-edge' ? 'Add an arrow to "' + name(p.to) + '"'
+    : p.op === 'remove-edge' ? 'Remove this arrow'
+    : 'Label the arrow "' + p.text + '"';
+}
+function proposalsHtml(c){
+  const mine = (store.proposals || []).filter(p => p.comment === c.id);
+  const others = c.node !== undefined ? nodesOf(c.diagram).filter(n => n.id !== c.node) : [];
+  const ask = c.node !== undefined
+    ? \`<div class="prow"><label class="skip" for="pr-\${esc(c.id)}">Rename this box</label>
+        <input id="pr-\${esc(c.id)}" data-ptext="rename" placeholder="Rename this box to…">
+        <button class="btn" type="button" data-prop="rename" data-pfor="\${esc(c.id)}">Propose</button></div>
+      <div class="prow"><label class="skip" for="pa-\${esc(c.id)}">Add a box after this one</label>
+        <input id="pa-\${esc(c.id)}" data-ptext="add-node" placeholder="Add a box after this one…">
+        <button class="btn" type="button" data-prop="add-node" data-pfor="\${esc(c.id)}">Propose</button></div>
+      <div class="prow"><label class="skip" for="pe-\${esc(c.id)}">Add an arrow from this box</label>
+        <select id="pe-\${esc(c.id)}" data-ptext="add-edge"><option value="">Add an arrow to…</option>
+        \${others.map(n => \`<option value="\${esc(n.id)}">\${esc(n.label || n.id)}</option>\`).join('')}</select>
+        <button class="btn" type="button" data-prop="add-edge" data-pfor="\${esc(c.id)}">Propose</button></div>
+      <button class="btn" type="button" data-prop="remove-node" data-pfor="\${esc(c.id)}">Propose removing this box</button>\`
+    : \`<div class="prow"><label class="skip" for="pl-\${esc(c.id)}">Change this arrow's label</label>
+        <input id="pl-\${esc(c.id)}" data-ptext="relabel-edge" placeholder="Change the arrow's label to…">
+        <button class="btn" type="button" data-prop="relabel-edge" data-pfor="\${esc(c.id)}">Propose</button></div>
+      <button class="btn" type="button" data-prop="remove-edge" data-pfor="\${esc(c.id)}">Propose removing this arrow</button>\`;
+  return \`<div class="props">\${ask}\${mine.length ? '<ul class="proplist">' + mine.map(p => \`<li>\${esc(proposalText(p))}
+    <button class="btn" type="button" data-unprop="\${esc(p.id)}">Undo</button></li>\`).join('') + '</ul>' : ''}</div>\`;
+}
+function addProposal(c, op, text, to){
+  const p = { id: 'proposal-' + (Math.max(0, ...(store.proposals || []).map(x => +String(x.id).split('-')[1] || 0)) + 1),
+    diagram: c.diagram, op, label: c.label, comment: c.id };
+  if (c.node !== undefined) { if (op === 'add-node' || op === 'add-edge') p.from = c.node; else p.node = c.node; }
+  else { p.from = c.edge.from; p.to = c.edge.to; }
+  if (op === 'add-edge') p.to = to;
+  if (text) p.text = text;
+  (store.proposals = store.proposals || []).push(p); save();
+  renderComments(); showChangesBtn(); drawStageChart();
+}
+function showChangesBtn(){
+  const b = $('#showchanges'); if (!b) return;
+  b.hidden = !(store.proposals || []).length;
+  if (b.hidden && showChanges) { showChanges = false; b.setAttribute('aria-pressed', 'false'); b.textContent = 'Show my changes'; }
+}
+
 function renderComments(){
   const box = $('#comments'); if (!box) return;
   const list = store.comments || [];
@@ -1384,6 +1446,7 @@ function renderComments(){
       <label class="skip" for="cm-\${esc(c.id)}">Your comment on \${esc(c.label)}</label>
       <textarea id="cm-\${esc(c.id)}" data-comment="\${esc(c.id)}" placeholder="What should change here, or what is wrong?">\${esc(c.note || '')}</textarea>
       \${picsHtml(c.id)}
+      \${proposalsHtml(c)}
       <button class="btn" type="button" data-uncomment="\${esc(c.id)}">Remove comment</button></div>\`;
   }).join('');
 }
@@ -1429,12 +1492,29 @@ if ($('#dpanel')) {
     const t = e.target.closest('[data-comment]'); if (!t) return;
     const c = (store.comments || []).find(x => x.id === t.dataset.comment); if (c) { c.note = t.value; save(); }
   });
+  $('#showchanges').addEventListener('click', () => {
+    showChanges = !showChanges;
+    $('#showchanges').setAttribute('aria-pressed', String(showChanges));
+    $('#showchanges').textContent = showChanges ? 'Show it as it was' : 'Show my changes';
+    drawStageChart();
+  });
   $('#comments').addEventListener('click', e => {
+    const pb = e.target.closest('[data-prop]');
+    if (pb) {
+      const c = (store.comments || []).find(x => x.id === pb.dataset.pfor); if (!c) return;
+      const op = pb.dataset.prop, field = pb.closest('.props').querySelector('[data-ptext="' + op + '"]');
+      const value = field ? field.value.trim() : '';
+      if (field && !value) { field.focus(); return; }
+      addProposal(c, op, op === 'add-edge' ? '' : value, op === 'add-edge' ? value : undefined);
+      return;
+    }
+    const un = e.target.closest('[data-unprop]');
+    if (un) { store.proposals = (store.proposals || []).filter(x => x.id !== un.dataset.unprop); save(); renderComments(); showChangesBtn(); drawStageChart(); return; }
     const b = e.target.closest('[data-uncomment]'); if (!b) return;
     store.comments = (store.comments || []).filter(x => x.id !== b.dataset.uncomment); save();
     renderComments(); drawStageChart();
   });
-  renderComments();
+  renderComments(); showChangesBtn();
 
   // Tabs: click or arrow keys, one chart on show at a time.
   const pickTab = (id) => { if (!TABS.some(t => t[0] === id)) return; chartTab = id; drawTabs(); drawStageChart(); };

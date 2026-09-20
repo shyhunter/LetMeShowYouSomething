@@ -21,7 +21,7 @@
 
 import { readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
-import { findLayerEntry, layerEntryText, partLabel } from '../lib/build-feedback.mjs';
+import { applyProposals, findLayerEntry, layerEntryText, partLabel } from '../lib/build-feedback.mjs';
 import { flowAsDiagram } from '../lib/draw-diagram.mjs';
 
 // #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
@@ -410,68 +410,77 @@ const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'as
 const ICONS = ["envelope", "phone", "lock", "clock", "warning", "person", "database", "cloud", "gear", "card", "calendar", "bell", "document", "search", "check", "cross", "chat", "cart", "key", "globe"];
 const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // need not be reachable
 
+// The rules for one diagram, so the same ones judge a diagram the reviewer changed (#60 part 3).
+function diagramFaults(d, ctx) {
+  const { stepIds, partIds, diagramIds, flow } = ctx;
+  const unresolved = [], senseless = [], collisions = [];
+  const nodes = d.nodes ?? [], edges = d.edges ?? [], lanes = (d.lanes ?? []).map((l) => l.id);
+  const ids = nodes.map((n) => n.id);
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  for (const id of new Set(ids.filter((x, i) => ids.indexOf(x) !== i)))
+    unresolved.push(`${d.id}: node id "${id}" is used twice. Rename one, or arrows can't say which box they mean`);
+  for (const n of nodes) {
+    const w = `${d.id}.${n.id}`;
+    if (!NODE_KINDS.has(n.kind)) unresolved.push(`${w}: unknown kind "${n.kind}". Use one of: ${[...NODE_KINDS].join(', ')}, or it can't be drawn`);
+    if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
+    if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
+    if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${flow ? 'a step' : 'an item'} in this review. Point at ${flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
+    if (n.part !== undefined && !partIds.has(n.part)) unresolved.push(`${w}: part "${n.part}" is not a part of this flow. Point at a part id or drop the link`);
+    if (n.subflow !== undefined && !diagramIds.includes(n.subflow) && !partIds.has(n.subflow)) unresolved.push(`${w}: subflow "${n.subflow}" is neither a diagram nor a part. Point at one, or the reader can't open it`);
+    if (n.component) {
+      const rule = COMPONENT_RULES[n.component.type];
+      if (!rule) unresolved.push(`${w}: unknown component type "${n.component.type}". Use a screen component type`);
+      else unresolved.push(...rule(n.component, `${w} (${n.component.type})`).errors);
+    }
+  }
+  for (const e of edges) {
+    if (!byId[e.from] || !byId[e.to]) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} points at a node that does not exist. Use one of: ${ids.join(', ')}`);
+    if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message or association`);
+  }
+
+  const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
+  const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
+  const starts = nodes.filter((n) => n.kind === 'start' || n.kind === 'entry');
+  if (!starts.length) senseless.push(`${d.id}: has no start. Add a start node, or the reader doesn't know where to begin`);
+  if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);
+  const seen = new Set();
+  for (const queue = starts.map((n) => n.id); queue.length;) { const id = queue.shift(); if (!seen.has(id)) { seen.add(id); queue.push(...out(id).map((e) => e.to)); } }
+  for (const n of nodes) if (starts.length && !seen.has(n.id) && !ANNOTATIONS.has(n.kind))
+    senseless.push(`${d.id}.${n.id}: can't be reached from a start. Connect it, or remove it; the reader would never get there`);
+  for (const n of nodes) {
+    const w = `${d.id}.${n.id}`;
+    if (n.kind === 'start' && inc(n.id).length) senseless.push(`${w}: a start can't have arrows coming in. Point them at a later step, or use a loop node`);
+    if ((n.kind === 'end' || n.kind === 'end-failed') && out(n.id).length) senseless.push(`${w}: an end can't have arrows going out. Make it a step, or remove the arrow`);
+    if (n.kind === 'decision') {
+      if (out(n.id).length < 2) senseless.push(`${w}: a decision needs at least two ways out. Add the other answer, or make it a step`);
+      for (const e of out(n.id)) if (!e.label) senseless.push(`${w}: the way out to ${e.to} has no label. Say which answer leads there`);
+    }
+    if (n.kind === 'parallel-start' && out(n.id).length < 2) senseless.push(`${w}: a parallel start needs at least two paths out, or nothing runs in parallel`);
+    if (n.kind === 'parallel-join' && inc(n.id).length < 2) senseless.push(`${w}: a parallel join needs at least two paths in, or there is nothing to wait for`);
+  }
+  for (const e of edges) if (e.kind === 'message' && byId[e.from] && byId[e.to] && (byId[e.from].lane ?? null) === (byId[e.to].lane ?? null))
+    senseless.push(`${d.id}: message ${e.from} → ${e.to} stays inside one lane. Use a sequence arrow; messages go between lanes`);
+
+  const cells = {};
+  for (const n of nodes) if (n.col !== undefined && n.row !== undefined) {
+    const k = `${n.col},${n.row}`;
+    if (cells[k]) collisions.push(`${d.id}: ${cells[k]} and ${n.id} are both pinned to column ${n.col}, row ${n.row}. Move one, or they draw on top of each other`);
+    else cells[k] = n.id;
+  }
+  return { unresolved, senseless, collisions };
+}
+
 function checkDiagrams(r, rep) {
   // Without a flow, a box may point at any item (#47): tapping it opens that item.
-  const stepIds = new Set((r.items ?? []).filter((i) => i?.step || !r.flow).map((i) => i.id));
-  const partIds = new Set((r.flow?.parts ?? []).map((p) => p.id));
-  const diagramIds = r.diagrams.map((d) => d?.id);
+  const ctx = { stepIds: new Set((r.items ?? []).filter((i) => i?.step || !r.flow).map((i) => i.id)),
+    partIds: new Set((r.flow?.parts ?? []).map((p) => p.id)),
+    diagramIds: r.diagrams.map((d) => d?.id), flow: !!r.flow };
   const unresolved = [], senseless = [], collisions = [];
-  for (const id of new Set(diagramIds.filter((x, i) => diagramIds.indexOf(x) !== i)))
+  for (const id of new Set(ctx.diagramIds.filter((x, i) => ctx.diagramIds.indexOf(x) !== i)))
     unresolved.push(`diagram id "${id}" is used twice. Rename one, or links to it are ambiguous`);
   for (const d of r.diagrams) {
-    const nodes = d.nodes ?? [], edges = d.edges ?? [], lanes = (d.lanes ?? []).map((l) => l.id);
-    const ids = nodes.map((n) => n.id);
-    const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
-    for (const id of new Set(ids.filter((x, i) => ids.indexOf(x) !== i)))
-      unresolved.push(`${d.id}: node id "${id}" is used twice. Rename one, or arrows can't say which box they mean`);
-    for (const n of nodes) {
-      const w = `${d.id}.${n.id}`;
-      if (!NODE_KINDS.has(n.kind)) unresolved.push(`${w}: unknown kind "${n.kind}". Use one of: ${[...NODE_KINDS].join(', ')}, or it can't be drawn`);
-      if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
-      if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
-      if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${r.flow ? 'a step' : 'an item'} in this review. Point at ${r.flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
-      if (n.part !== undefined && !partIds.has(n.part)) unresolved.push(`${w}: part "${n.part}" is not a part of this flow. Point at a part id or drop the link`);
-      if (n.subflow !== undefined && !diagramIds.includes(n.subflow) && !partIds.has(n.subflow)) unresolved.push(`${w}: subflow "${n.subflow}" is neither a diagram nor a part. Point at one, or the reader can't open it`);
-      if (n.component) {
-        const rule = COMPONENT_RULES[n.component.type];
-        if (!rule) unresolved.push(`${w}: unknown component type "${n.component.type}". Use a screen component type`);
-        else unresolved.push(...rule(n.component, `${w} (${n.component.type})`).errors);
-      }
-    }
-    for (const e of edges) {
-      if (!byId[e.from] || !byId[e.to]) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} points at a node that does not exist. Use one of: ${ids.join(', ')}`);
-      if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message or association`);
-    }
-
-    const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
-    const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
-    const starts = nodes.filter((n) => n.kind === 'start' || n.kind === 'entry');
-    if (!starts.length) senseless.push(`${d.id}: has no start. Add a start node, or the reader doesn't know where to begin`);
-    if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);
-    const seen = new Set();
-    for (const queue = starts.map((n) => n.id); queue.length;) { const id = queue.shift(); if (!seen.has(id)) { seen.add(id); queue.push(...out(id).map((e) => e.to)); } }
-    for (const n of nodes) if (starts.length && !seen.has(n.id) && !ANNOTATIONS.has(n.kind))
-      senseless.push(`${d.id}.${n.id}: can't be reached from a start. Connect it, or remove it; the reader would never get there`);
-    for (const n of nodes) {
-      const w = `${d.id}.${n.id}`;
-      if (n.kind === 'start' && inc(n.id).length) senseless.push(`${w}: a start can't have arrows coming in. Point them at a later step, or use a loop node`);
-      if ((n.kind === 'end' || n.kind === 'end-failed') && out(n.id).length) senseless.push(`${w}: an end can't have arrows going out. Make it a step, or remove the arrow`);
-      if (n.kind === 'decision') {
-        if (out(n.id).length < 2) senseless.push(`${w}: a decision needs at least two ways out. Add the other answer, or make it a step`);
-        for (const e of out(n.id)) if (!e.label) senseless.push(`${w}: the way out to ${e.to} has no label. Say which answer leads there`);
-      }
-      if (n.kind === 'parallel-start' && out(n.id).length < 2) senseless.push(`${w}: a parallel start needs at least two paths out, or nothing runs in parallel`);
-      if (n.kind === 'parallel-join' && inc(n.id).length < 2) senseless.push(`${w}: a parallel join needs at least two paths in, or there is nothing to wait for`);
-    }
-    for (const e of edges) if (e.kind === 'message' && byId[e.from] && byId[e.to] && (byId[e.from].lane ?? null) === (byId[e.to].lane ?? null))
-      senseless.push(`${d.id}: message ${e.from} → ${e.to} stays inside one lane. Use a sequence arrow; messages go between lanes`);
-
-    const cells = {};
-    for (const n of nodes) if (n.col !== undefined && n.row !== undefined) {
-      const k = `${n.col},${n.row}`;
-      if (cells[k]) collisions.push(`${d.id}: ${cells[k]} and ${n.id} are both pinned to column ${n.col}, row ${n.row}. Move one, or they draw on top of each other`);
-      else cells[k] = n.id;
-    }
+    const f = diagramFaults(d, ctx);
+    unresolved.push(...f.unresolved); senseless.push(...f.senseless); collisions.push(...f.collisions);
   }
   rep.check('diagrams resolve', unresolved.length === 0, unresolved.join(' · '));
   rep.check('diagrams make sense', senseless.length === 0, senseless.join(' · '));
@@ -591,6 +600,17 @@ function checkFeedback(f, rep, review) {
       `${bad.join(' · ')}. Attach them from the page again: it keeps only real PNG, JPEG or WebP pictures, re-saved and small enough to forward`);
   }
 
+  // #60 part 3 — changes the reviewer proposes to a diagram.
+  const OPS = ['rename', 'remove-node', 'add-node', 'add-edge', 'remove-edge', 'relabel-edge'];
+  const proposals = Array.isArray(f?.proposals) ? f.proposals : [];
+  if (proposals.length) {
+    const pids = proposals.map((p) => p?.id);
+    const bad = proposals.filter((p, i) => !/^proposal-\d{1,4}$/.test(p?.id ?? '') || pids.indexOf(p.id) !== i
+      || !OPS.includes(p?.op) || !String(p?.label ?? '').trim()).map((p) => `${p?.id ?? '?'}${OPS.includes(p?.op) ? '' : ` ("${p?.op}")`}`);
+    rep.check('proposals well-formed', bad.length === 0,
+      `${bad.join(', ')}: a proposed change needs its own id (proposal-1), one of ${OPS.join(', ')}, and the part it is on in words. Export it from the page again`);
+  }
+
   const addedIds = added.map((a) => a?.id);
   rep.check('added ids prefixed', addedIds.every((id) => /^added-/.test(id ?? '')),
     'reviewer-added items must use the "added-" prefix so they can never be confused with items the agent asked about');
@@ -705,6 +725,25 @@ function checkFeedback(f, rep, review) {
         `${lost.join(' · ')}. Export the answer from the page again, or a comment lands on the wrong part`);
     }
 
+    if (proposals.length) {
+      const charts = Object.fromEntries((review.diagrams ?? []).map((d) => [d.id, d]));
+      if (review.flow) charts['user-flow'] = flowAsDiagram(review);
+      const ctx = { stepIds: new Set((review.items ?? []).filter((i) => i?.step || !review.flow).map((i) => i.id)),
+        partIds: new Set((review.flow?.parts ?? []).map((p) => p.id)),
+        diagramIds: Object.keys(charts), flow: !!review.flow };
+      const broken = [];
+      for (const id of new Set(proposals.map((p) => p.diagram))) {
+        const d = charts[id];
+        if (!d) { broken.push(`${proposals.filter((p) => p.diagram === id).map((p) => p.id).join(', ')}: diagram "${id}" is not in the review`); continue; }
+        const { diagram, failed } = applyProposals(d, proposals.filter((p) => p.diagram === id));
+        for (const x of failed) broken.push(`${x.id}: ${x.why}`);
+        const faults = diagramFaults(diagram, ctx);
+        for (const m of [...faults.unresolved, ...faults.senseless]) broken.push(`with the changes, ${m}`);
+      }
+      rep.check('proposals fit the diagram', broken.length === 0,
+        `${broken.join(' · ')}. A change must land on a part that exists and leave a diagram that still holds together; ask the reviewer again rather than drawing something broken`);
+    }
+
     const requests = Array.isArray(f?.requests) ? f.requests : [];
     if (requests.length) {
       const itemIds = new Set((review.items ?? []).map((i) => i.id));
@@ -782,6 +821,11 @@ function checkFollowup(next, review, f, rep) {
     const open = f.comments.filter((c) => !answered.has(c.id)).map((c) => `${c.id} on "${c.label}"`);
     rep.check('comments answered', open.length === 0,
       `${open.join(', ')} ${open.length === 1 ? 'is' : 'are'} not answered. Answer each in an item of the next review and list it in that item's "answers", or the reviewer's point is dropped`);
+  }
+  if ((f?.proposals ?? []).length) {
+    const openP = f.proposals.filter((p) => !answered.has(p.id)).map((p) => `${p.id} on "${p.label}"`);
+    rep.check('proposals answered', openP.length === 0,
+      `${openP.join(', ')} ${openP.length === 1 ? 'is' : 'are'} not answered. Draw the change (or say why not) in an item of the next review and list the id in its "answers", or the reviewer's change is dropped`);
   }
   rep.check('requests answered', unanswered.length === 0, `${unanswered.join(' · ')}, or the reviewer's question goes unanswered where they asked it`);
 }

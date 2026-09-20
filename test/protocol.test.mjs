@@ -1199,3 +1199,37 @@ test('pictures: kept on what they are attached to, refused when they are not rea
   assert.match(w.stdout, /picture-1\.png {2}on "A declined card explains itself"/);
   assert.deepEqual(readFileSync(join(dir, 'picture-1.png')), Buffer.from(PNG, 'base64'));
 });
+
+// #60 part 3 — proposed changes: applied to a copy of the diagram, refused when they would break it.
+test('proposals: applied, refused when they break the diagram, and answered in the follow-up', () => {
+  const review = readJson('examples/review.example.json');
+  const d = review.diagrams[0];
+  const store = { proposals: [
+    { id: 'proposal-1', diagram: d.id, op: 'rename', node: 'pay', label: 'Takes the payment', text: 'Charges the card', comment: 'comment-1' },
+    { id: 'proposal-2', diagram: d.id, op: 'add-node', from: 'pay', label: 'Takes the payment', text: 'Shows the amount' } ],
+    comments: [{ id: 'comment-1', diagram: d.id, node: 'pay', label: 'Takes the payment', note: 'Say what is charged.' }] };
+  const fb = buildFeedback(review, store);
+  assert.equal(fb.proposals[0].why, 'Say what is charged.', 'the words from the comment on the same part travel with it');
+  const write = (o) => { const p = join(tmp, `pr-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
+  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  assert.equal(pair(fb).status, 0, pair(fb).stdout);
+
+  // The change is applied to a copy of the diagram, and the same rules judge the result.
+  const cut = structuredClone(fb);
+  cut.proposals = [{ id: 'proposal-1', diagram: d.id, op: 'remove-node', node: 'signed-in', label: 'Signed in?' }];
+  assert.match(pair(cut).stdout, /✗ proposals fit the diagram: with the changes, checkout-path\.guest: can't be reached from a start/);
+  const gone = structuredClone(fb);
+  gone.proposals = [{ id: 'proposal-1', diagram: d.id, op: 'rename', node: 'nowhere', label: 'x', text: 'y' }];
+  assert.match(pair(gone).stdout, /✗ proposals fit the diagram: proposal-1: box "nowhere" is not in this diagram/);
+  const junk = structuredClone(fb);
+  junk.proposals = [{ id: 'proposal-1', diagram: d.id, op: 'redraw-everything', label: 'x' }];
+  assert.match(pair(junk).stdout, /✗ proposals well-formed: proposal-1 \("redraw-everything"\)/);
+
+  // The next round draws the change, or says why not, and names the proposal it answers.
+  const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
+  next.items[0].answers = ['comment-1', 'proposal-1'];
+  const fbPath = write(fb);
+  assert.match(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ proposals answered: proposal-2 on "Takes the payment" is not answered/);
+  next.items[1].answers = ['proposal-2'];
+  assert.doesNotMatch(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ proposals answered/);
+});

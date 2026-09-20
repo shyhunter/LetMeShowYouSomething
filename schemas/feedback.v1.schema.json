@@ -139,6 +139,28 @@
       }
     },
 
+    "proposals": {
+      "type": "array",
+      "maxItems": 50,
+      "description": "#60 — changes the reviewer proposes to a diagram: rename, remove or add a box, add, remove or relabel an arrow. The checker applies them to a copy of the diagram and refuses a set that would break it. The next round draws them (or says why not) and lists each id in an item's `answers`.",
+      "items": {
+        "type": "object",
+        "required": ["id", "diagram", "op", "label"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^proposal-[0-9]{1,4}$" },
+          "diagram": { "type": "string" },
+          "op": { "enum": ["rename", "remove-node", "add-node", "add-edge", "remove-edge", "relabel-edge"] },
+          "node": { "type": "string", "description": "The box it is on (rename, remove-node)." },
+          "from": { "type": "string", "description": "A box id: the arrow's start, or the box a new box follows." },
+          "to": { "type": "string", "description": "A box id: the arrow's end." },
+          "text": { "type": "string", "maxLength": 300, "description": "The new words: a name, a new box, an arrow's label." },
+          "label": { "type": "string", "minLength": 1, "maxLength": 600, "description": "What the change is on, in words, so the file reads without the review." },
+          "why": { "type": "string", "maxLength": 4000, "description": "The reviewer's own words, from their comment on the same part." }
+        }
+      }
+    },
+
     "comments": {
       "type": "array",
       "description": "#60 — the reviewer's comments on one box or one arrow of a drawn diagram. Each carries what it is on, in words (label), so it reads without the review. The next round answers each one (an item's `answers`).",
