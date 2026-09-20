@@ -124,6 +124,9 @@ npm ci && npx playwright install chromium firefox webkit
 npx playwright test
 ```
 
+Changing something here? [CONTRIBUTING.md](CONTRIBUTING.md) has the house rules: run the three test
+suites, a new refusal comes with a test that proves it, and the example pages are generated.
+
 ## Licence
 
 Free and complete, with no paid version. Three licences, depending on where a file ends up
