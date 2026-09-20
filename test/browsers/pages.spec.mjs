@@ -300,3 +300,26 @@ test('a picture on a note: attached, re-saved, kept across a reload, and the exp
   expect(pic).toMatchObject({ on: 'guest-checkout', width: 1280, height: 640 });
   expect(['image/webp', 'image/jpeg']).toContain(pic.type);
 });
+
+// #60 part 3 — the reviewer changes the agent's diagram; the page shows it and the file carries it.
+test('a proposed change: rename a box, see it drawn, export it, and the checker accepts it', async ({ page }) => {
+  await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#commentmode').click();
+  await page.locator('#flowbeside [data-node="pay"]').focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('Say what is charged.');
+  await page.locator('#comments [data-ptext="rename"]').fill('Charges the card');
+  await page.locator('#comments [data-prop="rename"]').click();
+  await expect(page.locator('#comments .proplist li')).toHaveText([/Rename to "Charges the card"/]);
+  await page.locator('#showchanges').click();
+  await expect(page.locator('#flowbeside [data-node="pay"]')).toHaveAttribute('aria-label', 'Charges the card');
+  await expect(page.locator('#flowbeside .dg-proposed')).toHaveCount(1);
+  await page.locator('#showchanges').click();                        // back to the agent's own diagram
+  await expect(page.locator('#flowbeside [data-node="pay"]')).toHaveAttribute('aria-label', 'Takes the payment');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
+  const file = join(mkdtempSync(join(tmpdir(), 'pw-prop-')), 'feedback.json');
+  await download.saveAs(file);
+  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  expect(r.status, r.stdout).toBe(0);
+  expect(JSON.parse(readFileSync(file, 'utf8')).proposals[0]).toMatchObject({ op: 'rename', node: 'pay', text: 'Charges the card', why: 'Say what is charged.' });
+});
