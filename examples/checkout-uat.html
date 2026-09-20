@@ -470,6 +470,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-e-message path{stroke-dasharray:6 4}
 .dg-e-async path{stroke-dasharray:5 5}
+.dg-e-return path{stroke-dasharray:4 4}
+.dg-life{stroke:var(--line2);stroke-width:1.5;stroke-dasharray:4 5;fill:none}
 .dg-shape.dg-dashed{stroke-dasharray:6 4}
 .dg-e-association path{stroke-dasharray:2 3}
 .dg-back path{stroke:var(--warn)}
@@ -678,8 +680,12 @@ function partLabel(diagram, on) {
   const nodes = Object.fromEntries((diagram?.nodes || []).map((n) => [n.id, n]));
   const name = (id) => nodes[id]?.label || nodes[id]?.kind || id;
   if (on?.node !== undefined) return nodes[on.node] ? name(on.node) : null;
-  const e = (diagram?.edges || []).find((x) => x.from === on?.edge?.from && x.to === on?.edge?.to);
-  return e ? `${name(e.from)} → ${name(e.to)}${e.label ? ` (${e.label})` : ''}` : null;
+  // The same pair can be joined more than once (a sequence): `nth` says which arrow, by its place
+  // in the diagram's own list.
+  const all = diagram?.edges || [];
+  const e = on?.edge?.nth !== undefined ? all[on.edge.nth] : all.find((x) => x.from === on?.edge?.from && x.to === on?.edge?.to);
+  if (!e || e.from !== on?.edge?.from || e.to !== on?.edge?.to) return null;
+  return `${name(e.from)} → ${name(e.to)}${e.label ? ` (${e.label})` : ''}`;
 }
 
 // #60 — the reviewer's proposed changes to a diagram, applied to a copy of it: what the next round
@@ -692,7 +698,9 @@ function applyProposals(diagram, proposals) {
   let n = 0;
   for (const p of proposals) {
     const node = d.nodes.find((x) => x.id === p.node);
-    const edge = d.edges.find((x) => x.from === p.from && x.to === p.to);
+    // `nth` picks one arrow when the same pair is joined more than once (a sequence).
+    const edge = p.nth !== undefined ? (d.edges[p.nth]?.from === p.from && d.edges[p.nth]?.to === p.to ? d.edges[p.nth] : undefined)
+      : d.edges.find((x) => x.from === p.from && x.to === p.to);
     const no = (why) => failed.push({ id: p.id, why });
     if (p.op === 'rename') {
       if (!node) no(`box "${p.node}" is not in this diagram`);
@@ -844,7 +852,9 @@ function buildFeedback(review, store, now = new Date().toISOString()) {
   // comment is not an answer and is left out.
   const comments = (store.comments || []).filter((c) => (c.note || '').trim()).map((c) => {
     const o = { id: c.id, diagram: c.diagram };
-    if (c.node !== undefined) o.node = c.node; else o.edge = { from: c.edge.from, to: c.edge.to };
+    if (c.node !== undefined) o.node = c.node;
+    // `nth` says which arrow, when the same pair is joined more than once (a sequence): it must travel.
+    else o.edge = c.edge.nth === undefined ? { from: c.edge.from, to: c.edge.to } : { from: c.edge.from, to: c.edge.to, nth: c.edge.nth };
     o.label = c.label; o.note = c.note.trim();
     return o;
   });
@@ -862,7 +872,7 @@ function buildFeedback(review, store, now = new Date().toISOString()) {
   const why = Object.fromEntries((store.comments || []).map((c) => [c.id, (c.note || '').trim()]));
   const proposals = (store.proposals || []).map((p) => {
     const o = { id: p.id, diagram: p.diagram, op: p.op, label: p.label };
-    for (const k of ['node', 'from', 'to', 'text']) if (p[k] !== undefined) o[k] = p[k];
+    for (const k of ['node', 'from', 'to', 'nth', 'text']) if (p[k] !== undefined) o[k] = p[k];
     if (why[p.comment]) o.why = why[p.comment];
     return o;
   });
@@ -1087,6 +1097,37 @@ function layout(diagram) {
 // Edge labels are 600 11px sans: about 6.6px a character, plus the halo drawn around them.
 function labelWidth(text) { return Math.ceil(String(text).length * 6.6) + 10; }
 
+// #32 — a sequence: who calls whom, in the order the edges are written. Participants stand in a row,
+// each with a lifeline; every message is one row down. A message to itself gets a taller row for its
+// bracket. Deterministic and pure, like the flow layout.
+const SEQ = { w: 168, h: 56, gap: 56, pad: 16, top: 16, first: 40, row: 52, self: 34 };
+
+function layoutSequence(diagram) {
+  const nodes = diagram.nodes || [];
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const edges = (diagram.edges || []).filter((e) => byId[e.from] && byId[e.to]);
+  const boxes = {};
+  nodes.forEach((n, i) => {
+    const x = SEQ.pad + i * (SEQ.w + SEQ.gap);
+    boxes[n.id] = { x, y: SEQ.top, w: SEQ.w, h: SEQ.h, cx: x + SEQ.w / 2 };
+  });
+  let y = SEQ.top + SEQ.h + SEQ.first;
+  const lines = edges.map((e, i) => {
+    const a = boxes[e.from], b = boxes[e.to];
+    const self = e.from === e.to;
+    const at = y;
+    y += self ? SEQ.row + SEQ.self : SEQ.row;
+    const points = self
+      ? [[a.cx, at], [a.cx + 46, at], [a.cx + 46, at + SEQ.self], [a.cx + 6, at + SEQ.self]]
+      : [[a.cx, at], [b.cx, at]];
+    return { from: e.from, to: e.to, kind: e.kind || 'sequence', label: e.label, nth: i,
+      self, points, labelAt: self ? [a.cx + 52, at + SEQ.self / 2] : [(a.cx + b.cx) / 2, at - 9] };
+  });
+  const bottom = Math.max(y + 10, SEQ.top + SEQ.h + SEQ.first + 40);
+  return { nodes: boxes, edges: lines, lanes: [], lifelines: nodes.map((n) => ({ id: n.id, x: boxes[n.id].cx, from: SEQ.top + SEQ.h, to: bottom })),
+    width: SEQ.pad * 2 + nodes.length * SEQ.w + Math.max(0, nodes.length - 1) * SEQ.gap, height: bottom + SEQ.pad };
+}
+
 // SPDX-License-Identifier: MIT-0
 // Draws a flow chart as an SVG string: our own shapes per node kind, our own icons (D041), screen
 // components inside nodes, and the selected step marked (D045). Pure; the renderer inlines this file
@@ -1152,7 +1193,7 @@ function outline(kind, x, y, w, h) {
     case 'client': return r(8) + `<path class="dg-line" d="M${x} ${y + 14}h${w}"/>`;
     case 'service': return r(10);
     case 'external': return `<rect class="dg-shape dg-dashed" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
-    case 'queue': return r(6) + `<path class="dg-line" d="M${x + w / 3} ${y}v${h}M${x + (2 * w) / 3} ${y}v${h}"/>`;
+    case 'queue': return r(6) + `<path class="dg-line" d="M${x + 10} ${y}v${h}M${x + 16} ${y}v${h}"/>`;
     case 'guard': return poly([[x + 10, y], [x + w - 10, y], [x + w, cy], [x + w - 10, y + h], [x + 10, y + h], [x, cy]]);
     case 'group': return `<rect class="dg-shape dg-group" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
     default: return r(8);
@@ -1170,6 +1211,7 @@ function wrap(text, max = 22, lines = 3) {
 }
 
 function drawDiagram(diagram, opts = {}) {
+  if (diagram.kind === 'sequence') return drawSequence(diagram, opts);
   const L = layout(diagram);
   const id = escSvg(diagram.id);
   const byId = Object.fromEntries((diagram.nodes || []).map((n) => [n.id, n]));
@@ -1221,6 +1263,38 @@ function drawDiagram(diagram, opts = {}) {
       + '</g>');
   }
 
+  return `<svg class="dg" viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${escSvg(diagram.title)}">`
+    + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
+    + parts.join('') + labels.join('') + '</svg>';
+}
+
+// #32 — a sequence: the participants in a row with their lifelines, one message per row underneath.
+// The same hooks as any chart, so a comment or a proposed change lands on a box or a message.
+function drawSequence(diagram, opts = {}) {
+  const L = layoutSequence(diagram);
+  const id = escSvg(diagram.id);
+  const byId = Object.fromEntries((diagram.nodes || []).map((n) => [n.id, n]));
+  const parts = [];
+  for (const l of L.lifelines) parts.push(`<path class="dg-life" d="M${l.x} ${l.from}V${l.to}"/>`);
+  for (const e of L.edges) {
+    const d = e.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+    const pick = opts.commentable ? ` tabindex="0" role="button" aria-label="Message from ${escSvg(byId[e.from]?.label || e.from)} to ${escSvg(byId[e.to]?.label || e.to)}${e.label ? `: ${escSvg(e.label)}` : ''}"` : '';
+    parts.push(`<g class="dg-edge dg-e-${escSvg(e.kind)}" data-from="${escSvg(e.from)}" data-to="${escSvg(e.to)}" data-nth="${e.nth}"${pick}>`
+      + `<path d="${d}" marker-end="url(#dg-arrow-${id})"/>${opts.commentable ? `<path class="dg-hit" d="${d}"/>` : ''}</g>`);
+  }
+  for (const [nodeId, box] of Object.entries(L.nodes)) {
+    const n = byId[nodeId];
+    const glyph = n.icon || KIND_ICON[n.kind];
+    const lines = wrap(n.label, glyph ? 18 : 22, 2);
+    parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}"`
+      + (n.step !== undefined ? ` data-step="${escSvg(n.step)}"` : '') + (n.step !== undefined || opts.commentable ? ' tabindex="0" role="button"' : '')
+      + ` aria-label="${escSvg(n.label || n.kind)}">`
+      + outline(n.kind, box.x, box.y, box.w, box.h)
+      + (glyph ? icon(glyph, box.x + 8, box.y + box.h / 2 - 9) : '')
+      + `<text class="dg-label" x="${box.x + (glyph ? 34 : 12)}" y="${box.y + box.h / 2 - (lines.length - 1) * 7 + 4}">${lines.map((l, i) => `<tspan x="${box.x + (glyph ? 34 : 12)}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text></g>`);
+  }
+  const labels = L.edges.filter((e) => e.label).map((e) =>
+    `<text class="dg-edge-label" x="${e.labelAt[0]}" y="${e.labelAt[1]}" text-anchor="${e.self ? 'start' : 'middle'}" dominant-baseline="middle">${escSvg(e.label)}</text>`);
   return `<svg class="dg" viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${escSvg(diagram.title)}">`
     + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
     + parts.join('') + labels.join('') + '</svg>';
@@ -1869,7 +1943,8 @@ function markComments(){
   for (const c of store.comments || []) {
     if (c.diagram !== chartTab) continue;
     const el = c.node !== undefined ? box.querySelector('[data-node="' + CSS.escape(c.node) + '"]')
-      : box.querySelector('.dg-edge[data-from="' + CSS.escape(c.edge.from) + '"][data-to="' + CSS.escape(c.edge.to) + '"]');
+      : box.querySelector('.dg-edge[data-from="' + CSS.escape(c.edge.from) + '"][data-to="' + CSS.escape(c.edge.to) + '"]'
+        + (c.edge.nth === undefined ? '' : '[data-nth="' + c.edge.nth + '"]'));
     if (el) el.classList.add('dg-commented');
   }
 }
@@ -1911,7 +1986,7 @@ function addProposal(c, op, text, to){
   const p = { id: 'proposal-' + (Math.max(0, ...(store.proposals || []).map(x => +String(x.id).split('-')[1] || 0)) + 1),
     diagram: c.diagram, op, label: c.label, comment: c.id };
   if (c.node !== undefined) { if (op === 'add-node' || op === 'add-edge') p.from = c.node; else p.node = c.node; }
-  else { p.from = c.edge.from; p.to = c.edge.to; }
+  else { p.from = c.edge.from; p.to = c.edge.to; if (c.edge.nth !== undefined) p.nth = c.edge.nth; }
   if (op === 'add-edge') p.to = to;
   if (text) p.text = text;
   (store.proposals = store.proposals || []).push(p); save();
@@ -1957,7 +2032,9 @@ if ($('#dpanel')) {
     if (commenting) {
       const n = target.closest('#flowbeside [data-node]'), e = target.closest('#flowbeside .dg-edge');
       if (!n && !e) return false;
-      addComment(n ? { node: n.dataset.node } : { edge: { from: e.dataset.from, to: e.dataset.to } });
+      // The same pair can be joined more than once (a sequence): keep which arrow was picked.
+      const edge = e && (e.dataset.nth !== undefined ? { from: e.dataset.from, to: e.dataset.to, nth: +e.dataset.nth } : { from: e.dataset.from, to: e.dataset.to });
+      addComment(n ? { node: n.dataset.node } : { edge });
       return true;
     }
     const node = target.closest('#flowbeside [data-step]'); if (!node) return false;

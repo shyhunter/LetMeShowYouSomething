@@ -1251,7 +1251,7 @@ test('system diagrams: their own catalogue of boxes, and nothing unconnected', (
   assert.match(run(floating).stdout, /✗ diagrams make sense: sys\.cache: nothing calls it and it calls nothing/);
 
   const wrongBox = base(); wrongBox.nodes.push({ id: 'pick', kind: 'decision', lane: 'ours', label: 'Which one?' });
-  assert.match(run(wrongBox).stdout, /✗ diagrams resolve: sys\.pick: "decision" is a flow-chart box, not a system one/);
+  assert.match(run(wrongBox).stdout, /✗ diagrams resolve: sys\.pick: "decision" does not belong in a system diagram/);
 
   const halfGuard = base();
   halfGuard.nodes.push({ id: 'auth', kind: 'guard', lane: 'ours', label: 'Signed in?' });
@@ -1261,4 +1261,36 @@ test('system diagrams: their own catalogue of boxes, and nothing unconnected', (
   // A flow chart keeps its own rules: it still needs a start and an end.
   const flow = base(); flow.kind = 'flowchart';
   assert.match(run(flow).stdout, /sys: has no start/);
+});
+
+// #32 — a sequence: who calls whom, in order. Every message says something; an answer follows a call.
+test('sequence diagrams: every message speaks, every participant takes part, an answer follows a call', () => {
+  const base = () => ({ id: 'calls', kind: 'sequence', title: 'Booking, call by call',
+    nodes: [{ id: 'app', kind: 'client', label: 'Phone' }, { id: 'svc', kind: 'service', label: 'Booking service' },
+      { id: 'db', kind: 'data-store', label: 'Slots' }],
+    edges: [{ from: 'app', to: 'svc', label: 'book 10:00' }, { from: 'svc', to: 'db', label: 'still free?' },
+      { from: 'db', to: 'svc', kind: 'return', label: 'free' }, { from: 'svc', to: 'app', kind: 'return', label: 'booked' }] });
+  const withDiagram = (d) => { const r = readJson('examples/decision-review.example.json'); r.diagrams = [d]; return r; };
+  const run = (d) => checkReviewObj(withDiagram(d));
+  assert.equal(run(base()).status, 0, run(base()).stdout);
+
+  const mute = base(); mute.edges[1].label = '  ';
+  assert.match(run(mute).stdout, /✗ diagrams make sense: calls: message 2 \(svc → db\) says nothing/);
+  const early = base(); early.edges = [{ from: 'db', to: 'svc', kind: 'return', label: 'free' }, ...base().edges];
+  assert.match(run(early).stdout, /message 1 \(db → svc\) is an answer to a call that never happened/);
+  const idle = base(); idle.nodes.push({ id: 'mail', kind: 'external', label: 'Email provider' });
+  assert.match(run(idle).stdout, /calls\.mail: takes part in no message/);
+  const wrongBox = base(); wrongBox.nodes.push({ id: 'gate', kind: 'guard', label: 'Signed in?' });
+  wrongBox.edges.push({ from: 'app', to: 'gate', label: 'who are you?' });
+  assert.match(run(wrongBox).stdout, /calls\.gate: "guard" does not belong in a sequence diagram/);
+
+  // The same pair speaks more than once: a comment says which message, by its place in the list.
+  const review = withDiagram(base()); review.id = 'sequence-comment-test';
+  const fb = buildFeedback(review, { comments: [
+    { id: 'comment-1', diagram: 'calls', edge: { from: 'svc', to: 'db', nth: 1 }, label: 'Booking service → Slots (still free?)', note: 'Say what happens when it is not free.' }] });
+  const paths = ['r', 'f'].map((k, i) => { const p = join(tmp, `${k}q-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify([review, fb][i])); return p; });
+  assert.equal(check('pair', ...paths).status, 0, check('pair', ...paths).stdout);
+  const wrongPlace = structuredClone(fb); wrongPlace.comments[0].edge.nth = 3;
+  writeFileSync(paths[1], JSON.stringify(wrongPlace));
+  assert.match(check('pair', ...paths).stdout, /✗ comments resolve: comment-1: "Booking service → Slots \(still free\?\)" is no arrow of/);
 });

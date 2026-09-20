@@ -408,8 +408,10 @@ function checkFlow(r, rep) {
 // #32 — a closed catalogue per diagram kind: a flow chart says what happens in order, a system diagram
 // says what runs and what it talks to. A box from the wrong catalogue is refused, not drawn oddly.
 const SYSTEM_KINDS = new Set(["client", "service", "component", "guard", "queue", "data-store", "external", "note", "group", "connector", "off-page"]);
+// A sequence has participants, not steps: who is in the conversation, and nothing else.
+const SEQUENCE_KINDS = new Set(["client", "service", "component", "queue", "data-store", "external", "note"]);
 const NODE_KINDS = new Set([...SYSTEM_KINDS, "start", "end", "end-failed", "entry", "exit", "process", "user-action", "system-action", "manual", "subflow", "screen", "input", "output", "document", "notification", "decision", "parallel-start", "parallel-join", "merge", "event-choice", "wait", "timer", "deadline", "schedule", "error", "retry", "compensate", "escalate", "cancel", "send", "receive", "signal", "callback", "data", "data-store", "group", "connector", "off-page", "note", "loop"]);
-const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'association', 'async']);
+const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'association', 'async', 'return']);
 const ICONS = ["envelope", "phone", "lock", "clock", "warning", "person", "database", "cloud", "gear", "card", "calendar", "bell", "document", "search", "check", "cross", "chat", "cart", "key", "globe"];
 const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // need not be reachable
 
@@ -424,8 +426,8 @@ function diagramFaults(d, ctx) {
     unresolved.push(`${d.id}: node id "${id}" is used twice. Rename one, or arrows can't say which box they mean`);
   for (const n of nodes) {
     const w = `${d.id}.${n.id}`;
-    const kinds = d.kind === 'system' ? SYSTEM_KINDS : NODE_KINDS;
-      if (!kinds.has(n.kind)) unresolved.push(`${w}: ${NODE_KINDS.has(n.kind) ? `"${n.kind}" is a flow-chart box, not a system one` : `unknown kind "${n.kind}"`}. Use one of: ${[...kinds].join(', ')}, or it can't be drawn`);
+    const kinds = d.kind === 'system' ? SYSTEM_KINDS : d.kind === 'sequence' ? SEQUENCE_KINDS : NODE_KINDS;
+      if (!kinds.has(n.kind)) unresolved.push(`${w}: ${NODE_KINDS.has(n.kind) ? `"${n.kind}" does not belong in a ${d.kind} diagram` : `unknown kind "${n.kind}"`}. Use one of: ${[...kinds].join(', ')}, or it can't be drawn`);
     if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
     if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
     if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${flow ? 'a step' : 'an item'} in this review. Point at ${flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
@@ -439,11 +441,26 @@ function diagramFaults(d, ctx) {
   }
   for (const e of edges) {
     if (!byId[e.from] || !byId[e.to]) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} points at a node that does not exist. Use one of: ${ids.join(', ')}`);
-    if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message, association or async`);
+    if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message, association, async or return`);
   }
 
   const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
   const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
+  // #32 — a sequence says who calls whom, in order. Every message says what it is, every participant
+  // is in the conversation, and an answer follows a question.
+  if (d.kind === 'sequence') {
+    const seen = new Set();
+    for (const [i, e] of edges.entries()) {
+      const w = `${d.id}: message ${i + 1} (${e.from} → ${e.to})`;
+      if (!String(e.label ?? '').trim()) senseless.push(`${w} says nothing. Write what is asked or answered, or the reader sees an arrow and no reason`);
+      if (e.kind === 'return' && !seen.has(`${e.to}>${e.from}`)) senseless.push(`${w} is an answer to a call that never happened. Put the call first, or make it a message of its own`);
+      seen.add(`${e.from}>${e.to}`);
+    }
+    for (const n of nodes) if (!ANNOTATIONS.has(n.kind) && !edges.some((e) => e.from === n.id || e.to === n.id))
+      senseless.push(`${d.id}.${n.id}: takes part in no message. Give it one, or leave it out of the conversation`);
+    return { unresolved, senseless, collisions };
+  }
+
   // #32 — a system diagram has no beginning and no end: it says what runs and what it talks to.
   // Its own rule instead: nothing floats. Every box is on an arrow, and a check sits on a path.
   if (d.kind === 'system') {

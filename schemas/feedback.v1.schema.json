@@ -154,6 +154,7 @@
           "node": { "type": "string", "description": "The box it is on (rename, remove-node)." },
           "from": { "type": "string", "description": "A box id: the arrow's start, or the box a new box follows." },
           "to": { "type": "string", "description": "A box id: the arrow's end." },
+          "nth": { "type": "integer", "minimum": 0, "description": "Which arrow, when the same pair is joined more than once." },
           "text": { "type": "string", "maxLength": 300, "description": "The new words: a name, a new box, an arrow's label." },
           "label": { "type": "string", "minLength": 1, "maxLength": 600, "description": "What the change is on, in words, so the file reads without the review." },
           "why": { "type": "string", "maxLength": 4000, "description": "The reviewer's own words, from their comment on the same part." }
@@ -173,7 +174,8 @@
           "diagram": { "type": "string", "description": "The diagram id, or user-flow for the chart computed from a flow." },
           "node": { "type": "string" },
           "edge": { "type": "object", "required": ["from", "to"], "additionalProperties": false,
-            "properties": { "from": { "type": "string" }, "to": { "type": "string" } } },
+            "properties": { "from": { "type": "string" }, "to": { "type": "string" },
+              "nth": { "type": "integer", "minimum": 0, "description": "Which arrow, when the same pair is joined more than once (a sequence): its position in the diagram's edges, from 0." } } },
           "label": { "type": "string", "minLength": 1, "maxLength": 600 },
           "note": { "type": "string", "minLength": 1, "maxLength": 4000 }
         },

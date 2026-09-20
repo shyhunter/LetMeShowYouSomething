@@ -1075,6 +1075,91 @@
           "kind": "association"
         }
       ]
+    },
+    {
+      "id": "booking-calls",
+      "kind": "sequence",
+      "title": "Booking a slot, call by call",
+      "nodes": [
+        {
+          "id": "app",
+          "kind": "client",
+          "label": "The member's phone"
+        },
+        {
+          "id": "booking",
+          "kind": "service",
+          "label": "Booking service"
+        },
+        {
+          "id": "slots",
+          "kind": "data-store",
+          "label": "Slots and bookings"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "label": "Emails waiting to go"
+        },
+        {
+          "id": "mailer",
+          "kind": "external",
+          "label": "Email provider"
+        }
+      ],
+      "edges": [
+        {
+          "from": "app",
+          "to": "booking",
+          "label": "book 10:00 on Saturday"
+        },
+        {
+          "from": "booking",
+          "to": "slots",
+          "label": "is 10:00 still free?"
+        },
+        {
+          "from": "slots",
+          "to": "booking",
+          "kind": "return",
+          "label": "free"
+        },
+        {
+          "from": "booking",
+          "to": "slots",
+          "label": "hold it for this member"
+        },
+        {
+          "from": "slots",
+          "to": "booking",
+          "kind": "return",
+          "label": "held"
+        },
+        {
+          "from": "booking",
+          "to": "outbox",
+          "kind": "async",
+          "label": "confirmation email"
+        },
+        {
+          "from": "booking",
+          "to": "app",
+          "kind": "return",
+          "label": "booked, with the cancel window"
+        },
+        {
+          "from": "outbox",
+          "to": "mailer",
+          "kind": "async",
+          "label": "send it"
+        },
+        {
+          "from": "mailer",
+          "to": "outbox",
+          "kind": "return",
+          "label": "accepted, or try again in five minutes"
+        }
+      ]
     }
   ]
 }

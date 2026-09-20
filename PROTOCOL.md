@@ -329,6 +329,10 @@ Two kinds of chart, each with its own boxes and its own rules (#32):
 
 - **`flowchart`** — what happens, in order. It needs a start and an end, every box must be reachable,
   and a decision needs at least two labelled ways out.
+- **`sequence`** — who calls whom, in the order the messages are written. Participants stand in a
+  row with their lifelines; each edge is one message, drawn one row further down, and a `return` is
+  the answer to an earlier call. Every message must say what it is, and every participant must take
+  part in one. Its boxes: `client`, `service`, `component`, `queue`, `data-store`, `external`, `note`.
 - **`system`** — what runs and what it talks to. It has no start and no end. Its rule instead:
   **nothing floats** — every box is on at least one arrow — and a check (`guard`) sits on a path,
   with something reaching it and something leaving it. Its boxes are `client` (what a person uses),
@@ -345,8 +349,8 @@ A written chart has `lanes` (who does what), `nodes` and `edges`:
   `escalate` `cancel` · messages: `send` `receive` `signal` `callback` · data: `data` `data-store` ·
   structure: `group` `connector` `off-page` `note` `loop`.
 - **Edge kinds** — `sequence` (default) · `conditional` (with a label) · `default` · `message`
-  (between lanes) · `async` (sent now, handled later: a queue, an event) · `association` (a note to
-  what it explains).
+  (between lanes) · `async` (sent now, handled later: a queue, an event) · `return` (the answer to a call, in a
+  sequence) · `association` (a note to what it explains).
 - **Icons** — our own: `envelope` `phone` `lock` `clock` `warning` `person` `database` `cloud` `gear`
   `card` `calendar` `bell` `document` `search` `check` `cross` `chat` `cart` `key` `globe`.
 - **Links** — a node's `step` or `part` ties it to the flow: selecting either highlights the other.
@@ -387,7 +391,10 @@ part. The feedback carries each one:
                "label": "What happens? → Says why the card was declined (declined)", "note": "Keep the cart." }]
 ```
 
-`label` says what the comment is on, in words, so the file reads without the review. `diagram` is a
+`label` says what the comment is on, in words, so the file reads without the review. When the same
+two boxes are joined more than once — a sequence asks the same service twice — the edge carries
+`nth`, its place in the diagram's own list of arrows, so the comment lands on that message and no
+other. `diagram` is a
 diagram id, or `user-flow` for the chart computed from a flow. An empty comment is left out.
 
 | check | refuses |
