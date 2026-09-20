@@ -405,8 +405,11 @@ function checkFlow(r, rep) {
 }
 
 // ── diagrams (v0.2 part 3b, D036, D041, D052) ─────────────────────────────────────────────────────
-const NODE_KINDS = new Set(["start", "end", "end-failed", "entry", "exit", "process", "user-action", "system-action", "manual", "subflow", "screen", "input", "output", "document", "notification", "decision", "parallel-start", "parallel-join", "merge", "event-choice", "wait", "timer", "deadline", "schedule", "error", "retry", "compensate", "escalate", "cancel", "send", "receive", "signal", "callback", "data", "data-store", "group", "connector", "off-page", "note", "loop"]);
-const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'association']);
+// #32 — a closed catalogue per diagram kind: a flow chart says what happens in order, a system diagram
+// says what runs and what it talks to. A box from the wrong catalogue is refused, not drawn oddly.
+const SYSTEM_KINDS = new Set(["client", "service", "component", "guard", "queue", "data-store", "external", "note", "group", "connector", "off-page"]);
+const NODE_KINDS = new Set([...SYSTEM_KINDS, "start", "end", "end-failed", "entry", "exit", "process", "user-action", "system-action", "manual", "subflow", "screen", "input", "output", "document", "notification", "decision", "parallel-start", "parallel-join", "merge", "event-choice", "wait", "timer", "deadline", "schedule", "error", "retry", "compensate", "escalate", "cancel", "send", "receive", "signal", "callback", "data", "data-store", "group", "connector", "off-page", "note", "loop"]);
+const EDGE_KINDS = new Set(['sequence', 'conditional', 'default', 'message', 'association', 'async']);
 const ICONS = ["envelope", "phone", "lock", "clock", "warning", "person", "database", "cloud", "gear", "card", "calendar", "bell", "document", "search", "check", "cross", "chat", "cart", "key", "globe"];
 const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // need not be reachable
 
@@ -421,7 +424,8 @@ function diagramFaults(d, ctx) {
     unresolved.push(`${d.id}: node id "${id}" is used twice. Rename one, or arrows can't say which box they mean`);
   for (const n of nodes) {
     const w = `${d.id}.${n.id}`;
-    if (!NODE_KINDS.has(n.kind)) unresolved.push(`${w}: unknown kind "${n.kind}". Use one of: ${[...NODE_KINDS].join(', ')}, or it can't be drawn`);
+    const kinds = d.kind === 'system' ? SYSTEM_KINDS : NODE_KINDS;
+      if (!kinds.has(n.kind)) unresolved.push(`${w}: ${NODE_KINDS.has(n.kind) ? `"${n.kind}" is a flow-chart box, not a system one` : `unknown kind "${n.kind}"`}. Use one of: ${[...kinds].join(', ')}, or it can't be drawn`);
     if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
     if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
     if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${flow ? 'a step' : 'an item'} in this review. Point at ${flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
@@ -435,11 +439,23 @@ function diagramFaults(d, ctx) {
   }
   for (const e of edges) {
     if (!byId[e.from] || !byId[e.to]) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} points at a node that does not exist. Use one of: ${ids.join(', ')}`);
-    if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message or association`);
+    if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message, association or async`);
   }
 
   const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
   const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
+  // #32 — a system diagram has no beginning and no end: it says what runs and what it talks to.
+  // Its own rule instead: nothing floats. Every box is on an arrow, and a check sits on a path.
+  if (d.kind === 'system') {
+    for (const n of nodes) {
+      if (ANNOTATIONS.has(n.kind)) continue;
+      if (!flowEdges.some((e) => e.from === n.id || e.to === n.id))
+        senseless.push(`${d.id}.${n.id}: nothing calls it and it calls nothing. Draw the arrow, or leave the box out`);
+      else if (n.kind === 'guard' && !(out(n.id).length && inc(n.id).length))
+        senseless.push(`${d.id}.${n.id}: a check sits on a path — something reaches it, and it passes something on. Draw both arrows, or make it a service`);
+    }
+    return { unresolved, senseless, collisions };
+  }
   const starts = nodes.filter((n) => n.kind === 'start' || n.kind === 'entry');
   if (!starts.length) senseless.push(`${d.id}: has no start. Add a start node, or the reader doesn't know where to begin`);
   if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);

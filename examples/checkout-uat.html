@@ -469,6 +469,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-lane-title{fill:var(--mut);font:600 11px var(--mono)}
 .dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-e-message path{stroke-dasharray:6 4}
+.dg-e-async path{stroke-dasharray:5 5}
+.dg-shape.dg-dashed{stroke-dasharray:6 4}
 .dg-e-association path{stroke-dasharray:2 3}
 .dg-back path{stroke:var(--warn)}
 .dg-edge-label{fill:var(--ink2);font:600 11px var(--sans);paint-order:stroke;stroke:var(--surf);stroke-width:5px;stroke-linejoin:round}
@@ -1118,7 +1120,9 @@ const ICON_PATHS = {
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
 };
 // A kind without an explicit icon still gets a hint of what it is.
-const KIND_ICON = { 'user-action': 'person', notification: 'bell', timer: 'clock', wait: 'clock', deadline: 'clock', schedule: 'calendar',
+// #32 — a system diagram's boxes: what runs, what it keeps, what it talks to.
+const KIND_ICON = { client: 'phone', service: 'gear', component: 'gear', guard: 'lock', queue: 'envelope', external: 'cloud',
+  'user-action': 'person', notification: 'bell', timer: 'clock', wait: 'clock', deadline: 'clock', schedule: 'calendar',
   error: 'warning', escalate: 'person', cancel: 'cross', send: 'envelope', receive: 'envelope', callback: 'chat', 'data-store': 'database', document: 'document', screen: 'phone' };
 
 function icon(name, x, y) {
@@ -1142,7 +1146,14 @@ function outline(kind, x, y, w, h) {
     case 'data-store': return `<path class="dg-shape" d="M${x} ${y + 8}c0-10 ${w} -10 ${w} 0v${h - 16}c0 10 -${w} 10 -${w} 0z"/><path class="dg-line" d="M${x} ${y + 8}c0 10 ${w} 10 ${w} 0"/>`;
     case 'document': return `<path class="dg-shape" d="M${x} ${y}h${w}v${h - 8}c-${w / 4} -10 -${w / 2} 10 -${w} 0z"/>`;
     case 'note': return `<path class="dg-shape dg-note" d="M${x} ${y}h${w - 14}l14 14v${h - 14}h-${w}z"/>`;
-    case 'subflow': return r(6) + `<path class="dg-line" d="M${x + 8} ${y}v${h}M${x + w - 8} ${y}v${h}"/>`;
+    case 'subflow': case 'component': return r(6) + `<path class="dg-line" d="M${x + 8} ${y}v${h}M${x + w - 8} ${y}v${h}"/>`;
+    // A system diagram: the thing the person uses has a window bar; what we run is plain; what we call
+    // out to is drawn open-edged; a queue shows its slots; a check is a shield.
+    case 'client': return r(8) + `<path class="dg-line" d="M${x} ${y + 14}h${w}"/>`;
+    case 'service': return r(10);
+    case 'external': return `<rect class="dg-shape dg-dashed" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
+    case 'queue': return r(6) + `<path class="dg-line" d="M${x + w / 3} ${y}v${h}M${x + (2 * w) / 3} ${y}v${h}"/>`;
+    case 'guard': return poly([[x + 10, y], [x + w - 10, y], [x + w, cy], [x + w - 10, y + h], [x + 10, y + h], [x, cy]]);
     case 'group': return `<rect class="dg-shape dg-group" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
     default: return r(8);
   }
@@ -1733,6 +1744,8 @@ function drawStageChart(){
   const box = $('#flowbeside');
   const d = chartFor(chartTab);
   if (!d) { box.innerHTML = ''; return; }
+  // Sub-processes belong to a flow: a chart with no steps and no parts (a system diagram) hides them.
+  if ($('#subproc')) $('#subproc').hidden = !(d.nodes || []).some(n => n.step !== undefined || n.part !== undefined);
   const mine = (store.proposals || []).filter(p => p.diagram === chartTab);
   const shown = showChanges && mine.length ? applyProposals(d, mine) : { diagram: d, added: [] };
   box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });

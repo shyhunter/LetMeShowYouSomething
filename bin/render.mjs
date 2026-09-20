@@ -565,6 +565,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-lane-title{fill:var(--mut);font:600 11px var(--mono)}
 .dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-e-message path{stroke-dasharray:6 4}
+.dg-e-async path{stroke-dasharray:5 5}
+.dg-shape.dg-dashed{stroke-dasharray:6 4}
 .dg-e-association path{stroke-dasharray:2 3}
 .dg-back path{stroke:var(--warn)}
 .dg-edge-label{fill:var(--ink2);font:600 11px var(--sans);paint-order:stroke;stroke:var(--surf);stroke-width:5px;stroke-linejoin:round}
@@ -1260,6 +1262,8 @@ function drawStageChart(){
   const box = $('#flowbeside');
   const d = chartFor(chartTab);
   if (!d) { box.innerHTML = ''; return; }
+  // Sub-processes belong to a flow: a chart with no steps and no parts (a system diagram) hides them.
+  if ($('#subproc')) $('#subproc').hidden = !(d.nodes || []).some(n => n.step !== undefined || n.part !== undefined);
   const mine = (store.proposals || []).filter(p => p.diagram === chartTab);
   const shown = showChanges && mine.length ? applyProposals(d, mine) : { diagram: d, added: [] };
   box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });

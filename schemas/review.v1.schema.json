@@ -745,7 +745,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {"$ref": "#/$defs/id"},
-        "kind": {"enum": ["flowchart"]},
+        "kind": {"enum": ["flowchart", "system"], "description": "flowchart: what happens, in order. system: what runs and what it talks to — no start or end, and nothing may float unconnected."},
         "title": {"type": "string", "minLength": 1, "maxLength": 160},
         "lanes": {
           "type": "array",
