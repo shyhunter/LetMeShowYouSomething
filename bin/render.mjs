@@ -60,7 +60,7 @@ const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-body">
         <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
         <div class="dg-body">
-          ${review.flow ? `<div id="subproc">
+${review.flow ? `          <div id="subproc">
             <button type="button" id="subswitch" class="switch" role="switch" aria-checked="true">
               <span class="switch-box"></span>Sub-processes</button>
             <div id="chips" role="group" aria-label="Highlight a sub-process"></div>
@@ -693,7 +693,7 @@ ${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
     </section>
   </div>` : (review.diagrams || []).length ? `<div id="stage" class="stage">
 ${DPANEL}</div>` : ''}
-    ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
+${review.brief ? `    <section id="brief" aria-labelledby="brief-h">
       <div class="brief-head min-head"><h2 id="brief-h">${review.brief.question ? 'What I need you to decide' : 'What this explains'}</h2><span class="head-btns"><button class="btn pin" type="button" aria-pressed="false">Pin</button><button class="btn min" type="button" data-min="#brief" aria-expanded="true" aria-label="Minimise the brief">Minimise</button></span></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
       ${review.brief.explains ? `<p class="brief-explains">${esc(review.brief.explains)}</p>` : ''}
@@ -720,7 +720,7 @@ ${DPANEL}</div>` : ''}
         <aside id="detail" aria-label="${review.flow ? 'The step you opened' : 'The item you opened'}"></aside></div>
       </div>
     </section>
-  ${review.flow ? `<div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
+${review.flow ? `  <div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
     <span class="note">Where you click is never saved or sent. Only your verdicts, notes and added items are.</span></div>
   <p id="announce" class="skip" aria-live="polite"></p>
 </section>` : ''}
@@ -729,7 +729,7 @@ ${DPANEL}</div>` : ''}
   <label class="skip" for="q">Search items</label>
   <input type="search" id="q" placeholder="Search…" autocomplete="off">
   <div id="filters" role="group" aria-label="Filter items"></div>
-  ${review.flow ? `<div class="flow-filters" role="group" aria-label="Filter steps">
+${review.flow ? `  <div class="flow-filters" role="group" aria-label="Filter steps">
     <label>Journey <select id="f-journey"><option value="">All journeys</option></select></label>
     <label>Status <select id="f-status"><option value="">Any status</option><option value="exists">In the product</option><option value="proposed">Planned</option><option value="suggested">Suggested</option></select></label>
     <label><input type="checkbox" id="f-problems"> Only where something goes wrong</label>
