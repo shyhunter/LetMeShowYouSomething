@@ -325,10 +325,12 @@ them). The parts of the process are not a chart: they are the sub-processes colu
 screen marked `end`, and every screen no step leaves, leads into it, so a reader can see where each
 journey stops. The end stands alone in the last column, as the start does in the first (D077).
 
-Two kinds of chart, each with its own boxes and its own rules (#32):
+Four kinds of chart, each with its own boxes and its own rules (#32):
 
 - **`flowchart`** — what happens, in order. It needs a start and an end, every box must be reachable,
   and a decision needs at least two labelled ways out.
+- **`database`** — tables with their columns, key and example rows, connected by column-specific
+  many-to-one relationships. See the database contract below (#69, part 3).
 - **`sequence`** — who calls whom, in the order the messages are written. Participants stand in a
   row with their lifelines; each edge is one message, drawn one row further down, and a `return` is
   the answer to an earlier call. Every message must say what it is, and every participant must take
@@ -366,6 +368,42 @@ underneath, and arrows only in the space between boxes. If a chart comes out awk
 | `diagrams make sense` | no start or no end; a box nobody can reach; arrows into a start or out of an end; a decision with fewer than two ways out or an unlabelled one; a parallel start or join with too few paths; a message inside one lane |
 | `diagram pins don't collide` | two pinned boxes in the same place |
 | `pictures are drawn` | a section `diagram` (Mermaid), which the offline page can only show as text |
+
+### Database diagram contract (#69 / #32 part 3)
+
+Start from `examples/database-booking.review.json`. A database diagram uses the same `id`, `title`,
+`nodes` and `edges` as the other diagrams; it does not take lanes, pins, icons or flow boxes.
+Tables are stacked in reading order, with scrollable relationships beside them, so phone text and
+targets keep their size. No connection to a database is made.
+
+- Each table node has `id`, `kind: "table"`, `label`, `columns`, optional `step`, and optional
+  `sampleRows`. A table may stand alone. `step` links to a review item (a step item in flow mode).
+- Each column has `id`, `label` (the name), `type` (plain words), and a boolean `key`. Exactly one
+  declared column has `key: true`; the page marks it **Key**. Composite keys are not supported.
+- Each edge has `from`, `fromColumn`, `to`, `toColumn`, `cardinality: "many-to-one"` and an optional
+  `label`. The `from` column is the child/many side; `toColumn` must be the parent table's key.
+  The child column may also be a key. These are declared relationships, not inferred constraints;
+  nullability, uniqueness, SQL types and referential integrity of sample values are not inferred.
+  The page draws **Many** and **One** at the corresponding ends without needing a legend.
+- Repeated mappings `(from, fromColumn, to, toColumn, cardinality)` are refused. Different column
+  mappings between the same tables are allowed. Comments and proposals use the edge's original
+  zero-based `nth` position to distinguish them; an ambiguous target without `nth` is refused.
+- Each sample row supplies exactly the declared column ids, once each, with scalar JSON values
+  (text, finite number, boolean, null). A missing cell is written as null. Every row is drawn under
+  **Example data** and **Example row** labels. Use invented data only. A plain-word `type` is a
+  description, not a runtime type expression or executable SQL.
+
+Limits: 1–30 tables per diagram, 1–30 columns per table, 0–10 sample rows per table, 0–160 edges,
+500 characters per string cell. Labels and types must be trimmed and nonblank; table/title labels
+allow 160 characters, column names/types and edge labels 80. Ids use the existing id grammar.
+The schema fixes the closed shape; `diagrams resolve` refuses duplicate ids, unknown columns/tables,
+missing/multiple keys, a parent endpoint that is not a key, malformed rows, and these size limits.
+
+The reviewer can comment on tables/relationships and propose a rename, removal or edge relabel.
+Proposals are applied to a copy and checked by the same database rules. The generic add-box and
+add-arrow payloads cannot carry columns and key mappings, so the page asks for those additions in
+a comment and the checker refuses those operations. Follow-up reviews must answer these comments
+and proposals as usual. Existing diagram kinds retain their editing controls.
 
 ## No secrets
 

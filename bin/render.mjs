@@ -38,7 +38,7 @@ const drawer = readFileSync(join(HERE, '..', 'lib', 'draw-components.mjs'), 'utf
 // Diagrams: layout and drawing, inlined the same way; their imports are dropped because the page
 // already defines everything they import.
 const inline = (file) => readFileSync(join(HERE, '..', 'lib', file), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '');
-const diagrams = inline('layout.mjs') + '\n' + inline('draw-diagram.mjs');
+const diagrams = inline('layout.mjs') + '\n' + inline('draw-database.mjs') + '\n' + inline('draw-diagram.mjs');
 
 // `</script>` inside a JSON string would close the tag early; escaping `<` is enough and keeps the
 // payload valid JSON.
@@ -60,7 +60,7 @@ const DPANEL = `    <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-body">
         <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
         <div class="dg-body">
-          ${review.flow ? `<div id="subproc">
+${review.flow ? `          <div id="subproc">
             <button type="button" id="subswitch" class="switch" role="switch" aria-checked="true">
               <span class="switch-box"></span>Sub-processes</button>
             <div id="chips" role="group" aria-label="Highlight a sub-process"></div>
@@ -561,6 +561,9 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-group{fill:none;stroke-dasharray:5 4}
 .dg-line{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-label{fill:var(--ink);font:12.5px var(--sans)}
+.dg-db-title{font-weight:700}
+.dg-database .dg-label{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.dg-db-edge .dg-hit{stroke:transparent;stroke-width:44}
 .dg-lane rect{fill:none;stroke:var(--line)}
 .dg-lane-title{fill:var(--mut);font:600 11px var(--mono)}
 .dg-edge path{fill:none;stroke:var(--line3);stroke-width:1.5}
@@ -690,7 +693,7 @@ ${DPANEL}    <section id="upanel" class="panel" aria-label="The screen">
     </section>
   </div>` : (review.diagrams || []).length ? `<div id="stage" class="stage">
 ${DPANEL}</div>` : ''}
-    ${review.brief ? `<section id="brief" aria-labelledby="brief-h">
+${review.brief ? `    <section id="brief" aria-labelledby="brief-h">
       <div class="brief-head min-head"><h2 id="brief-h">${review.brief.question ? 'What I need you to decide' : 'What this explains'}</h2><span class="head-btns"><button class="btn pin" type="button" aria-pressed="false">Pin</button><button class="btn min" type="button" data-min="#brief" aria-expanded="true" aria-label="Minimise the brief">Minimise</button></span></div>
       ${review.brief.question ? `<p class="brief-q">${esc(review.brief.question)}</p>` : ''}
       ${review.brief.explains ? `<p class="brief-explains">${esc(review.brief.explains)}</p>` : ''}
@@ -717,7 +720,7 @@ ${DPANEL}</div>` : ''}
         <aside id="detail" aria-label="${review.flow ? 'The step you opened' : 'The item you opened'}"></aside></div>
       </div>
     </section>
-  ${review.flow ? `<div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
+${review.flow ? `  <div class="player-bar"><button class="btn" id="restart" type="button">Restart</button>
     <span class="note">Where you click is never saved or sent. Only your verdicts, notes and added items are.</span></div>
   <p id="announce" class="skip" aria-live="polite"></p>
 </section>` : ''}
@@ -726,7 +729,7 @@ ${DPANEL}</div>` : ''}
   <label class="skip" for="q">Search items</label>
   <input type="search" id="q" placeholder="Search…" autocomplete="off">
   <div id="filters" role="group" aria-label="Filter items"></div>
-  ${review.flow ? `<div class="flow-filters" role="group" aria-label="Filter steps">
+${review.flow ? `  <div class="flow-filters" role="group" aria-label="Filter steps">
     <label>Journey <select id="f-journey"><option value="">All journeys</option></select></label>
     <label>Status <select id="f-status"><option value="">Any status</option><option value="exists">In the product</option><option value="proposed">Planned</option><option value="suggested">Suggested</option></select></label>
     <label><input type="checkbox" id="f-problems"> Only where something goes wrong</label>
@@ -1268,7 +1271,7 @@ function drawStageChart(){
   if ($('#subproc')) $('#subproc').hidden = !(d.nodes || []).some(n => n.step !== undefined || n.part !== undefined);
   const mine = (store.proposals || []).filter(p => p.diagram === chartTab);
   const shown = showChanges && mine.length ? applyProposals(d, mine) : { diagram: d, added: [] };
-  box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting });
+  box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting, originalEdges: d.edges || [] });
   if (showChanges) for (const id of shown.added.concat(mine.map(p => p.node).filter(Boolean)))
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-proposed');
   markComments();
@@ -1383,7 +1386,7 @@ const setFull = (panel, on) => {
 };
 // #60 — the reviewer comments on a box or an arrow. Each comment keeps what it is on, in words.
 let commenting = false;
-const onKey = (c) => c.diagram + '|' + (c.node !== undefined ? 'n:' + c.node : 'e:' + c.edge.from + '>' + c.edge.to);
+const onKey = (c) => c.diagram + '|' + (c.node !== undefined ? 'n:' + c.node : 'e:' + c.edge.from + '>' + c.edge.to + ':' + (c.edge.nth ?? ''));
 function markComments(){
   const box = $('#flowbeside'); if (!box) return;
   for (const c of store.comments || []) {
@@ -1407,19 +1410,20 @@ function proposalText(p){
     : 'Label the arrow "' + p.text + '"';
 }
 function proposalsHtml(c){
+  const database = chartFor(c.diagram)?.kind === 'database';
   const mine = (store.proposals || []).filter(p => p.comment === c.id);
   const others = c.node !== undefined ? nodesOf(c.diagram).filter(n => n.id !== c.node) : [];
   const ask = c.node !== undefined
     ? \`<div class="prow"><label class="skip" for="pr-\${esc(c.id)}">Rename this box</label>
         <input id="pr-\${esc(c.id)}" data-ptext="rename" placeholder="Rename this box to…">
         <button class="btn" type="button" data-prop="rename" data-pfor="\${esc(c.id)}">Propose</button></div>
-      <div class="prow"><label class="skip" for="pa-\${esc(c.id)}">Add a box after this one</label>
+      \${database ? '<p class="hint">Describe new tables and relationships in your comment so the next review can include their columns and keys.</p>' : \`<div class="prow"><label class="skip" for="pa-\${esc(c.id)}">Add a box after this one</label>
         <input id="pa-\${esc(c.id)}" data-ptext="add-node" placeholder="Add a box after this one…">
         <button class="btn" type="button" data-prop="add-node" data-pfor="\${esc(c.id)}">Propose</button></div>
       <div class="prow"><label class="skip" for="pe-\${esc(c.id)}">Add an arrow from this box</label>
         <select id="pe-\${esc(c.id)}" data-ptext="add-edge"><option value="">Add an arrow to…</option>
         \${others.map(n => \`<option value="\${esc(n.id)}">\${esc(n.label || n.id)}</option>\`).join('')}</select>
-        <button class="btn" type="button" data-prop="add-edge" data-pfor="\${esc(c.id)}">Propose</button></div>
+        <button class="btn" type="button" data-prop="add-edge" data-pfor="\${esc(c.id)}">Propose</button></div>\`}
       <button class="btn" type="button" data-prop="remove-node" data-pfor="\${esc(c.id)}">Propose removing this box</button>\`
     : \`<div class="prow"><label class="skip" for="pl-\${esc(c.id)}">Change this arrow's label</label>
         <input id="pl-\${esc(c.id)}" data-ptext="relabel-edge" placeholder="Change the arrow's label to…">

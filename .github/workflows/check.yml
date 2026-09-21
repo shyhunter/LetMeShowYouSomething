@@ -57,6 +57,7 @@ jobs:
           node bin/check.mjs review examples/review.example.json
           node bin/check.mjs review examples/decision-review.example.json
           node bin/check.mjs review examples/flow-booking.review.json --root .
+          node bin/check.mjs review examples/database-booking.review.json
           node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
           node bin/check.mjs pair examples/review.example.json examples/feedback.example.json
           node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .
@@ -67,7 +68,7 @@ jobs:
       - name: Example pages are up to date
         run: |
           out="$RUNNER_TEMP/pages"; mkdir -p "$out"
-          for pair in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking; do
+          for pair in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking; do
             node bin/render.mjs "examples/${pair%%:*}" "$out/${pair##*:}.html" > /dev/null
             cmp -s "$out/${pair##*:}.html" "examples/${pair##*:}.html" \
               || { echo "::error file=examples/${pair##*:}.html::out of date; run: node bin/render.mjs examples/${pair%%:*} examples/${pair##*:}.html"; exit 1; }

@@ -11,14 +11,143 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildFeedback } from '../lib/build-feedback.mjs';
-import { flowAsDiagram } from '../lib/draw-diagram.mjs';
+import { buildFeedback, applyProposals, partLabel } from '../lib/build-feedback.mjs';
+import { flowAsDiagram, drawDiagram } from '../lib/draw-diagram.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const at = (p) => join(root, p);
 const tmp = mkdtempSync(join(tmpdir(), 'review-test-'));
 const readJson = (p) => JSON.parse(readFileSync(at(p), 'utf8'));
 const REVIEW = 'examples/review.example.json';
+
+// #69 / #32 part 3: tables are data, never executable SQL or live records.
+const database = () => ({ id: 'db', kind: 'database', title: 'Example booking data', nodes: [
+  { id: 'members', kind: 'table', label: 'Members', step: 'guest-checkout', columns: [
+    { id: 'id', label: 'Member id', type: 'text', key: true },
+    { id: 'name', label: 'Name', type: 'text', key: false }], sampleRows: [{ id: 'm1', name: 'Example member' }] },
+  { id: 'bookings', kind: 'table', label: 'Bookings', columns: [
+    { id: 'id', label: 'Booking id', type: 'text', key: true },
+    { id: 'member', label: 'Member id', type: 'text', key: false },
+    { id: 'creator', label: 'Created by', type: 'text', key: false }] }
+], edges: [
+  { from: 'bookings', fromColumn: 'member', to: 'members', toColumn: 'id', cardinality: 'many-to-one', label: 'Booked by' },
+  { from: 'bookings', fromColumn: 'creator', to: 'members', toColumn: 'id', cardinality: 'many-to-one', label: 'Created by' }
+] });
+const databaseReview = (d = database()) => ({ ...readJson(REVIEW), id: 'database-unit-review', diagrams: [d] });
+
+test('database: a valid diagram and isolated table pass; keys may also be child columns', () => {
+  const d = database();
+  assert.equal(checkReviewObj(databaseReview(d)).status, 0);
+  d.edges = []; assert.equal(checkReviewObj(databaseReview(d)).status, 0);
+  d.edges = [{ ...database().edges[0], fromColumn: 'id' }];
+  assert.equal(checkReviewObj(databaseReview(d)).status, 0);
+});
+
+const databaseFaults = {
+  'diagram shape': d => { d.lanes = []; },
+  'diagram id type': d => { d.id = 23; },
+  'table count': d => { d.nodes = []; },
+  'table limit': d => { d.nodes = Array.from({ length: 31 }, (_, i) => ({ ...d.nodes[0], id: `t${i}` })); d.edges = []; },
+  'table shape': d => { d.nodes[0] = null; },
+  'table fields': d => { d.nodes[0].sql = 'unused'; },
+  'table id': d => { d.nodes[0].id = 'bad id'; },
+  'duplicate table': d => { d.nodes.push(structuredClone(d.nodes[0])); },
+  'table kind': d => { d.nodes[0].kind = 'service'; },
+  'table label': d => { d.nodes[0].label = ' '; },
+  'columns': d => { d.nodes[0].columns = []; },
+  'column limit': d => { d.nodes[0].columns = Array.from({ length: 31 }, (_, i) => ({ id: `c${i}`, label: 'Column', type: 'text', key: i === 0 })); },
+  'column shape': d => { d.nodes[0].columns[0] = null; },
+  'column fields': d => { d.nodes[0].columns[0].extra = true; },
+  'column id': d => { d.nodes[0].columns[0].id = 'bad id'; },
+  'duplicate column': d => { d.nodes[0].columns.push(structuredClone(d.nodes[0].columns[1])); },
+  'column label': d => { d.nodes[0].columns[0].label = ' '; },
+  'column type': d => { d.nodes[0].columns[0].type = ' '; },
+  'key flag': d => { d.nodes[0].columns[0].key = 'id'; },
+  'key count': d => { d.nodes[0].columns[0].key = false; },
+  'multiple keys': d => { d.nodes[0].columns[1].key = true; },
+  'absent key column': d => { d.nodes[0].key = 'missing'; },
+  'sample rows': d => { d.nodes[0].sampleRows = {}; },
+  'row limit': d => { d.nodes[0].sampleRows = Array(11).fill({ id: 'm1', name: 'Example' }); },
+  'row shape': d => { d.nodes[0].sampleRows = [null]; },
+  'row columns': d => { d.nodes[0].sampleRows[0].extra = 'missing column'; },
+  'missing cell': d => { delete d.nodes[0].sampleRows[0].name; },
+  'cell scalar': d => { d.nodes[0].sampleRows[0].name = {}; },
+  'cell length': d => { d.nodes[0].sampleRows[0].name = 'x'.repeat(501); },
+  'relationships': d => { d.edges = {}; },
+  'relationship limit': d => { d.edges = Array(161).fill(d.edges[0]); },
+  'relationship shape': d => { d.edges[0] = null; },
+  'relationship fields': d => { d.edges[0].kind = 'conditional'; },
+  'relationship table': d => { d.edges[0].to = 'missing'; },
+  'relationship column': d => { d.edges[0].fromColumn = 'missing'; },
+  'target column': d => { d.edges[0].toColumn = 'missing'; },
+  'target key': d => { d.edges[0].toColumn = 'name'; },
+  'cardinality': d => { d.edges[0].cardinality = 'one-to-many'; },
+  'relationship label': d => { d.edges[0].label = ' '; },
+  'duplicate mapping': d => { d.edges.push(structuredClone(d.edges[0])); },
+  'step': d => { d.nodes[0].step = 'missing'; }
+};
+for (const [name, change] of Object.entries(databaseFaults)) test(`database refuses ${name}`, () => {
+  const d = database(); change(d);
+  const result = checkReviewObj(databaseReview(d));
+  assert.equal(result.status, 1, result.stderr || result.stdout);
+  const rule = { 'diagram id type': 'diagram shape', 'table limit': 'table count', 'column limit': 'columns', 'multiple keys': 'key count', 'absent key column': 'table fields', 'row limit': 'sample rows', 'missing cell': 'row columns', 'relationship limit': 'relationships', 'target column': 'relationship column' }[name] || name;
+  assert.ok(result.stdout.includes(`(${rule})`), result.stdout);
+});
+
+test('database drawing: columns, keys, example cells, cardinalities and repeated-edge targets', () => {
+  const html = drawDiagram(database(), { selected: 'guest-checkout', commentable: true });
+  for (const word of ['Member id', 'text', 'Key', 'Example data', 'Example member', 'Many', 'One', 'data-nth="1"', 'dg-selected']) assert.ok(html.includes(word), word);
+  const d = database(), hostile = '<img src=x onerror="boom()">';
+  d.nodes[0].label = hostile; d.nodes[0].columns[0].label = hostile;
+  d.nodes[0].columns[0].type = hostile; d.nodes[0].sampleRows[0].name = hostile; d.edges[0].label = hostile;
+  const safe = drawDiagram(d, { commentable: true });
+  assert.doesNotMatch(safe, /<img|<script/);
+  assert.ok(safe.includes('&lt;img'));
+});
+
+test('database proposals: bounded operations preserve relationship fields and comments identify columns', () => {
+  const d = database();
+  for (const op of ['add-node', 'add-edge']) assert.equal(applyProposals(d, [{ id: 'proposal-1', op, from: 'bookings', to: 'members', text: 'Extra' }]).failed.length, 1);
+  const next = applyProposals(d, [{ id: 'proposal-1', op: 'relabel-edge', from: 'bookings', to: 'members', nth: 1, text: 'Entered by' }]);
+  assert.equal(checkReviewObj(databaseReview(next.diagram)).status, 0);
+  assert.equal(next.diagram.edges[0].label, 'Booked by');
+  assert.equal(next.diagram.edges[1].fromColumn, 'creator');
+  assert.equal(d.edges[1].label, 'Created by');
+  assert.match(partLabel(d, { edge: { from: 'bookings', to: 'members', nth: 1 } }), /creator/);
+  const removed = applyProposals(d, [{ id: 'proposal-2', op: 'remove-edge', from: 'bookings', to: 'members', nth: 0 }]);
+  const shown = drawDiagram(removed.diagram, { commentable: true, originalEdges: d.edges });
+  assert.match(shown, /data-nth="1"/);
+  assert.doesNotMatch(shown, /data-nth="0"/);
+});
+
+test('database: real example, repeated relationships, proposals and followup pass the same contract', () => {
+  const review = readJson('examples/database-booking.review.json');
+  assert.equal(check('review', at('examples/database-booking.review.json')).status, 0);
+  const d = review.diagrams[0];
+  const on = { diagram: d.id, edge: { from: 'bookings', to: 'members', nth: 1 } };
+  const label = partLabel(d, on);
+  const store = { comments: [{ ...on, id: 'comment-1', label, note: 'Say who entered it.' }], proposals: [
+    { id: 'proposal-1', diagram: d.id, op: 'remove-edge', from: 'bookings', to: 'members', nth: 0, label: partLabel(d, { edge: { from: 'bookings', to: 'members', nth: 0 } }) },
+    { id: 'proposal-2', diagram: d.id, op: 'relabel-edge', from: 'bookings', to: 'members', nth: 1, text: 'Entered by member', label }
+  ] };
+  const feedback = buildFeedback(review, store);
+  const fp = join(tmp, 'database-feedback.json'); writeFileSync(fp, JSON.stringify(feedback));
+  const result = check('pair', at('examples/database-booking.review.json'), fp);
+  assert.equal(result.status, 0, result.stdout);
+  const next = structuredClone(review); next.id = 'database-followup';
+  next.items[0].answers = ['comment-1', 'proposal-1', 'proposal-2'];
+  const rp = join(tmp, 'database-followup.json'); writeFileSync(rp, JSON.stringify(next));
+  assert.equal(check('followup', rp, at('examples/database-booking.review.json'), fp).status, 0);
+  next.items[0].answers = []; writeFileSync(rp, JSON.stringify(next));
+  assert.equal(check('followup', rp, at('examples/database-booking.review.json'), fp).status, 1);
+  // A missing position is ambiguous when there are two foreign keys between the same tables.
+  assert.equal(partLabel(d, { edge: { from: 'bookings', to: 'members' } }), null);
+  for (const op of ['add-node', 'add-edge']) {
+    const bad = buildFeedback(review, { proposals: [{ id: 'proposal-1', diagram: d.id, op, from: 'bookings', to: 'members', text: 'Extra', label: 'Bookings' }] });
+    writeFileSync(fp, JSON.stringify(bad));
+    assert.match(check('pair', at('examples/database-booking.review.json'), fp).stdout, /✗ proposals fit the diagram/);
+  }
+});
 
 const check = (...args) => spawnSync(process.execPath, [at('bin/check.mjs'), ...args], { encoding: 'utf8' });
 const checkFeedback = (feedback) => {

@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Where do reviewer answers go?</title>
+<title>The tables behind a booking</title>
 <link rel="icon" href="data:image/svg+xml;base64,PCEtLSBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogQXBhY2hlLTIuMCAtLT4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxldE1lU2hvd1lvdVNvbWV0aGluZyI+PHRpdGxlPkxldE1lU2hvd1lvdVNvbWV0aGluZzwvdGl0bGU+PHN0eWxlPnN2Z3tjb2xvcjojNUIzRThDfUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7c3Zne2NvbG9yOiNBOThCRDZ9fTwvc3R5bGU+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01Mi42NyA0Mi4wMiBBMjIgMjIgMCAxIDEgNDYuMTQgMTcuNjUiLz48cGF0aCBkPSJNMzcuMTggMTguMjIgTDQ2LjkxIDE4LjI5IEw0NS4xNSA4LjcyIi8+PHBhdGggZD0iTTIxLjUgMzUuNTAgTDI4LjUgNDIuNTAgTDQyLjUgMjguMDAiLz48L2c+PC9zdmc+Cg==">
 <style>
 :root{
@@ -556,8 +556,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <header>
   <div class="htop min-head">
     <div>
-      <h1>Where do reviewer answers go?</h1>
-      <p class="sub">One choice, before the export path is built</p>
+      <h1>The tables behind a booking</h1>
+      <p class="sub">An invented booking app — example data only</p>
     </div>
     <div class="htools">
       <label class="style-pick">Style <select id="style">
@@ -571,14 +571,34 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
       <button class="btn min" type="button" data-min="header" aria-expanded="true" aria-label="Minimise the header">Minimise</button>
     </div>
   </div>
-  
+  <div class="intro" id="intro"></div>
   <div class="asks">
-    <p><b>How to answer</b>Pick one of the three options, and mark anything you disagree with on the way.</p>
-    <p><b>What happens next</b>Your pick is what I build in v0.1. If you mark the recommendation &quot;revisit&quot;, I draft two more options instead of building.</p>
+    <p><b>How to answer</b>Which part of these tables or their relationships is unclear?</p>
+    <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
   </div>
 </header>
 
+<div id="stage" class="stage">
+    <section id="dpanel" class="panel" aria-label="The diagram">
+      <div class="panel-head min-head">
+        <span class="panel-title">Diagram</span>
+        <button class="btn" id="commentmode" type="button" aria-pressed="false">Comment</button>
+        <button class="btn" id="showchanges" type="button" aria-pressed="false" hidden>Show my changes</button>
+        <button class="btn pin" type="button" aria-pressed="false">Pin</button>
+        <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
+        <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
+      </div>
+      <div class="panel-body">
+        <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
+        <div class="dg-body">
 
+          <div id="flowbeside" role="tabpanel" aria-label="The chart"></div>
+        </div>
+        <p id="commenthint" class="hint" hidden>Pick a box or an arrow to comment on it: click it, or Tab to it and press Enter.</p>
+        <div id="comments"></div>
+      </div>
+    </section>
+</div>
 
     <section id="feedback" aria-labelledby="fb-h">
       <div class="min-head sec-bar"><h2 id="fb-h">Your feedback</h2><button class="btn min" type="button" data-min="#feedback" aria-expanded="true" aria-label="Minimise your feedback">Minimise</button></div>
@@ -632,7 +652,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 // D076 — the page as it arrived, before anything is drawn: "Export feedback.html" saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
-const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"answer-storage-2026-09","title":"Where do reviewer answers go?","subtitle":"One choice, before the export path is built","audience":"Product owner; no code knowledge needed","ask":"Pick one of the three options, and mark anything you disagree with on the way.","afterwards":"Your pick is what I build in v0.1. If you mark the recommendation \"revisit\", I draft two more options instead of building.","createdAt":"2026-09-17T15:00:00Z","createdBy":{"agent":"claude-code"},"verdictSet":{"id":"decision","options":[{"value":"agree","label":"Agree","tone":"positive"},{"value":"partly-agree","label":"Partly agree","tone":"caution"},{"value":"disagree","label":"Disagree","tone":"negative"},{"value":"revisit","label":"Revisit","tone":"caution","hint":"Right question, not ready to decide"},{"value":"changed-mind","label":"Changed my mind","tone":"neutral"}]},"fields":[{"key":"assumes","label":"Assumes"},{"key":"risk","label":"Risk","tone":"caution"},{"key":"would_change_my_mind","label":"Would change my mind"}],"sections":[{"id":"storage","label":"Where the answers are kept","mode":"choose-one","recommended":{"itemId":"opt-file","why":"It is the only option that works offline and for a reviewer with no account."}},{"id":"follow-up","label":"Consequences of any choice"},{"id":"challenge","label":"Where I could be wrong","kind":"challenge","description":"If I were you, I would push back on these. Agree means the concern is real."}],"items":[{"id":"opt-file","sectionId":"storage","title":"The reviewer exports a file and sends it back","summary":"One click saves feedback.json; the reviewer emails or drops it wherever the agent can read it.","body":"Answers autosave in the reviewer's own browser while they work. Nothing leaves the machine until they choose to send the file.","fields":{"assumes":"The reviewer can send a file back (email, chat, shared folder).","risk":"They forget to send it, and the agent waits.","would_change_my_mind":"Most reviewers turn out to be colleagues on the same hosted workspace."}},{"id":"opt-db","sectionId":"storage","title":"Answers save to a hosted database as the reviewer works","summary":"No export step; the agent reads answers the moment they are given.","fields":{"assumes":"A server we run, and an account or link for every reviewer.","risk":"Breaks offline use and puts reviewer notes on a third-party host."},"affects":[{"decision":{"review":"offline-first-2026-09","itemId":"no-network","title":"The review page makes zero network requests","verdict":"agree"},"effect":"contradicts","why":"Every save would need the network."}]},{"id":"opt-both","sectionId":"storage","title":"Export a file now, optional sync later","summary":"Build the file export first; add sync only if reviewers ask for it.","fields":{"risk":"Two paths to maintain once sync exists."},"affects":[{"decision":{"review":"offline-first-2026-09","itemId":"no-network","title":"The review page makes zero network requests","verdict":"agree"},"effect":"extends","why":"Offline stays the default; sync would be opt-in."}]},{"id":"autosave-local","sectionId":"follow-up","title":"Autosave stays in the reviewer's browser only","summary":"Half-finished answers survive a reload, and are never sent anywhere automatically."},{"id":"challenge-forgotten-file","sectionId":"challenge","title":"A reviewer who forgets to send the file is a bigger problem than I make it sound","summary":"If this happens often, the agent waits silently and the loop stalls.","fields":{"would_change_my_mind":"Reviewers in the first real rounds send files back without a reminder."}},{"id":"challenge-browser-storage","sectionId":"challenge","title":"Autosave in the browser can lose work when a reviewer clears their data","summary":"Answers only become safe once exported."}]};
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"database-booking-example","title":"The tables behind a booking","subtitle":"An invented booking app — example data only","intro":"Select a table to read what it stores. Each relationship connects the named columns; Many bookings belong to One member. Use Comment to ask about a table or relationship.","ask":"Which part of these tables or their relationships is unclear?","afterwards":"The agent will explain unclear parts and prepare a revised review. This review never connects to a database.","verdictSet":{"id":"understanding","options":[{"value":"clear","label":"Clear","tone":"positive"},{"value":"partly-clear","label":"Partly clear","tone":"caution"},{"value":"lost","label":"Lost me","tone":"negative"},{"value":"wrong","label":"Seems wrong","tone":"negative"}]},"allowAddedItems":true,"sections":[{"id":"data","label":"What each table stores"}],"items":[{"id":"members","sectionId":"data","title":"Members identify the people in this example","body":"A member has one identifier. The name is display text. Every row shown here is invented."},{"id":"bookings","sectionId":"data","title":"Bookings distinguish the attendee from the person entering it","body":"A booking belongs to one member, but a different member can enter it for them. The two lines refer to different columns, even though they join the same tables."}],"focus":"booking-data","diagrams":[{"id":"booking-data","kind":"database","title":"Members and bookings — example data","nodes":[{"id":"members","kind":"table","label":"Members","step":"members","columns":[{"id":"id","label":"Member id","type":"text identifier","key":true},{"id":"name","label":"Display name","type":"text","key":false}],"sampleRows":[{"id":"member-example-1","name":"Example attendee"}]},{"id":"bookings","kind":"table","label":"Bookings","step":"bookings","columns":[{"id":"id","label":"Booking id","type":"text identifier","key":true},{"id":"member","label":"Member id","type":"text identifier","key":false},{"id":"creator","label":"Entered by","type":"text identifier","key":false},{"id":"start","label":"Starts at","type":"UTC date and time","key":false}],"sampleRows":[{"id":"booking-example-1","member":"member-example-1","creator":"member-example-1","start":"2026-10-01T10:00:00Z"}]}],"edges":[{"from":"bookings","fromColumn":"member","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Attendee"},{"from":"bookings","fromColumn":"creator","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Entered by"}]}]};
 const SEED = null;
 // SPDX-License-Identifier: MIT-0
 // The single source of truth for what a completed review exports.
@@ -1395,7 +1415,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':dc0afe4a62b4' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':978acddb5411' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
