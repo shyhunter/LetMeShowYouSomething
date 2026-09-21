@@ -19,8 +19,9 @@ Each requires a trimmed, nonblank label of at most 160 characters. Draw a visibl
 and an appropriate original icon/outline, so meaning does not depend on colour or a legend.
 Reuse existing lanes, arrows, node ids, item links through `step`, selection, and keyboard access.
 
-A flowchart describing an agent carries `agent: true` at diagram level. This flag is allowed
-only on flowcharts; omission leaves ordinary flowcharts unchanged. A flowchart containing any
+A flowchart describing an agent carries `agent: true` at diagram level. When present the value
+must be exactly true, never false or a string. This flag is allowed only on flowcharts; omission
+leaves ordinary flowcharts unchanged. A flowchart containing any
 of the five AI kinds must carry the flag. An explicitly marked agent flow may also use ordinary
 process, decision, retry, timer, start, and end boxes. System diagrams containing AI boxes remain
 architecture drawings and do not acquire start/stop semantics.
@@ -119,15 +120,21 @@ insufficient. Any needed SKILL.md edit would require the repository's old/new fr
 - Keep new semantic checks in a focused Apache-2.0 module called by `diagramFaults`, including
   when validating the reviewer's proposed copy. Update the closed CC0 schemas and PROTOCOL.md
   in the same PR. Bound agent flow size to 80 nodes and 160 edges; bound each stop and token field
-  as above. Apply these new limits only to marked agent flows, preserving existing examples.
+  as above. The 80-node/160-edge graph limits apply only to marked agent flows, preserving existing
+  examples. Token-field bounds apply wherever tokenUsage is present, including system diagrams
+  and unmarked flowcharts.
 - Keep drawing helpers pure and MIT-0. Reuse the existing layout, adding content-aware heights
   where stop explanations need room; do not truncate the reason or next action. Escape all new
   text at the HTML/SVG boundary and wrap long unbroken strings and wide glyphs safely.
-- Existing rename, remove, add-process, add-edge and relabel proposals remain available when
-  their resulting diagram passes all rules. Adding a generic process does not create an AI box
-  or an explained stop. Removing the sole stop, creating a silent dead end, or closing the only
-  exit from a loop is refused by checking the copied graph. Stop metadata and token figures are
-  changed by the author in a later review, not by a new structural proposal type in #70.
+- Existing rename, remove, add-edge and relabel proposals remain available when their resulting
+  agent flow passes all rules. The generic add-node proposal appends a terminal process and has
+  no payload for its onward connection or stop explanation. Hide/refuse this operation for marked
+  agent flows in both the page controls and applyProposals, including paired-feedback validation.
+  Ask the reviewer to describe the addition in a comment, as database diagrams already do.
+  Do not introduce insertion or new stop-editing operations in #70. Ordinary flowchart
+  and system diagram controls remain unchanged. Removing the sole stop, creating a silent dead
+  end, or closing the only exit from a loop is refused by checking the copied graph. Stop metadata
+  and token figures are changed by the author in a later review.
 - Comments and feedback exports keep original node/edge targets. Follow-up reviews answer
   outstanding comments/proposals as usual. No changes to the agent's original diagram occur
   when showing the reviewer's proposed version.
@@ -138,7 +145,8 @@ insufficient. Any needed SKILL.md edit would require the repository's old/new fr
 
 Add a named refusal test for each new rule and prove it fails with that guard disabled. Cover
 missing/blank stop details, silent dead ends, terminal outgoing edges, no-exit loops, malformed
-AI context, wrong diagram kinds, token bounds/shape/duplicate ids/sums, and invalid proposal sets.
+AI context, wrong diagram kinds, token bounds/shape/duplicate ids/sums, agent add-node proposals,
+and other invalid proposal sets.
 Keep valid zero totals, estimated/reported figures, connected loops with exits, and both terminal
 and continuing human hand-offs as acceptance cases.
 
