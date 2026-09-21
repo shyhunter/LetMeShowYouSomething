@@ -36,7 +36,7 @@ The schema keeps the protocol closed (`additionalProperties: false`). The checke
 ## Validation and safety
 
 - Reject duplicate table ids, empty tables, invalid/duplicate columns, anything other than exactly one key column, and relationships whose tables or columns do not exist.
-- Reject relationships whose child/parent column mapping or `many-to-one` direction is inconsistent, duplicate relationship identities, and dangling `step` links.
+- Reject relationships whose child/parent column mapping or `many-to-one` direction is inconsistent, repeated relationship mappings, and dangling `step` links. A relationship mapping is unique by the tuple `(from, fromColumn, to, toColumn, cardinality)`, so separate foreign keys between the same two tables remain valid.
 - Reject invalid relationship cardinality, non-scalar sample values, and sample-row values keyed by undeclared columns.
 - Keep all examples synthetic; never add customer, credential, or private data.
 - Preserve the no-network, no-third-party-runtime, MIT-0 generated-page boundary.
