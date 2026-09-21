@@ -20,7 +20,7 @@ Add `diagrams[].kind: "database"` so a review can explain tables, columns, keys,
 
 ## Data model
 
-`database` is a third diagram model alongside `flowchart`, `system`, and `sequence`. It retains the existing generic `nodes` and `edges` shape so comments, keyboard selection, and proposals use the established protocol without a parallel targeting system:
+`database` is a fourth diagram model alongside `flowchart`, `system`, and `sequence`. It retains the existing generic `nodes` and `edges` shape so comments, keyboard selection, and proposals use the established protocol without a parallel targeting system:
 
 - Each node is a table: `kind: "table"`, a stable id matching the existing diagram-id grammar, a trimmed `label` (1–160 characters), optional `step`, and `columns`.
 - Each column has a stable id matching the same grammar, a trimmed `label` (1–80 characters), a trimmed plain-language `type` (1–80 characters), and `key: true` or `false`. A table has exactly one key column; composite keys are deliberately out of scope for #69.

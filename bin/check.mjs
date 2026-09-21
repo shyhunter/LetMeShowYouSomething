@@ -23,6 +23,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { relative, resolve } from 'node:path';
 import { applyProposals, findLayerEntry, layerEntryText, partLabel } from '../lib/build-feedback.mjs';
 import { flowAsDiagram } from '../lib/draw-diagram.mjs';
+import { databaseFaults } from '../lib/check-database.mjs';
 
 // #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
 // its answers with the example page in the same browser. Only the example itself may carry its id.
@@ -417,6 +418,7 @@ const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // ne
 
 // The rules for one diagram, so the same ones judge a diagram the reviewer changed (#60 part 3).
 function diagramFaults(d, ctx) {
+  if (d.kind === 'database') return { unresolved: databaseFaults(d, ctx.stepIds), senseless: [], collisions: [] };
   const { stepIds, partIds, diagramIds, flow } = ctx;
   const unresolved = [], senseless = [], collisions = [];
   const nodes = d.nodes ?? [], edges = d.edges ?? [], lanes = (d.lanes ?? []).map((l) => l.id);

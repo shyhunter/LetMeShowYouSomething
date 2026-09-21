@@ -6,6 +6,24 @@ import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
 const CHECKOUT = join(REPO, 'examples/review.example.json');
 const DECISION = join(REPO, 'examples/decision-review.example.json');
+const DATABASE = join(REPO, 'examples/database-booking.review.json');
+
+await withChrome('database-page', async ({ dir, say, ev, load, key, type, exported, shot }) => {
+  await load(render(DATABASE, dir));
+  say(await ev(`document.querySelectorAll('.dg-k-table').length`) === 2, 'database draws two tables');
+  say(await ev(`['Key','Many','One','Example data','text identifier'].every(t => document.querySelector('.dg-database').textContent.includes(t))`), 'columns, key, cardinalities and example labels are visible');
+  await ev(`document.querySelector('.dg-k-table[data-node="bookings"]').focus()`);
+  await key('Enter', 'Enter', 13);
+  say(await ev(`document.querySelector('#detail').textContent.includes('Bookings distinguish')`), 'keyboard table selection opens the item');
+  await ev(`document.querySelector('#commentmode').click()`);
+  await ev(`document.querySelector('.dg-edge[data-nth="1"]').focus()`);
+  await key('Enter', 'Enter', 13); await type('Explain the second relationship.');
+  await ev(`document.querySelector('#export').click()`);
+  const file = await exported();
+  say(file && checkPair(DATABASE, file).status === 0, 'database relationship comment export passes the checker');
+  await shot('database-desktop', 1280);
+  await shot('database-phone', 390, true);
+});
 // The page's own key (id + fingerprint of the review, #38): ask the page rather than rebuild it here.
 const stored = () => `JSON.parse(localStorage.getItem(LS))`;
 // The list on the left, one item open on the right (#44): open an item before answering it.

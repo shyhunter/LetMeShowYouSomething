@@ -1,0 +1,42 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "database-booking-example",
+  "title": "The tables behind a booking",
+  "subtitle": "An invented booking app — example data only",
+  "intro": "Select a table to read what it stores. Each relationship connects the named columns; Many bookings belong to One member. Use Comment to ask about a table or relationship.",
+  "ask": "Which part of these tables or their relationships is unclear?",
+  "afterwards": "The agent will explain unclear parts and prepare a revised review. This review never connects to a database.",
+  "verdictSet": { "id": "understanding", "options": [
+    { "value": "clear", "label": "Clear", "tone": "positive" },
+    { "value": "partly-clear", "label": "Partly clear", "tone": "caution" },
+    { "value": "lost", "label": "Lost me", "tone": "negative" },
+    { "value": "wrong", "label": "Seems wrong", "tone": "negative" }
+  ]},
+  "allowAddedItems": true,
+  "sections": [{ "id": "data", "label": "What each table stores" }],
+  "items": [
+    { "id": "members", "sectionId": "data", "title": "Members identify the people in this example", "body": "A member has one identifier. The name is display text. Every row shown here is invented." },
+    { "id": "bookings", "sectionId": "data", "title": "Bookings distinguish the attendee from the person entering it", "body": "A booking belongs to one member, but a different member can enter it for them. The two lines refer to different columns, even though they join the same tables." }
+  ],
+  "focus": "booking-data",
+  "diagrams": [{
+    "id": "booking-data", "kind": "database", "title": "Members and bookings — example data",
+    "nodes": [
+      { "id": "members", "kind": "table", "label": "Members", "step": "members", "columns": [
+        { "id": "id", "label": "Member id", "type": "text identifier", "key": true },
+        { "id": "name", "label": "Display name", "type": "text", "key": false }
+      ], "sampleRows": [{ "id": "member-example-1", "name": "Example attendee" }] },
+      { "id": "bookings", "kind": "table", "label": "Bookings", "step": "bookings", "columns": [
+        { "id": "id", "label": "Booking id", "type": "text identifier", "key": true },
+        { "id": "member", "label": "Member id", "type": "text identifier", "key": false },
+        { "id": "creator", "label": "Entered by", "type": "text identifier", "key": false },
+        { "id": "start", "label": "Starts at", "type": "UTC date and time", "key": false }
+      ], "sampleRows": [{ "id": "booking-example-1", "member": "member-example-1", "creator": "member-example-1", "start": "2026-10-01T10:00:00Z" }] }
+    ],
+    "edges": [
+      { "from": "bookings", "fromColumn": "member", "to": "members", "toColumn": "id", "cardinality": "many-to-one", "label": "Attendee" },
+      { "from": "bookings", "fromColumn": "creator", "to": "members", "toColumn": "id", "cardinality": "many-to-one", "label": "Entered by" }
+    ]
+  }]
+}

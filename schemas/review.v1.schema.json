@@ -745,7 +745,7 @@
       "additionalProperties": false,
       "properties": {
         "id": {"$ref": "#/$defs/id"},
-        "kind": {"enum": ["flowchart", "system", "sequence"], "description": "flowchart: what happens, in order. system: what runs and what it talks to — no start or end, nothing floats. sequence: who calls whom, in the order the messages are written."},
+        "kind": {"enum": ["flowchart", "system", "sequence", "database"], "description": "flowchart: what happens. system: what runs. sequence: messages in order. database: tables, columns, keys and many-to-one relationships."},
         "title": {"type": "string", "minLength": 1, "maxLength": 160},
         "lanes": {
           "type": "array",
@@ -756,8 +756,52 @@
             "properties": {"id": {"$ref": "#/$defs/id"}, "title": {"type": "string", "minLength": 1, "maxLength": 80}}
           }
         },
-        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/diagramNode"}},
-        "edges": {"type": "array", "items": {"$ref": "#/$defs/diagramEdge"}}
+        "nodes": {"type": "array", "minItems": 1},
+        "edges": {"type": "array"}
+      },
+      "allOf": [{
+        "if": {"properties": {"kind": {"const": "database"}}, "required": ["kind"]},
+        "then": {"properties": {
+          "title": {"type": "string", "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+          "lanes": false,
+          "nodes": {"type": "array", "maxItems": 30, "items": {"$ref": "#/$defs/databaseTable"}},
+          "edges": {"type": "array", "maxItems": 160, "items": {"$ref": "#/$defs/databaseRelationship"}}
+        }},
+        "else": {"properties": {
+          "nodes": {"type": "array", "items": {"$ref": "#/$defs/diagramNode"}},
+          "edges": {"type": "array", "items": {"$ref": "#/$defs/diagramEdge"}}
+        }}
+      }]
+    },
+    "databaseTable": {
+      "type": "object", "required": ["id", "kind", "label", "columns"], "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"}, "kind": {"const": "table"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 160, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "step": {"$ref": "#/$defs/id"},
+        "columns": {"type": "array", "minItems": 1, "maxItems": 30, "items": {"$ref": "#/$defs/databaseColumn"}},
+        "sampleRows": {"type": "array", "maxItems": 10, "items": {
+          "type": "object", "maxProperties": 30, "propertyNames": {"$ref": "#/$defs/id"},
+          "additionalProperties": {"anyOf": [{"type": "string", "maxLength": 500}, {"type": "number"}, {"type": "boolean"}, {"type": "null"}]}
+        }}
+      }
+    },
+    "databaseColumn": {
+      "type": "object", "required": ["id", "label", "type", "key"], "additionalProperties": false,
+      "properties": {
+        "id": {"$ref": "#/$defs/id"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "type": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"},
+        "key": {"type": "boolean"}
+      }
+    },
+    "databaseRelationship": {
+      "type": "object", "required": ["from", "to", "fromColumn", "toColumn", "cardinality"], "additionalProperties": false,
+      "properties": {
+        "from": {"$ref": "#/$defs/id"}, "to": {"$ref": "#/$defs/id"},
+        "fromColumn": {"$ref": "#/$defs/id"}, "toColumn": {"$ref": "#/$defs/id"},
+        "cardinality": {"const": "many-to-one"},
+        "label": {"type": "string", "minLength": 1, "maxLength": 80, "pattern": "^\\S(?:[\\s\\S]*\\S)?$"}
       }
     },
     "diagramNode": {
@@ -768,6 +812,7 @@
         "id": {"$ref": "#/$defs/id"},
         "kind": {
           "enum": [
+            "client", "service", "component", "guard", "queue", "external",
             "start",
             "end",
             "end-failed",
@@ -851,7 +896,7 @@
       "properties": {
         "from": {"$ref": "#/$defs/id"},
         "to": {"$ref": "#/$defs/id"},
-        "kind": {"enum": ["sequence", "conditional", "default", "message", "association"]},
+        "kind": {"enum": ["sequence", "conditional", "default", "message", "association", "async", "return"]},
         "label": {"type": "string", "maxLength": 80}
       }
     },
