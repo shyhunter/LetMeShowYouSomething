@@ -29,3 +29,12 @@ playwright-report/
 
 # macOS folder metadata
 .DS_Store
+
+# Local agent instructions are not part of the public project.
+AGENTS.md
+AGENTS.override.md
+CLAUDE.md
+CLAUDE.local.md
+GEMINI.md
+.github/copilot-instructions.md
+.github/instructions/*.instructions.md
