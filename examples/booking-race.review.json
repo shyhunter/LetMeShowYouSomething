@@ -1,0 +1,26 @@
+{
+  "protocol": "letmeshowyousomething/review", "schemaVersion": 1, "id": "booking-race-example",
+  "title": "Two people, one last slot", "subtitle": "An invented race — not a database implementation",
+  "intro": "Both contenders see the same last available slot. The atomic claim, not the earlier availability display, decides who gets it.",
+  "ask": "Can you follow what the winner and the other person each see?", "afterwards": "The agent will clarify unclear steps. No booking or database request is made.",
+  "verdictSet": {"id": "understanding", "options": [{"value": "clear", "label": "Clear", "tone": "positive"}, {"value": "lost", "label": "Lost me", "tone": "negative"}]},
+  "items": [
+    {"id": "claim", "title": "Only the atomic claim reserves the last slot", "body": "Example person A and example person B both saw availability. Their claims are arbitrated atomically, with exactly one winner. This is the required behavior, not an implementation of transactions, isolation, locking or database constraints."},
+    {"id": "loser", "title": "The other person gets a clear next step", "body": "The winner receives a confirmation. The other person is told the slot was taken and can choose another slot; they never receive a false confirmation. The illustration does not promise fairness about who wins."}
+  ],
+  "focus": "race", "diagrams": [{"id": "race", "kind": "flowchart", "title": "One atomic winner, two explicit outcomes",
+    "nodes": [
+      {"id": "start", "kind": "start", "label": "One slot remains"},
+      {"id": "parallel", "kind": "parallel-start", "label": "Two contenders"},
+      {"id": "a", "kind": "user-action", "label": "Person A claims slot", "step": "claim"},
+      {"id": "b", "kind": "user-action", "label": "Person B claims slot", "step": "claim"},
+      {"id": "claim", "kind": "process", "label": "Atomic claim: exactly one winner", "step": "claim"},
+      {"id": "outcomes", "kind": "parallel-start", "label": "Notify both people"},
+      {"id": "winner", "kind": "end", "label": "Winner: confirmed", "step": "loser"},
+      {"id": "loser", "kind": "end-failed", "label": "Other: choose another slot", "step": "loser"}
+    ], "edges": [
+      {"from": "start", "to": "parallel"}, {"from": "parallel", "to": "a"}, {"from": "parallel", "to": "b"},
+      {"from": "a", "to": "claim"}, {"from": "b", "to": "claim"}, {"from": "claim", "to": "outcomes"},
+      {"from": "outcomes", "to": "winner", "label": "Winning claim"}, {"from": "outcomes", "to": "loser", "label": "Other claim"}
+    ]}]
+}

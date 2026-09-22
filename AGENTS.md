@@ -5,6 +5,7 @@
 - State your recommendation first and explain why you recommend it before asking for a decision.
 - Ask for clarification when the user's requirements are uncertain. Flag better or safer alternatives and explain why; keep solutions secure and legitimate.
 - Tell the user when a pull request is ready to merge. Only the user merges pull requests.
+- Check off completed issue acceptance items only after verification. A parent checklist that tracks merged work stays unchecked until the user merges.
 
 ## Public-repository safety
 

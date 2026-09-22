@@ -6,6 +6,9 @@
 // 3. The page inlines lib/build-feedback.mjs verbatim and makes no network requests.
 
 import { test } from 'node:test';
+import './ai-checks.test.mjs';
+import './ai-drawing.test.mjs';
+import './ai-examples.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';

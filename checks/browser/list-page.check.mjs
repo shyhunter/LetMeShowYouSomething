@@ -7,6 +7,32 @@ import { REPO, checkPair, render, withChrome } from './lib.mjs';
 const CHECKOUT = join(REPO, 'examples/review.example.json');
 const DECISION = join(REPO, 'examples/decision-review.example.json');
 const DATABASE = join(REPO, 'examples/database-booking.review.json');
+const AI = join(REPO, 'examples/ai-tool-loop.review.json');
+
+await withChrome('ai-page', async ({ dir, say, ev, load, key, type, exported, shot }) => {
+  await load(render(AI, dir));
+  say(await ev(`['Model call','Tool call','Retrieval','Guardrail','Human handoff','Why','Next','Estimated tokens','Total: 1400'].every(t => document.querySelector('.dg-agent').textContent.includes(t))`), 'AI kinds, explained stops and estimated tokens are visible');
+  await ev(`document.querySelector('#commentmode').click(); document.querySelector('[data-node="model"]').focus()`);
+  await key('Enter', 'Enter', 13); await type('Explain this invented model call.');
+  say(await ev(`!document.querySelector('[data-prop="add-node"]') && !!document.querySelector('[data-prop="add-edge"]')`), 'agent controls refuse a generic box addition but retain arrows');
+  await ev(`document.querySelector('#export').click()`); const file = await exported();
+  say(file && checkPair(AI, file).status === 0, 'AI comment export passes the checker');
+  await shot('ai-desktop', 1280); await shot('ai-phone', 390, true);
+});
+await withChrome('ai-hostile', async ({ dir, say, ev, load, exported }) => {
+  const review = JSON.parse(readFileSync(AI, 'utf8')), attack = '<img src=x onerror="window.__aiAttack=1"><script>window.__aiAttack=1</script>';
+  review.id = 'ai-hostile-check'; const d = review.diagrams[0];
+  d.nodes.find(n => n.id === 'model').label = attack;
+  for (const n of d.nodes.filter(n => n.stop)) n.stop = { reason: attack, next: attack };
+  d.tokenUsage.parts[0].label = attack;
+  const rp = join(dir, 'ai-hostile.json'); writeFileSync(rp, JSON.stringify(review));
+  await load(render(rp, dir));
+  const safe = `!window.__aiAttack && !document.querySelector('.dg-agent img, .dg-agent script')`;
+  say(await ev(safe), 'AI hostile text is inert');
+  await ev(`document.querySelector('#exporth').click()`); const file = await exported('.feedback.html');
+  if (file) await load(file);
+  say(file && await ev(safe), 'AI hostile text stays inert after HTML export');
+});
 
 await withChrome('database-page', async ({ dir, say, ev, load, key, type, exported, shot }) => {
   await load(render(DATABASE, dir));

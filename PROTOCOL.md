@@ -405,6 +405,60 @@ add-arrow payloads cannot carry columns and key mappings, so the page asks for t
 a comment and the checker refuses those operations. Follow-up reviews must answer these comments
 and proposals as usual. Existing diagram kinds retain their editing controls.
 
+### AI elements and explainers (#70 / #32 part 4)
+
+Flowchart and system diagrams can use `model-call`, `tool-call`, `retrieval`, `guardrail` and
+`human-handoff`. Each has a trimmed, nonblank `label` (at most 160 characters), an original icon
+and a visible kind caption. Their `step` links, comments and proposals work like other boxes.
+Sequence and database diagrams do not accept these kinds.
+
+An AI flowchart must declare `agent: true`; only flowcharts accept this flag, and false is not a
+second mode. It remains on proposed copies even if all AI boxes are removed. Marked graphs allow
+at most 80 nodes and 160 edges. Existing start, reachability and labelled-decision rules still apply.
+
+Every `end`, `end-failed`, `exit` and `human-handoff` in an agent flow has a closed
+`stop: {"reason": "Why it stops", "next": "What happens next"}` object. Both strings are trimmed,
+nonblank and at most 300 characters; the page draws them in full as **Why** and **Next**.
+Other nodes and unmarked diagrams cannot carry stop metadata. Ends/exits have no outgoing control
+arrows. A human handoff can stop or continue, but always explains why control passes to a person.
+Every non-annotation terminal is one of these stops. Every reachable control node must have a path
+to a terminal stop: a closed loop, association or annotation is not an exit. This checks the drawn
+explanation, not runtime termination; guardrails add no new branching semantics.
+
+Optional `tokenUsage` on flowchart/system diagrams is a small horizontal bar chart:
+
+```json
+{"basis": "estimated", "total": 1400, "parts": [
+  {"id": "input", "label": "Input tokens", "tokens": 1000},
+  {"id": "output", "label": "Output tokens", "tokens": 400}
+]}
+```
+
+`basis` is `estimated` or `reported`. Both are author-supplied, not verified provider measurements
+or billing. There are 1–30 disjoint parts, with unique protocol ids and trimmed nonblank labels
+of at most 80 characters. Counts and total are integers from 0 to 1,000,000,000; zero is valid.
+The checker requires exact addition. All objects are closed: no extra fields, numeric strings,
+fractions or duplicated subtotals. Arithmetic does not prove completeness or provenance. The chart
+shows its basis, complete labels, exact counts and total; use an ordinary review item to ask about
+the assumptions. The summary itself is not a new editable feedback target.
+
+Agent rename/removal/add-arrow/edge-relabel proposals use the existing format and are rechecked
+against the same rules. The generic add-box operation would create an unexplained terminal, so it
+is hidden and refused for agent flows; describe the desired insertion in a comment for the next
+review. Other diagram kinds retain their controls. A terminal human handoff satisfies an agent
+flow's ending requirement.
+
+Reusable understanding reviews, all synthetic and fully offline:
+
+| Start from | What it explains |
+|---|---|
+| `examples/retry-backoff.review.json` | At most four attempts, with 1/2/4-second waits and explicit success/failure |
+| `examples/booking-race.review.json` | Two contenders, one atomic claim winner, and a clear next step for the other person |
+| `examples/ai-tool-loop.review.json` | Five AI kinds, a two-call tool budget, explained endings and an estimated token chart |
+
+Each has a generated HTML page and item links. Copy a review with a new id and adapt its assumptions;
+these are drawings, not a retry engine, reservation implementation or live AI integration.
+
 ## No secrets
 
 Reviews get emailed and forwarded. The checker refuses **any** review containing something shaped

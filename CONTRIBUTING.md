@@ -26,7 +26,7 @@ check.
   an old yes can be used for a new situation.` A message that only names the problem is a bug.
 - **The example pages are generated.** After changing `bin/render.mjs` or an example, run:
   ```bash
-  for p in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking; do
+  for p in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking retry-backoff.review.json:retry-backoff booking-race.review.json:booking-race ai-tool-loop.review.json:ai-tool-loop; do
     node bin/render.mjs "examples/${p%%:*}" "examples/${p##*:}.html"; done
   ```
   CI fails if they are out of date.

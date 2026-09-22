@@ -465,6 +465,10 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-group{fill:none;stroke-dasharray:5 4}
 .dg-line{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-label{fill:var(--ink);font:12.5px var(--sans)}
+.dg-ai-text{fill:var(--ink);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+.dg-ai-caption{fill:var(--ink);font:600 12px var(--sans)}
+.dg-token-bar{fill:var(--ac)}
+.dg-agent .dg-edge .dg-hit{stroke:transparent;stroke-width:44}
 .dg-db-title{font-weight:700}
 .dg-database .dg-label{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .dg-db-edge .dg-hit{stroke:transparent;stroke-width:44}
@@ -711,6 +715,9 @@ function applyProposals(diagram, proposals) {
     const no = (why) => failed.push({ id: p.id, why });
     if (d.kind === 'database' && ['remove-edge', 'relabel-edge'].includes(p.op) && p.nth === undefined && originalEdges.filter(e => e.from === p.from && e.to === p.to).length > 1) {
       no('more than one relationship joins these tables. Name its original position with nth, or the change could land on the wrong columns'); continue;
+    }
+    if (d.agent === true && p.op === 'add-node') {
+      no('agent additions need an explained continuation or stop. Describe the addition in a comment for the next review'); continue;
     }
     if (d.kind === 'database' && ['add-node', 'add-edge'].includes(p.op)) {
       no('database additions need columns and key mappings. Describe the addition in a comment for the next review, or the new table or relationship would be incomplete'); continue;
@@ -978,6 +985,64 @@ function drawBlock(block, ctx) {
 }
 
 // SPDX-License-Identifier: MIT-0
+// Pure, bounded presentation shared by layout, static rendering and offline pages.
+const AI_CAPTIONS = { 'model-call': 'Model call', 'tool-call': 'Tool call', retrieval: 'Retrieval', guardrail: 'Guardrail', 'human-handoff': 'Human handoff' };
+function aiEscape(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function aiCaption(kind) { return Object.hasOwn(AI_CAPTIONS, kind) ? AI_CAPTIONS[kind] : ''; }
+// Conservative monospace cells, counting wide/fallback glyphs twice. Never discard text.
+function aiLines(value, max = 18) {
+  const lines = []; let line = '', cells = 0;
+  for (const char of String(value ?? '')) {
+    const size = char.codePointAt(0) > 127 ? 2 : 1;
+    if (cells + size > max) { lines.push(line); line = ''; cells = 0; }
+    line += char; cells += size;
+  }
+  if (line || !lines.length) lines.push(line);
+  return lines;
+}
+function aiContentHeight(node) {
+  if (!aiCaption(node.kind) && !node.stop) return 0;
+  let height = (aiCaption(node.kind) ? 38 : 20) + aiLines(node.label).length * 16;
+  if (node.stop) height += 48 + (aiLines(node.stop.reason).length + aiLines(node.stop.next).length) * 16;
+  return height + 12;
+}
+function aiNodeHeight(node) {
+  const height = aiContentHeight(node);
+  return height ? Math.max(64, height + (node.component ? 136 : 0)) : 0;
+}
+function aiText(value, x, y, max = 18) {
+  return `<text class="dg-ai-text" x="${x}" y="${y}" xml:space="preserve">${aiLines(value, max).map((line, i) => `<tspan x="${x}" dy="${i ? 16 : 0}">${aiEscape(line)}</tspan>`).join('')}</text>`;
+}
+function drawAiContent(node, box) {
+  const caption = aiCaption(node.kind); let y = box.y + (caption ? 44 : 26);
+  let out = caption ? `<text class="dg-ai-caption" x="${box.x + 34}" y="${box.y + 21}">${caption}</text>` : '';
+  out += aiText(node.label, box.x + 12, y);
+  y += aiLines(node.label).length * 16;
+  if (node.stop) for (const [heading, value] of [['Why', node.stop.reason], ['Next', node.stop.next]]) {
+    y += 8; out += `<text class="dg-ai-caption" x="${box.x + 12}" y="${y}">${heading}</text>`;
+    y += 16; out += aiText(value, box.x + 12, y); y += aiLines(value).length * 16;
+  }
+  return out;
+}
+function drawTokenChart(usage, y, graphWidth) {
+  if (!usage) return { markup: '', width: graphWidth, height: y };
+  const width = Math.max(360, graphWidth), x = 16, barWidth = 300;
+  let cursor = y + 32;
+  let markup = `<g class="dg-token-chart" role="group" aria-label="${usage.basis === 'reported' ? 'Reported' : 'Estimated'} tokens, author-supplied"><text class="dg-ai-caption" x="${x}" y="${cursor}">${usage.basis === 'reported' ? 'Reported' : 'Estimated'} tokens</text>`;
+  cursor += 22;
+  markup += aiText('Author-supplied; not verified usage or billing.', x, cursor, 40); cursor += 40;
+  for (const part of usage.parts) {
+    markup += aiText(part.label, x, cursor, 40); cursor += aiLines(part.label, 40).length * 16;
+    const ratio = Number(part.tokens) / Number(usage.total);
+    const bar = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) * barWidth : 0;
+    markup += `<rect class="dg-token-bar" x="${x}" y="${cursor}" width="${bar}" height="10"/><text class="dg-ai-text" x="${x}" y="${cursor + 28}">${aiEscape(part.tokens)}</text>`;
+    cursor += 50;
+  }
+  markup += `<text class="dg-ai-caption" x="${x}" y="${cursor}">Total: ${aiEscape(usage.total)}</text></g>`;
+  return { markup, width, height: cursor + 20 };
+}
+
+// SPDX-License-Identifier: MIT-0
 // Lays out a flow chart (D052, D075 — each column gap as wide as its widest label): boxes in columns by their longest distance from a start, one row band
 // per lane, loops found and routed underneath. Deterministic and pure; the renderer inlines this file.
 //
@@ -989,7 +1054,8 @@ const NODE_W = 168, GAP_MIN = 32, NODE_H = 64, COMPONENT_H = 170, PAD = 16, LANE
 function layout(diagram) {
   const nodes = diagram.nodes || [];
   // A node showing a screen component is taller; only the lane holding one gets taller rows.
-  const cellH = (members) => (members.some((n) => n.component) ? COMPONENT_H + 26 : 96);
+  const nodeH = n => aiNodeHeight(n) || (n.component ? COMPONENT_H : NODE_H);
+  const cellH = members => Math.max(96, ...members.map(n => nodeH(n) + 26));
   const ids = nodes.map((n) => n.id);
   const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
   const edges = (diagram.edges || []).filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
@@ -1076,7 +1142,7 @@ function layout(diagram) {
   const boxes = {};
   for (const n of nodes) {
     boxes[n.id] = { x: colX[col[n.id]], y: bandY[laneOf(n)] + PAD + sub[n.id] * bandCell[laneOf(n)],
-      w: NODE_W, h: n.component ? COMPONENT_H : NODE_H, col: col[n.id], row: sub[n.id], lane: laneOf(n) };
+      w: NODE_W, h: nodeH(n), col: col[n.id], row: sub[n.id], lane: laneOf(n) };
   }
 
   // 4. Edges travel only where no box can be: the corridor between columns, the gap above a row, and
@@ -1251,6 +1317,7 @@ const ICON_PATHS = {
 // A kind without an explicit icon still gets a hint of what it is.
 // #32 — a system diagram's boxes: what runs, what it keeps, what it talks to.
 const KIND_ICON = { client: 'phone', service: 'gear', component: 'gear', guard: 'lock', queue: 'envelope', external: 'cloud',
+  'model-call': 'chat', 'tool-call': 'gear', retrieval: 'search', guardrail: 'lock', 'human-handoff': 'person',
   'user-action': 'person', notification: 'bell', timer: 'clock', wait: 'clock', deadline: 'clock', schedule: 'calendar',
   error: 'warning', escalate: 'person', cancel: 'cross', send: 'envelope', receive: 'envelope', callback: 'chat', 'data-store': 'database', document: 'document', screen: 'phone' };
 
@@ -1338,23 +1405,25 @@ function drawDiagram(diagram, opts = {}) {
     const linked = n.step !== undefined;
     const selected = (linked && n.step === opts.selected) || opts.here === nodeId;
     const diamond = ['decision', 'event-choice', 'merge', 'parallel-start', 'parallel-join'].includes(n.kind);
+    const rich = aiContentHeight(n);
     const glyph = diamond ? null : n.icon || KIND_ICON[n.kind];
     const textX = diamond ? box.x + box.w / 2 : box.x + (glyph ? 34 : 12);
     const lines = wrap(n.label, diamond ? 14 : glyph ? 18 : 22);
     const labelTop = box.y + (n.component ? 22 : box.h / 2 - (lines.length - 1) * 7 + 4);
     parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}${selected ? ' dg-selected' : ''}${partClass(nodeId)}"`
       + (linked ? ` data-step="${escSvg(n.step)}"` : '') + (linked || opts.commentable ? ' tabindex="0" role="button"' : '')
-      + ` aria-label="${escSvg(n.label || n.kind)}" aria-current="${selected}">`
+      + ` aria-label="${escSvg([aiCaption(n.kind), n.label || n.kind, n.stop ? `Why: ${n.stop.reason}. Next: ${n.stop.next}` : ''].filter(Boolean).join('. '))}" aria-current="${selected}">`
       + outline(n.kind, box.x, box.y, box.w, box.h)
-      + (glyph ? icon(glyph, box.x + 8, box.y + (n.component ? 6 : box.h / 2 - 9)) : '')
-      + `<text class="dg-label" x="${textX}" y="${labelTop}"${diamond ? ' text-anchor="middle"' : ''}>${lines.map((l, i) => `<tspan x="${textX}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text>`
-      + (n.component ? `<foreignObject x="${box.x + 6}" y="${box.y + 34}" width="${box.w - 12}" height="${box.h - 40}"><div class="dg-component">${drawBlock(n.component, { targets: new Set() })}</div></foreignObject>` : '')
+      + (glyph && (!rich || aiCaption(n.kind)) ? icon(glyph, box.x + 8, box.y + (rich || n.component ? 6 : box.h / 2 - 9)) : '')
+      + (rich ? drawAiContent(n, box) : `<text class="dg-label" x="${textX}" y="${labelTop}"${diamond ? ' text-anchor="middle"' : ''}>${lines.map((l, i) => `<tspan x="${textX}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text>`)
+      + (n.component ? `<foreignObject x="${box.x + 6}" y="${box.y + (rich || 34)}" width="${box.w - 12}" height="${box.h - (rich || 34) - 6}"><div class="dg-component">${drawBlock(n.component, { targets: new Set() })}</div></foreignObject>` : '')
       + '</g>');
   }
 
-  return `<svg class="dg" viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${escSvg(diagram.title)}">`
+  const chart = drawTokenChart(diagram.tokenUsage, L.height, L.width);
+  return `<svg class="dg${diagram.agent ? ' dg-agent' : ''}" viewBox="0 0 ${chart.width} ${chart.height}" width="${chart.width}" height="${chart.height}" role="group" aria-label="${escSvg(diagram.title)}">`
     + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
-    + parts.join('') + labels.join('') + '</svg>';
+    + parts.join('') + labels.join('') + chart.markup + '</svg>';
 }
 
 // #32 — a sequence: the participants in a row with their lifelines, one message per row underneath.
@@ -2051,15 +2120,16 @@ function proposalText(p){
 }
 function proposalsHtml(c){
   const database = chartFor(c.diagram)?.kind === 'database';
+  const agent = chartFor(c.diagram)?.agent === true;
   const mine = (store.proposals || []).filter(p => p.comment === c.id);
   const others = c.node !== undefined ? nodesOf(c.diagram).filter(n => n.id !== c.node) : [];
   const ask = c.node !== undefined
     ? `<div class="prow"><label class="skip" for="pr-${esc(c.id)}">Rename this box</label>
         <input id="pr-${esc(c.id)}" data-ptext="rename" placeholder="Rename this box to…">
         <button class="btn" type="button" data-prop="rename" data-pfor="${esc(c.id)}">Propose</button></div>
-      ${database ? '<p class="hint">Describe new tables and relationships in your comment so the next review can include their columns and keys.</p>' : `<div class="prow"><label class="skip" for="pa-${esc(c.id)}">Add a box after this one</label>
+      ${database ? '<p class="hint">Describe new tables and relationships in your comment so the next review can include their columns and keys.</p>' : `${agent ? '<p class="hint">Describe new agent steps in your comment so the next review can explain their continuation or stop.</p>' : `<div class="prow"><label class="skip" for="pa-${esc(c.id)}">Add a box after this one</label>
         <input id="pa-${esc(c.id)}" data-ptext="add-node" placeholder="Add a box after this one…">
-        <button class="btn" type="button" data-prop="add-node" data-pfor="${esc(c.id)}">Propose</button></div>
+        <button class="btn" type="button" data-prop="add-node" data-pfor="${esc(c.id)}">Propose</button></div>`}
       <div class="prow"><label class="skip" for="pe-${esc(c.id)}">Add an arrow from this box</label>
         <select id="pe-${esc(c.id)}" data-ptext="add-edge"><option value="">Add an arrow to…</option>
         ${others.map(n => `<option value="${esc(n.id)}">${esc(n.label || n.id)}</option>`).join('')}</select>
