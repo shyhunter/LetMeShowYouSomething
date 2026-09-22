@@ -5,6 +5,15 @@ import { drawDiagram } from '../lib/draw-diagram.mjs';
 import { layout } from '../lib/layout.mjs';
 import { agentDiagram } from './ai-fixtures.mjs';
 
+// Inspect the renderer's escaped tspan payloads only. This is not an HTML
+// sanitizer; the resulting string is used exclusively in text assertions.
+const spanText = svg => [...svg.matchAll(/<tspan\b[^>]*>([^<]*)<\/tspan>/g)].map(match => match[1]).join('');
+test('AI drawing assertions read text spans, not markup or attribute values', () => {
+  const svg = '<svg aria-label="a > b"><text><tspan x="0">Visible </tspan><tspan x="0">text</tspan></text></svg>';
+  assert.equal(spanText(svg), 'Visible text');
+  assert.equal(spanText('<svg aria-label="not visible"></svg>'), '');
+});
+
 test('AI kinds have visible captions and original glyphs without relying on colour', () => {
   const kinds = ['model-call', 'tool-call', 'retrieval', 'guardrail', 'human-handoff'];
   for (const [i, caption] of ['Model call', 'Tool call', 'Retrieval', 'Guardrail', 'Human handoff'].entries()) {
@@ -19,7 +28,7 @@ test('AI stops are drawn in full and taller boxes stay inside layout bounds', ()
   const d = agentDiagram(); d.nodes[2].stop = { reason: '界'.repeat(150), next: 'x'.repeat(300) };
   const svg = drawDiagram(d), l = layout(d), box = l.nodes.end;
   assert.match(svg, />Why</); assert.match(svg, />Next</);
-  const visible = svg.replace(/<[^>]*>/g, '');
+  const visible = spanText(svg);
   assert.ok(visible.includes(d.nodes[2].stop.reason)); assert.ok(visible.includes(d.nodes[2].stop.next));
   assert.ok(box.h > 500); assert.ok(box.y + box.h <= l.height);
   assert.ok(!svg.includes('…'));
@@ -42,5 +51,5 @@ test('AI text surfaces escape markup and retain long labels without ellipses', (
   const svg = drawDiagram(d);
   assert.ok(!svg.includes('<script>')); assert.match(svg, /&lt;script&gt;/);
   const long = '界'.repeat(80); d.nodes[1].label = long;
-  const visible = drawDiagram(d).replace(/<[^>]*>/g, ''); assert.ok(visible.includes(long));
+  const visible = spanText(drawDiagram(d)); assert.ok(visible.includes(long));
 });
