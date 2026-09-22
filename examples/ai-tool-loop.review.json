@@ -1,0 +1,33 @@
+{
+  "protocol": "letmeshowyousomething/review", "schemaVersion": 1, "id": "ai-tool-loop-example",
+  "title": "An agent's bounded tool loop", "subtitle": "Invented steps and estimated token counts — no AI calls",
+  "intro": "The agent retrieves context, drafts an answer and checks whether it can finish. It may use a tool at most twice before handing the question to a person.",
+  "ask": "Are the tool limit, stops and token assumptions clear?", "afterwards": "The agent will use your feedback to improve the explanation. This offline page calls no model, tool or provider.",
+  "verdictSet": {"id": "understanding", "options": [{"value": "clear", "label": "Clear", "tone": "positive"}, {"value": "partly-clear", "label": "Partly clear", "tone": "caution"}, {"value": "lost", "label": "Lost me", "tone": "negative"}]},
+  "items": [
+    {"id": "model", "title": "Retrieved context helps the model draft an answer", "body": "Retrieval returns invented reference material. The model drafts a candidate answer; the guardrail is a separate check, not a promise that the model is correct."},
+    {"id": "tool", "title": "The loop has an explicit two-call tool budget", "body": "A counter starts at zero. Each tool call consumes one of two allowed calls, then returns its result to the model. A rejected answer, exhausted budget or tool error goes to a person. This graph shows an exit path; it does not execute or prove a production loop terminates."},
+    {"id": "stops", "title": "Both final outcomes say why and what happens next", "body": "A satisfactory checked answer is shown to the person. A handoff pauses automation and asks a person to decide the next action; no automatic retry follows that stop."},
+    {"id": "tokens", "title": "The token chart is an illustrative estimate, not measured billing", "body": "The three disjoint buckets are input/context (1000), model output (300) and tool-result input (100): 1400 total for an invented run. No subtotal is counted twice. Arithmetic is checked, but completeness, provenance and actual provider usage are not."}
+  ],
+  "focus": "agent", "diagrams": [{"id": "agent", "kind": "flowchart", "agent": true, "title": "At most two tool calls, then answer or handoff",
+    "nodes": [
+      {"id": "start", "kind": "start", "label": "Set tool count to 0"},
+      {"id": "retrieve", "kind": "retrieval", "label": "Retrieve context", "step": "model"},
+      {"id": "model", "kind": "model-call", "label": "Draft an answer", "step": "model"},
+      {"id": "guard", "kind": "guardrail", "label": "Check answer and tool need", "step": "stops"},
+      {"id": "result", "kind": "decision", "label": "Check result?", "step": "stops"},
+      {"id": "budget", "kind": "decision", "label": "Tool count below 2?", "step": "tool"},
+      {"id": "tool", "kind": "tool-call", "label": "Increment count; call tool", "step": "tool"},
+      {"id": "tool-result", "kind": "decision", "label": "Tool succeeded?", "step": "tool"},
+      {"id": "done", "kind": "end", "label": "Answer ready", "step": "stops", "stop": {"reason": "The candidate passed the illustrated check.", "next": "Show the answer to the person."}},
+      {"id": "handoff", "kind": "human-handoff", "label": "Ask a person", "step": "stops", "stop": {"reason": "The check rejected the answer, the tool failed or the two-call budget ran out.", "next": "Pause automation. A person reviews the context and chooses the next action."}}
+    ], "edges": [
+      {"from": "start", "to": "retrieve"}, {"from": "retrieve", "to": "model"}, {"from": "model", "to": "guard"}, {"from": "guard", "to": "result"},
+      {"from": "result", "to": "done", "label": "Ready"}, {"from": "result", "to": "handoff", "label": "Rejected"}, {"from": "result", "to": "budget", "label": "Needs a tool"},
+      {"from": "budget", "to": "tool", "label": "Yes"}, {"from": "budget", "to": "handoff", "label": "No; budget exhausted"},
+      {"from": "tool", "to": "tool-result"}, {"from": "tool-result", "to": "model", "label": "Yes; use result"}, {"from": "tool-result", "to": "handoff", "label": "No; tool error"}
+    ], "tokenUsage": {"basis": "estimated", "total": 1400, "parts": [
+      {"id": "context", "label": "Input and context", "tokens": 1000}, {"id": "output", "label": "Model output", "tokens": 300}, {"id": "tool-input", "label": "Tool-result input", "tokens": 100}
+    ]}}]
+}

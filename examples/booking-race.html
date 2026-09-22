@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The tables behind a booking</title>
+<title>Two people, one last slot</title>
 <link rel="icon" href="data:image/svg+xml;base64,PCEtLSBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogQXBhY2hlLTIuMCAtLT4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxldE1lU2hvd1lvdVNvbWV0aGluZyI+PHRpdGxlPkxldE1lU2hvd1lvdVNvbWV0aGluZzwvdGl0bGU+PHN0eWxlPnN2Z3tjb2xvcjojNUIzRThDfUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7c3Zne2NvbG9yOiNBOThCRDZ9fTwvc3R5bGU+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01Mi42NyA0Mi4wMiBBMjIgMjIgMCAxIDEgNDYuMTQgMTcuNjUiLz48cGF0aCBkPSJNMzcuMTggMTguMjIgTDQ2LjkxIDE4LjI5IEw0NS4xNSA4LjcyIi8+PHBhdGggZD0iTTIxLjUgMzUuNTAgTDI4LjUgNDIuNTAgTDQyLjUgMjguMDAiLz48L2c+PC9zdmc+Cg==">
 <style>
 :root{
@@ -560,8 +560,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <header>
   <div class="htop min-head">
     <div>
-      <h1>The tables behind a booking</h1>
-      <p class="sub">An invented booking app — example data only</p>
+      <h1>Two people, one last slot</h1>
+      <p class="sub">An invented race — not a database implementation</p>
     </div>
     <div class="htools">
       <label class="style-pick">Style <select id="style">
@@ -577,8 +577,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
   </div>
   <div class="intro" id="intro"></div>
   <div class="asks">
-    <p><b>How to answer</b>Which part of these tables or their relationships is unclear?</p>
-    <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
+    <p><b>How to answer</b>Can you follow what the winner and the other person each see?</p>
+    <p><b>What happens next</b>The agent will clarify unclear steps. No booking or database request is made.</p>
   </div>
 </header>
 
@@ -656,7 +656,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 // D076 — the page as it arrived, before anything is drawn: "Export feedback.html" saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
-const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"database-booking-example","title":"The tables behind a booking","subtitle":"An invented booking app — example data only","intro":"Select a table to read what it stores. Each relationship connects the named columns; Many bookings belong to One member. Use Comment to ask about a table or relationship.","ask":"Which part of these tables or their relationships is unclear?","afterwards":"The agent will explain unclear parts and prepare a revised review. This review never connects to a database.","verdictSet":{"id":"understanding","options":[{"value":"clear","label":"Clear","tone":"positive"},{"value":"partly-clear","label":"Partly clear","tone":"caution"},{"value":"lost","label":"Lost me","tone":"negative"},{"value":"wrong","label":"Seems wrong","tone":"negative"}]},"allowAddedItems":true,"sections":[{"id":"data","label":"What each table stores"}],"items":[{"id":"members","sectionId":"data","title":"Members identify the people in this example","body":"A member has one identifier. The name is display text. Every row shown here is invented."},{"id":"bookings","sectionId":"data","title":"Bookings distinguish the attendee from the person entering it","body":"A booking belongs to one member, but a different member can enter it for them. The two lines refer to different columns, even though they join the same tables."}],"focus":"booking-data","diagrams":[{"id":"booking-data","kind":"database","title":"Members and bookings — example data","nodes":[{"id":"members","kind":"table","label":"Members","step":"members","columns":[{"id":"id","label":"Member id","type":"text identifier","key":true},{"id":"name","label":"Display name","type":"text","key":false}],"sampleRows":[{"id":"member-example-1","name":"Example attendee"}]},{"id":"bookings","kind":"table","label":"Bookings","step":"bookings","columns":[{"id":"id","label":"Booking id","type":"text identifier","key":true},{"id":"member","label":"Member id","type":"text identifier","key":false},{"id":"creator","label":"Entered by","type":"text identifier","key":false},{"id":"start","label":"Starts at","type":"UTC date and time","key":false}],"sampleRows":[{"id":"booking-example-1","member":"member-example-1","creator":"member-example-1","start":"2026-10-01T10:00:00Z"}]}],"edges":[{"from":"bookings","fromColumn":"member","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Attendee"},{"from":"bookings","fromColumn":"creator","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Entered by"}]}]};
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"booking-race-example","title":"Two people, one last slot","subtitle":"An invented race — not a database implementation","intro":"Both contenders see the same last available slot. The atomic claim, not the earlier availability display, decides who gets it.","ask":"Can you follow what the winner and the other person each see?","afterwards":"The agent will clarify unclear steps. No booking or database request is made.","verdictSet":{"id":"understanding","options":[{"value":"clear","label":"Clear","tone":"positive"},{"value":"lost","label":"Lost me","tone":"negative"}]},"items":[{"id":"claim","title":"Only the atomic claim reserves the last slot","body":"Example person A and example person B both saw availability. Their claims are arbitrated atomically, with exactly one winner. This is the required behavior, not an implementation of transactions, isolation, locking or database constraints."},{"id":"loser","title":"The other person gets a clear next step","body":"The winner receives a confirmation. The other person is told the slot was taken and can choose another slot; they never receive a false confirmation. The illustration does not promise fairness about who wins."}],"focus":"race","diagrams":[{"id":"race","kind":"flowchart","title":"One atomic winner, two explicit outcomes","nodes":[{"id":"start","kind":"start","label":"One slot remains"},{"id":"parallel","kind":"parallel-start","label":"Two contenders"},{"id":"a","kind":"user-action","label":"Person A claims slot","step":"claim"},{"id":"b","kind":"user-action","label":"Person B claims slot","step":"claim"},{"id":"claim","kind":"process","label":"Atomic claim: exactly one winner","step":"claim"},{"id":"outcomes","kind":"parallel-start","label":"Notify both people"},{"id":"winner","kind":"end","label":"Winner: confirmed","step":"loser"},{"id":"loser","kind":"end-failed","label":"Other: choose another slot","step":"loser"}],"edges":[{"from":"start","to":"parallel"},{"from":"parallel","to":"a"},{"from":"parallel","to":"b"},{"from":"a","to":"claim"},{"from":"b","to":"claim"},{"from":"claim","to":"outcomes"},{"from":"outcomes","to":"winner","label":"Winning claim"},{"from":"outcomes","to":"loser","label":"Other claim"}]}]};
 const SEED = null;
 // SPDX-License-Identifier: MIT-0
 // The single source of truth for what a completed review exports.
@@ -1484,7 +1484,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':978acddb5411' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':6a75a74200f2' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }

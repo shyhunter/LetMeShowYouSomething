@@ -38,7 +38,7 @@ const drawer = readFileSync(join(HERE, '..', 'lib', 'draw-components.mjs'), 'utf
 // Diagrams: layout and drawing, inlined the same way; their imports are dropped because the page
 // already defines everything they import.
 const inline = (file) => readFileSync(join(HERE, '..', 'lib', file), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '');
-const diagrams = inline('layout.mjs') + '\n' + inline('draw-database.mjs') + '\n' + inline('draw-diagram.mjs');
+const diagrams = inline('draw-ai.mjs') + '\n' + inline('layout.mjs') + '\n' + inline('draw-database.mjs') + '\n' + inline('draw-diagram.mjs');
 
 // `</script>` inside a JSON string would close the tag early; escaping `<` is enough and keeps the
 // payload valid JSON.
@@ -561,6 +561,10 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 .dg-group{fill:none;stroke-dasharray:5 4}
 .dg-line{fill:none;stroke:var(--line3);stroke-width:1.5}
 .dg-label{fill:var(--ink);font:12.5px var(--sans)}
+.dg-ai-text{fill:var(--ink);font:12px ui-monospace,SFMono-Regular,Consolas,monospace}
+.dg-ai-caption{fill:var(--ink);font:600 12px var(--sans)}
+.dg-token-bar{fill:var(--ac)}
+.dg-agent .dg-edge .dg-hit{stroke:transparent;stroke-width:44}
 .dg-db-title{font-weight:700}
 .dg-database .dg-label{font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
 .dg-db-edge .dg-hit{stroke:transparent;stroke-width:44}
@@ -1411,15 +1415,16 @@ function proposalText(p){
 }
 function proposalsHtml(c){
   const database = chartFor(c.diagram)?.kind === 'database';
+  const agent = chartFor(c.diagram)?.agent === true;
   const mine = (store.proposals || []).filter(p => p.comment === c.id);
   const others = c.node !== undefined ? nodesOf(c.diagram).filter(n => n.id !== c.node) : [];
   const ask = c.node !== undefined
     ? \`<div class="prow"><label class="skip" for="pr-\${esc(c.id)}">Rename this box</label>
         <input id="pr-\${esc(c.id)}" data-ptext="rename" placeholder="Rename this box to…">
         <button class="btn" type="button" data-prop="rename" data-pfor="\${esc(c.id)}">Propose</button></div>
-      \${database ? '<p class="hint">Describe new tables and relationships in your comment so the next review can include their columns and keys.</p>' : \`<div class="prow"><label class="skip" for="pa-\${esc(c.id)}">Add a box after this one</label>
+      \${database ? '<p class="hint">Describe new tables and relationships in your comment so the next review can include their columns and keys.</p>' : \`\${agent ? '<p class="hint">Describe new agent steps in your comment so the next review can explain their continuation or stop.</p>' : \`<div class="prow"><label class="skip" for="pa-\${esc(c.id)}">Add a box after this one</label>
         <input id="pa-\${esc(c.id)}" data-ptext="add-node" placeholder="Add a box after this one…">
-        <button class="btn" type="button" data-prop="add-node" data-pfor="\${esc(c.id)}">Propose</button></div>
+        <button class="btn" type="button" data-prop="add-node" data-pfor="\${esc(c.id)}">Propose</button></div>\`}
       <div class="prow"><label class="skip" for="pe-\${esc(c.id)}">Add an arrow from this box</label>
         <select id="pe-\${esc(c.id)}" data-ptext="add-edge"><option value="">Add an arrow to…</option>
         \${others.map(n => \`<option value="\${esc(n.id)}">\${esc(n.label || n.id)}</option>\`).join('')}</select>

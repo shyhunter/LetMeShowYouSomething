@@ -2,7 +2,7 @@
 <html lang="en"><head>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>The tables behind a booking</title>
+<title>Retry with backoff</title>
 <link rel="icon" href="data:image/svg+xml;base64,PCEtLSBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogQXBhY2hlLTIuMCAtLT4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxldE1lU2hvd1lvdVNvbWV0aGluZyI+PHRpdGxlPkxldE1lU2hvd1lvdVNvbWV0aGluZzwvdGl0bGU+PHN0eWxlPnN2Z3tjb2xvcjojNUIzRThDfUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7c3Zne2NvbG9yOiNBOThCRDZ9fTwvc3R5bGU+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01Mi42NyA0Mi4wMiBBMjIgMjIgMCAxIDEgNDYuMTQgMTcuNjUiLz48cGF0aCBkPSJNMzcuMTggMTguMjIgTDQ2LjkxIDE4LjI5IEw0NS4xNSA4LjcyIi8+PHBhdGggZD0iTTIxLjUgMzUuNTAgTDI4LjUgNDIuNTAgTDQyLjUgMjguMDAiLz48L2c+PC9zdmc+Cg==">
 <style>
 :root{
@@ -560,8 +560,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <header>
   <div class="htop min-head">
     <div>
-      <h1>The tables behind a booking</h1>
-      <p class="sub">An invented booking app — example data only</p>
+      <h1>Retry with backoff</h1>
+      <p class="sub">A finite, invented example — nothing is executed</p>
     </div>
     <div class="htools">
       <label class="style-pick">Style <select id="style">
@@ -577,8 +577,8 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
   </div>
   <div class="intro" id="intro"></div>
   <div class="asks">
-    <p><b>How to answer</b>Which part of these tables or their relationships is unclear?</p>
-    <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
+    <p><b>How to answer</b>Are the retry limit and both outcomes clear?</p>
+    <p><b>What happens next</b>Your comments will guide a revised explanation; this page sends no requests and runs no retries.</p>
   </div>
 </header>
 
@@ -656,7 +656,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 // D076 — the page as it arrived, before anything is drawn: "Export feedback.html" saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
-const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"database-booking-example","title":"The tables behind a booking","subtitle":"An invented booking app — example data only","intro":"Select a table to read what it stores. Each relationship connects the named columns; Many bookings belong to One member. Use Comment to ask about a table or relationship.","ask":"Which part of these tables or their relationships is unclear?","afterwards":"The agent will explain unclear parts and prepare a revised review. This review never connects to a database.","verdictSet":{"id":"understanding","options":[{"value":"clear","label":"Clear","tone":"positive"},{"value":"partly-clear","label":"Partly clear","tone":"caution"},{"value":"lost","label":"Lost me","tone":"negative"},{"value":"wrong","label":"Seems wrong","tone":"negative"}]},"allowAddedItems":true,"sections":[{"id":"data","label":"What each table stores"}],"items":[{"id":"members","sectionId":"data","title":"Members identify the people in this example","body":"A member has one identifier. The name is display text. Every row shown here is invented."},{"id":"bookings","sectionId":"data","title":"Bookings distinguish the attendee from the person entering it","body":"A booking belongs to one member, but a different member can enter it for them. The two lines refer to different columns, even though they join the same tables."}],"focus":"booking-data","diagrams":[{"id":"booking-data","kind":"database","title":"Members and bookings — example data","nodes":[{"id":"members","kind":"table","label":"Members","step":"members","columns":[{"id":"id","label":"Member id","type":"text identifier","key":true},{"id":"name","label":"Display name","type":"text","key":false}],"sampleRows":[{"id":"member-example-1","name":"Example attendee"}]},{"id":"bookings","kind":"table","label":"Bookings","step":"bookings","columns":[{"id":"id","label":"Booking id","type":"text identifier","key":true},{"id":"member","label":"Member id","type":"text identifier","key":false},{"id":"creator","label":"Entered by","type":"text identifier","key":false},{"id":"start","label":"Starts at","type":"UTC date and time","key":false}],"sampleRows":[{"id":"booking-example-1","member":"member-example-1","creator":"member-example-1","start":"2026-10-01T10:00:00Z"}]}],"edges":[{"from":"bookings","fromColumn":"member","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Attendee"},{"from":"bookings","fromColumn":"creator","to":"members","toColumn":"id","cardinality":"many-to-one","label":"Entered by"}]}]};
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"retry-backoff-example","title":"Retry with backoff","subtitle":"A finite, invented example — nothing is executed","intro":"Follow the failed attempts through waits of 1, 2 and 4 seconds. Any successful attempt ends immediately. A fourth failure ends the attempt sequence.","ask":"Are the retry limit and both outcomes clear?","afterwards":"Your comments will guide a revised explanation; this page sends no requests and runs no retries.","verdictSet":{"id":"understanding","options":[{"value":"clear","label":"Clear","tone":"positive"},{"value":"lost","label":"Lost me","tone":"negative"}]},"items":[{"id":"backoff","title":"The waits grow but the number of attempts is finite","body":"This illustration tries once, then retries at most three times after waits of 1, 2 and 4 seconds. Real systems also need policies for retryable failures, idempotency, deadlines and jitter; these invented numbers are not a production recommendation."},{"id":"outcomes","title":"Success and exhaustion both have an outcome","body":"Success returns the result. Exhausting four attempts reports failure and leaves the caller to choose what to do next; it does not silently restart."}],"focus":"retry","diagrams":[{"id":"retry","kind":"flowchart","title":"At most four attempts","nodes":[{"id":"start","kind":"start","label":"Begin"},{"id":"try-1","kind":"decision","label":"Attempt 1 succeeds?","step":"backoff"},{"id":"wait-1","kind":"wait","label":"Wait 1 second","step":"backoff"},{"id":"try-2","kind":"decision","label":"Attempt 2 succeeds?"},{"id":"wait-2","kind":"wait","label":"Wait 2 seconds"},{"id":"try-3","kind":"decision","label":"Attempt 3 succeeds?"},{"id":"wait-4","kind":"wait","label":"Wait 4 seconds"},{"id":"try-4","kind":"decision","label":"Attempt 4 succeeds?"},{"id":"success","kind":"end","label":"Return result","step":"outcomes"},{"id":"failed","kind":"end-failed","label":"Report failure","step":"outcomes"}],"edges":[{"from":"start","to":"try-1"},{"from":"try-1","to":"success","label":"Yes"},{"from":"try-1","to":"wait-1","label":"No"},{"from":"wait-1","to":"try-2"},{"from":"try-2","to":"success","label":"Yes"},{"from":"try-2","to":"wait-2","label":"No"},{"from":"wait-2","to":"try-3"},{"from":"try-3","to":"success","label":"Yes"},{"from":"try-3","to":"wait-4","label":"No"},{"from":"wait-4","to":"try-4"},{"from":"try-4","to":"success","label":"Yes"},{"from":"try-4","to":"failed","label":"No; limit reached"}]}]};
 const SEED = null;
 // SPDX-License-Identifier: MIT-0
 // The single source of truth for what a completed review exports.
@@ -1484,7 +1484,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':978acddb5411' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':f64a0b3c3bd6' + (SEED ? ':copy:' + SEED.exportedAt : '');
 const TONE = {"positive":"ok","caution":"warn","negative":"bad","neutral":"neut"};
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }

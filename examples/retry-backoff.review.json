@@ -1,0 +1,33 @@
+{
+  "protocol": "letmeshowyousomething/review", "schemaVersion": 1, "id": "retry-backoff-example",
+  "title": "Retry with backoff", "subtitle": "A finite, invented example — nothing is executed",
+  "intro": "Follow the failed attempts through waits of 1, 2 and 4 seconds. Any successful attempt ends immediately. A fourth failure ends the attempt sequence.",
+  "ask": "Are the retry limit and both outcomes clear?", "afterwards": "Your comments will guide a revised explanation; this page sends no requests and runs no retries.",
+  "verdictSet": {"id": "understanding", "options": [{"value": "clear", "label": "Clear", "tone": "positive"}, {"value": "lost", "label": "Lost me", "tone": "negative"}]},
+  "items": [
+    {"id": "backoff", "title": "The waits grow but the number of attempts is finite", "body": "This illustration tries once, then retries at most three times after waits of 1, 2 and 4 seconds. Real systems also need policies for retryable failures, idempotency, deadlines and jitter; these invented numbers are not a production recommendation."},
+    {"id": "outcomes", "title": "Success and exhaustion both have an outcome", "body": "Success returns the result. Exhausting four attempts reports failure and leaves the caller to choose what to do next; it does not silently restart."}
+  ],
+  "focus": "retry", "diagrams": [{"id": "retry", "kind": "flowchart", "title": "At most four attempts",
+    "nodes": [
+      {"id": "start", "kind": "start", "label": "Begin"},
+      {"id": "try-1", "kind": "decision", "label": "Attempt 1 succeeds?", "step": "backoff"},
+      {"id": "wait-1", "kind": "wait", "label": "Wait 1 second", "step": "backoff"},
+      {"id": "try-2", "kind": "decision", "label": "Attempt 2 succeeds?"},
+      {"id": "wait-2", "kind": "wait", "label": "Wait 2 seconds"},
+      {"id": "try-3", "kind": "decision", "label": "Attempt 3 succeeds?"},
+      {"id": "wait-4", "kind": "wait", "label": "Wait 4 seconds"},
+      {"id": "try-4", "kind": "decision", "label": "Attempt 4 succeeds?"},
+      {"id": "success", "kind": "end", "label": "Return result", "step": "outcomes"},
+      {"id": "failed", "kind": "end-failed", "label": "Report failure", "step": "outcomes"}
+    ], "edges": [
+      {"from": "start", "to": "try-1"},
+      {"from": "try-1", "to": "success", "label": "Yes"}, {"from": "try-1", "to": "wait-1", "label": "No"},
+      {"from": "wait-1", "to": "try-2"},
+      {"from": "try-2", "to": "success", "label": "Yes"}, {"from": "try-2", "to": "wait-2", "label": "No"},
+      {"from": "wait-2", "to": "try-3"},
+      {"from": "try-3", "to": "success", "label": "Yes"}, {"from": "try-3", "to": "wait-4", "label": "No"},
+      {"from": "wait-4", "to": "try-4"},
+      {"from": "try-4", "to": "success", "label": "Yes"}, {"from": "try-4", "to": "failed", "label": "No; limit reached"}
+    ]}]
+}

@@ -24,6 +24,7 @@ import { relative, resolve } from 'node:path';
 import { applyProposals, findLayerEntry, layerEntryText, partLabel } from '../lib/build-feedback.mjs';
 import { flowAsDiagram } from '../lib/draw-diagram.mjs';
 import { databaseFaults } from '../lib/check-database.mjs';
+import { aiFaults, agentControlEdges } from '../lib/check-ai.mjs';
 
 // #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
 // its answers with the example page in the same browser. Only the example itself may carry its id.
@@ -408,7 +409,7 @@ function checkFlow(r, rep) {
 // ── diagrams (v0.2 part 3b, D036, D041, D052) ─────────────────────────────────────────────────────
 // #32 — a closed catalogue per diagram kind: a flow chart says what happens in order, a system diagram
 // says what runs and what it talks to. A box from the wrong catalogue is refused, not drawn oddly.
-const SYSTEM_KINDS = new Set(["client", "service", "component", "guard", "queue", "data-store", "external", "note", "group", "connector", "off-page"]);
+const SYSTEM_KINDS = new Set(["client", "service", "component", "guard", "queue", "data-store", "external", "note", "group", "connector", "off-page", "model-call", "tool-call", "retrieval", "guardrail", "human-handoff"]);
 // A sequence has participants, not steps: who is in the conversation, and nothing else.
 const SEQUENCE_KINDS = new Set(["client", "service", "component", "queue", "data-store", "external", "note"]);
 const NODE_KINDS = new Set([...SYSTEM_KINDS, "start", "end", "end-failed", "entry", "exit", "process", "user-action", "system-action", "manual", "subflow", "screen", "input", "output", "document", "notification", "decision", "parallel-start", "parallel-join", "merge", "event-choice", "wait", "timer", "deadline", "schedule", "error", "retry", "compensate", "escalate", "cancel", "send", "receive", "signal", "callback", "data", "data-store", "group", "connector", "off-page", "note", "loop"]);
@@ -418,6 +419,8 @@ const ANNOTATIONS = new Set(['note', 'group', 'connector', 'off-page']);   // ne
 
 // The rules for one diagram, so the same ones judge a diagram the reviewer changed (#60 part 3).
 function diagramFaults(d, ctx) {
+  const aiErrors = aiFaults(d);
+  if (aiErrors.length) return { unresolved: aiErrors, senseless: [], collisions: [] };
   if (d.kind === 'database') return { unresolved: databaseFaults(d, ctx.stepIds), senseless: [], collisions: [] };
   const { stepIds, partIds, diagramIds, flow } = ctx;
   const unresolved = [], senseless = [], collisions = [];
@@ -446,7 +449,7 @@ function diagramFaults(d, ctx) {
     if (e.kind !== undefined && !EDGE_KINDS.has(e.kind)) unresolved.push(`${d.id}: edge ${e.from} → ${e.to} has unknown kind "${e.kind}". Use sequence, conditional, default, message, association, async or return`);
   }
 
-  const flowEdges = edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
+  const flowEdges = d.agent === true ? agentControlEdges(d) : edges.filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
   const out = (id) => flowEdges.filter((e) => e.from === id), inc = (id) => flowEdges.filter((e) => e.to === id);
   // #32 — a sequence says who calls whom, in order. Every message says what it is, every participant
   // is in the conversation, and an answer follows a question.
@@ -477,7 +480,7 @@ function diagramFaults(d, ctx) {
   }
   const starts = nodes.filter((n) => n.kind === 'start' || n.kind === 'entry');
   if (!starts.length) senseless.push(`${d.id}: has no start. Add a start node, or the reader doesn't know where to begin`);
-  if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);
+  if (!nodes.some((n) => ['end', 'end-failed', 'exit'].includes(n.kind) || (d.agent === true && n.kind === 'human-handoff' && !out(n.id).length))) senseless.push(`${d.id}: has no end. Add an end node, or the process never finishes`);
   const seen = new Set();
   for (const queue = starts.map((n) => n.id); queue.length;) { const id = queue.shift(); if (!seen.has(id)) { seen.add(id); queue.push(...out(id).map((e) => e.to)); } }
   for (const n of nodes) if (starts.length && !seen.has(n.id) && !ANNOTATIONS.has(n.kind))

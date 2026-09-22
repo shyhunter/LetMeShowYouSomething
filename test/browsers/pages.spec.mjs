@@ -9,7 +9,7 @@ import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '../..');
 const url = (file) => 'file://' + resolve(ROOT, file);
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json' };
 const check = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin/check.mjs'), ...args, '--root', ROOT], { encoding: 'utf8' });
 const render = (reviewPath, dir) => {
   const out = join(dir, 'page.html');
