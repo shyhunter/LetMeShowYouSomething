@@ -564,6 +564,20 @@ item's `examples`, and an `explain` request by a `summary` or `body` that says i
 review needs its own id. There is no status field: the files already hold the state, and a second copy
 could disagree with them.
 
+**One id, one answer** (#77). Inside one feedback file, every response, added item and comment has its
+own id. An added item carried into the next round keeps its `added-` id as a review item, so the page
+gives a new added item or comment the first free number: it counts the review's items, the added
+items, the comments and the ids a proposed change still points at. The checker's `answer ids unique`
+refuses a file where two answers share an id, in `feedback`, `pair`, `followup` and `history` (for
+each earlier file). A gap, a picture or a later review names what it means by id alone, so such a
+file could mean either answer. Pages made before #77 could write one. To recover:
+
+1. Keep the original review, the returned file and, if you have it, the page's saved copy. Change none of them.
+2. List each shared id with its titles, in every place it occurs: responses, added items, comments, gaps, pictures.
+3. Ask the reviewer which answer each gap and picture belongs to. Never take the first match.
+4. In a copy, give one answer a new id and update every reference to it. If the reviewer cannot say, stop.
+5. Run the checker on the copy. A pass shows the file is consistent, not that the association is what they meant.
+
 The checker prints every check it ran; the number depends on what the files use (a review with a
 choose-one section gets its choices checked). Exit `0` only at zero errors; warnings never fail a
 run. The checker has no dependencies on purpose — a protocol checker

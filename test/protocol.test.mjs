@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import './ai-checks.test.mjs';
 import './ai-drawing.test.mjs';
 import './ai-examples.test.mjs';
+import './feedback-identity.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -187,7 +188,7 @@ const faults = {
   'every item answered': (f) => { f.responses = f.responses.filter((x) => x.itemId !== 'back-button'); },
   'verdicts in vocabulary': (f) => { f.responses[0].verdict = 'great'; },
   'gaps are derived': (f) => { f.gaps = f.gaps.filter((id) => id !== 'declined-card'); },
-  'added ids unique': (f) => {
+  'answer ids unique': (f) => {
     f.addedItems.push({ ...f.addedItems[0], title: 'A second item under the same id' });
     f.summary.added += 1; f.gaps.push(f.addedItems[0].id);
   },
