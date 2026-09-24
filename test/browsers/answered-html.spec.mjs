@@ -16,6 +16,7 @@ test.beforeEach(async ({ page }, info) => {
 });
 test.afterEach(async ({}, info) => { expect(info.faults).toEqual([]); });
 const save = async (page, button, path) => {
+  if (!await page.locator('#return-review').isVisible()) await page.locator('#finish').click();
   const d = page.waitForEvent('download'); await page.locator(button).click(); await (await d).saveAs(path); return path;
 };
 

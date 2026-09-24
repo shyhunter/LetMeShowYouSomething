@@ -338,3 +338,15 @@ test('workspace: Go to response reopens a selected layer and focuses its answer'
   await expect(judge).toHaveAttribute('open');
   await expect(judge.locator('input').first()).toBeFocused();
 });
+
+test('workspace: proposal outcome objects do not break item rendering', async ({ page }) => {
+  const { url, review } = pageFor('review.example.json', review => {
+    review.items[0].answers = [{ review: 'earlier-round', id: 'proposal-1', outcome: 'not-drawn', why: 'Still open' }];
+  });
+  await page.goto(url);
+  await expect(page.locator('#steplist [data-open="guest-checkout"]')).toBeVisible();
+  await page.locator('#steplist [data-open="guest-checkout"]').click();
+  await expect(page.locator('#detail input[data-item="guest-checkout"]')).toHaveCount(4);
+  await expect(page.locator('#selection-title')).toContainText(review.items[0].title);
+  await expect(page.locator('#detail')).not.toContainText('[object Object]');
+});

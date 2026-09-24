@@ -31,6 +31,7 @@ test('#77: a carried added-1 is never reused, and a removed item takes its pictu
   await page.locator('[data-del="1"]').click();
   await addItem(page, 'Added after the removal');
   expect(await page.evaluate(() => store.pictures)).toEqual([]);
+  await page.locator('#finish').click();
   const d = page.waitForEvent('download'); await page.locator('#export').click();
   const fp = join(dir, 'feedback.json'); await (await d).saveAs(fp);
   expect(JSON.parse(readFileSync(fp, 'utf8')).addedItems.map((a) => a.id)).toEqual(['added-2', 'added-3']);
