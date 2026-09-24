@@ -687,7 +687,7 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
   <button class="btn pri" id="export" type="button">Export feedback.json</button>
   <button class="btn" id="exporth" type="button">Export feedback.html</button>
   <button class="btn" id="reset" type="button">Clear my answers</button>
-  <span class="note" id="footnote">Answers save in this browser as you go.</span>
+  <span class="note" id="footnote">Answers save in this browser as you go. Exporting saves a file; nothing is sent from this page.</span>
 </div>
 <p class="made"><svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M52.67 42.02 A22 22 0 1 1 46.14 17.65"/><path d="M37.18 18.22 L46.91 18.29 L45.15 8.72"/><path d="M21.5 35.50 L28.5 42.50 L42.5 28.00"/></g></svg>Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
@@ -1942,7 +1942,7 @@ if (addBtn) addBtn.addEventListener('click', () => {
 $('#export').addEventListener('click', () => {
   const out = buildFeedback(REVIEW, store);
   saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
-  $('#footnote').textContent = `Exported ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Send me the file.`;
+  $('#footnote').textContent = `Exported ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Nothing was sent: send the file back yourself.`;
 });
 const saveAs = (text, type, name) => {
   const a = document.createElement('a');
@@ -1952,9 +1952,9 @@ const saveAs = (text, type, name) => {
 // D076 — the HTML export is this whole page with the answers in it: every chart, screen and step, for
 // someone who will never open a .json file. "<" is escaped so no answer can close the script tag.
 $('#exporth').addEventListener('click', () => {
-  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/</g, '\\u003c');
+  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
-  $('#footnote').textContent = 'Exported the whole page with your answers. The agent still needs the .json file.';
+  $('#footnote').textContent = 'Exported the whole page with your answers. Nothing was sent: send this file back yourself; the agent can read it or the .json.';
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;

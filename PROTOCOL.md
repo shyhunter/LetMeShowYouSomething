@@ -543,7 +543,7 @@ For one to four quick questions a page is too much, but a decision others will r
 record (#53). The agent writes the questions as a small review, asks them in its chat, reads the
 answers back one line per question, and the person confirms or corrects them. Only then does
 `bin/answer.mjs <review.json> <answers.json>` write the feedback, with the same builder the page uses,
-marked `"via": "chat"`. It passes the same checker. What the person did not answer is left out of the
+marked `"via": "chat"`. It checks the result with `check pair` and writes nothing that fails. What the person did not answer is left out of the
 answers file and arrives as `unset`, a gap: never agreement.
 
 ## Checking
@@ -640,11 +640,23 @@ is judged. The screen panel shows one screen or, at a press, **every screen at o
 brief points at is ringed in the chart, and the screen panel says "look here". Every item offers **Show me an example** and **Explain this** as checkboxes — the questions that
 travel back as `requests`.
 
-Answers leave as **Export feedback.json** for the agent, and **Export feedback.html** for a person
-(D076): the whole page — every chart, screen, step and the brief — with the answers written into it,
-so whoever opens it sees everything, not a summary. The answers sit in the page's script as JSON with
-`<` escaped; an exported copy keeps its own answers in the browser, apart from the original's. The
-agent still reads the `.json` file; the HTML is never a second source of truth.
+Answers leave as **Export feedback.json**, or as **Export feedback.html** (D076): the whole page —
+every chart, screen, step and the brief — with the answers written into it, so whoever opens it sees
+everything, not a summary. An exported copy keeps its own answers in the browser, apart from the
+original's. Exporting sends nothing: the reviewer returns the file themselves.
+
+**Reading an answered page** (#78). The page holds the review and the answers each on one line of its
+script, as JSON: `const REVIEW = {…};` and `const SEED = {…};` (the answers as the page keeps them, plus
+`exportedAt`). Both are written with `<`, U+2028 and U+2029 escaped, so neither can close the script
+or end its line early. `bin/answer.mjs <review.json> <answered.html> [feedback.json]` reads exactly one
+of each line with `JSON.parse` and never runs, loads or fetches anything in the page. It refuses
+when the embedded review is not the agent's own review exactly (a changed review would put answers on
+changed questions), when the page has no answers, or when a line is missing, repeated or not JSON. The
+answers then go through the same builder as the page's own export (`respondedAt` = `exportedAt`,
+`"via": "page"`), and `check pair` must pass before the file is written; an existing file is never
+overwritten. Input over 32 MB is refused. The `.json` export and the page give the same feedback. The
+file is unsigned either way: a matching review proves nothing about who answered. Pages exported
+before #78 read the same way, unless a note held U+2028 or U+2029; those are refused, never guessed.
 
 Where the reviewer clicks lives in memory only. A reload starts at the beginning, and nothing about
 the path taken is saved or exported. It works with the keyboard alone, and every tap target is at
