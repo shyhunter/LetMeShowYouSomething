@@ -42,7 +42,9 @@ const diagrams = inline('draw-ai.mjs') + '\n' + inline('layout.mjs') + '\n' + in
 
 // `</script>` inside a JSON string would close the tag early; escaping `<` is enough and keeps the
 // payload valid JSON.
-const embed = (o) => JSON.stringify(o).replace(/</g, '\\u003c');
+// #78 — `<` could close the script, and U+2028/U+2029 end a line: an answered page is read back line
+// by line (bin/answer.mjs), and its re-export replaces the SEED line. JSON escapes change no value.
+const embed = (o) => JSON.stringify(o).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
 const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut' };
@@ -760,7 +762,7 @@ ${review.allowAddedItems === false ? '' : `
   <button class="btn pri" id="export" type="button">Export feedback.json</button>
   <button class="btn" id="exporth" type="button">Export feedback.html</button>
   <button class="btn" id="reset" type="button">Clear my answers</button>
-  <span class="note" id="footnote">Answers save in this browser as you go.</span>
+  <span class="note" id="footnote">Answers save in this browser as you go. Exporting saves a file; nothing is sent from this page.</span>
 </div>
 <p class="made">${mark ? `<svg viewBox="0 0 64 64" aria-hidden="true">${mark}</svg>` : ''}Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
@@ -1184,7 +1186,7 @@ if (addBtn) addBtn.addEventListener('click', () => {
 $('#export').addEventListener('click', () => {
   const out = buildFeedback(REVIEW, store);
   saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
-  $('#footnote').textContent = \`Exported \${out.summary.answered}/\${out.summary.total} answered · \${out.summary.added} added · \${out.gaps.length} gaps. Send me the file.\`;
+  $('#footnote').textContent = \`Exported \${out.summary.answered}/\${out.summary.total} answered · \${out.summary.added} added · \${out.gaps.length} gaps. Nothing was sent: send the file back yourself.\`;
 });
 const saveAs = (text, type, name) => {
   const a = document.createElement('a');
@@ -1194,9 +1196,9 @@ const saveAs = (text, type, name) => {
 // D076 — the HTML export is this whole page with the answers in it: every chart, screen and step, for
 // someone who will never open a .json file. "<" is escaped so no answer can close the script tag.
 $('#exporth').addEventListener('click', () => {
-  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/</g, '\\\\u003c');
+  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\\u2028\\u2029]/g, (c) => '\\\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
-  $('#footnote').textContent = 'Exported the whole page with your answers. The agent still needs the .json file.';
+  $('#footnote').textContent = 'Exported the whole page with your answers. Nothing was sent: send this file back yourself; the agent can read it or the .json.';
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
