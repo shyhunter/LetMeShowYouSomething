@@ -63,17 +63,21 @@ await withChrome('database-page', async ({ dir, say, ev, load, key, type, export
 // The page's own key (id + fingerprint of the review, #38): ask the page rather than rebuild it here.
 const stored = () => `JSON.parse(localStorage.getItem(LS))`;
 // The list on the left, one item open on the right (#44): open an item before answering it.
-const open = (id) => `document.querySelector('[data-open="${id}"]').click()`;
-const rows = `document.querySelectorAll('#steplist fieldset.item.row')`;
+// #100 — a question opens from the Overview, as a reviewer would.
+const open = (id) => `document.querySelector('#mode-overview').click(); document.querySelector('#items [data-open="${id}"]').click()`;
+// The Overview holds every question as a card (#100).
+const overview = `document.querySelector('#mode-overview').click();`;
+const rows = `(document.querySelector('#mode-overview').click(), document.querySelectorAll('#items [data-card]'))`;
 
 await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key, type, exported }) => {
   const page = render(CHECKOUT, dir);
   await load(page);
   say(await ev(`${rows}.length`) === 4, 'lists 4 items');
-  say(await ev(`document.querySelectorAll('#detail fieldset.item').length`) === 1, 'and opens one of them beside the list');
+  await ev(`document.querySelector('#mode-tour').click(); document.querySelector('#next').click()`);
+  say(await ev(`document.querySelectorAll('#detail fieldset.item').length`) === 1, 'and Next opens the first one in the tour');
   say(await ev("[...document.querySelectorAll('textarea,input')].every(el => el.type==='radio' || el.closest('label') || document.querySelector(`label[for=\"${el.id}\"]`))"), 'every text field has a label');
   await media('light'); await shot('checkout-light', 1280);
-  await ev(reveal('#filters .chip'));
+  await ev(overview); await ev(reveal('#filters .chip'));
   say(await ev(`(()=>{const c=[...document.querySelectorAll('#filters .chip')];return c[1].getBoundingClientRect().left-c[0].getBoundingClientRect().right})()`) >= 4, 'filter chips are spaced apart');
   await media('dark'); await shot('checkout-dark', 1280);
   say(await ev("getComputedStyle(document.querySelector('input[type=radio]')).colorScheme") === 'dark', 'dark mode: native controls use the dark scheme');
@@ -86,10 +90,10 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
   await key(' ', 'Space', 32); await key('ArrowRight', 'ArrowRight', 39);
   say(await ev(`${stored()}.verdicts['saved-card']`) === 'partial', 'keyboard: Space then ArrowRight selects "partial"');
   say(await ev('document.activeElement.name + "=" + document.activeElement.value') === 'v-saved-card=partial', 'keyboard focus stays in the group');
-  await ev(`document.querySelector('#at').focus()`); await type('Currency flips mid-flow'); await ev(`document.querySelector('#addbtn').click()`);
+  await ev(overview); await ev(`document.querySelector('#at').focus()`); await type('Currency flips mid-flow'); await ev(`document.querySelector('#addbtn').click()`);
   await load(page); await ev(open('declined-card'));
   say(await ev(`document.querySelector('textarea[data-note="declined-card"]').value`) === 'Customer sees error 51.' && await ev("document.querySelectorAll('.addedrow').length") === 1, 'autosave keeps note and added item across reload');
-  await ev(reveal('[data-f="gaps"]'));
+  await ev(overview); await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   say(await ev(`${rows}.length`) === 2, '"Gaps only" shows the 2 gaps');
   await ev(`document.querySelector('[data-f="all"]').click()`);
@@ -114,6 +118,7 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
 await withChrome('decision-page', async ({ dir, say, ev, load, key, exported }) => {
   const page = render(DECISION, dir);
   await load(page);
+  await ev(overview);
   say(await ev(`document.querySelectorAll('.rec').length`) === 1, 'exactly one Recommended label');
   let aff = 0;
   for (const id of ['opt-file', 'opt-db', 'opt-both']) { await ev(open(id)); aff += await ev(`document.querySelectorAll('#detail .aff').length`); }
@@ -121,15 +126,16 @@ await withChrome('decision-page', async ({ dir, say, ev, load, key, exported }) 
   await ev(open('opt-db')); await ev(`document.querySelector('input[data-choice][value="opt-db"]').focus()`);
   await key(' ', 'Space', 32);
   say(await ev(`${stored()}.choices.storage`) === 'opt-db', 'keyboard picks opt-db');
-  say(/Chosen/.test(await ev(`document.querySelector('#steplist [data-step="opt-db"]').textContent`)), 'and the list marks it Chosen');
-  await ev(reveal('[data-f="gaps"]'));
+  await ev(overview);
+  say(await ev(`!!document.querySelector('#items [data-card="opt-db"] fieldset.item.chosen')`), 'and the Overview marks it chosen');
+  await ev(overview); await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   const gaps = await ev(`[...${rows}].map(r=>r.querySelector('legend').textContent)`);
   say(!gaps.some((t) => t.startsWith('Export a file now')), '"Gaps only" after a pick hides unrated options');
   await ev(`document.querySelector('[data-f="all"]').click()`);
   await ev(open('challenge-forgotten-file')); await ev(`document.querySelector('input[data-item="challenge-forgotten-file"][value="agree"]').click()`);
   await ev(open('challenge-browser-storage')); await ev(`document.querySelector('input[data-item="challenge-browser-storage"][value="disagree"]').click()`);
-  await ev(reveal('[data-f="gaps"]'));
+  await ev(overview); await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   const doubtGaps = await ev(`[...${rows}].map(r=>r.querySelector('legend').textContent)`);
   say(doubtGaps.some((t) => t.startsWith('A reviewer who forgets')) && !doubtGaps.some((t) => t.startsWith('Autosave in the browser can lose')), 'doubts: an agreed concern is a gap, a rejected one is not (D051)');

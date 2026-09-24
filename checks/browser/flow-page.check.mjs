@@ -14,6 +14,8 @@ const returnReview = `if (!document.querySelector('#return-review').open) docume
 
 const FLOW = join(REPO, 'examples/flow-booking.review.json');
 const title = `document.querySelector('#screen-title')?.textContent`;
+// #100 — the Overview holds every question as a card; the tour shows one at a time.
+const overview = `document.querySelector('#mode-overview').click()`, tour = `document.querySelector('#mode-tour').click()`;
 const tap = (id) => `document.querySelector('#screen [data-target="${id}"]').click()`;
 
 await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sleep, exported }) => {
@@ -24,17 +26,17 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(title) === 'Pick a time', 'opens on the start screen');
   say(JSON.stringify(await ev(`[...document.querySelectorAll('#screen [data-target]')].map(b=>b.tagName+':'+b.dataset.target)`)) === JSON.stringify(['BUTTON:help', 'BUTTON:book']), 'only the two step targets are tappable, as real buttons: Ask a question and Book 10:00');
   say(/0 answered · 11 open/.test(await ev(`document.querySelector('#overview').textContent`)) && /Tap a highlighted/.test(await ev(`document.querySelector('#detail').textContent`)), 'the feedback panel opens with the overview and invites the first tap');
-  say(await ev(`document.querySelectorAll('#steplist fieldset.item.row').length`) === 11 && await ev(`document.querySelectorAll('#detail .open').length`) === 0, 'every step is one row on the left; nothing open on the right yet');
+  say(await ev(`document.querySelector('#stepno').textContent`) === 'Step 1 of 13' && await ev(`document.querySelectorAll('#detail .open').length`) === 0, 'the tour counts all 11 steps between Understand and Return; nothing open yet');
   say(await ev(`document.querySelectorAll('#stepline').length`) === 0, 'the step appears in one place only: no step line above the panels');
   await ev(tap('book'));
   const line = await ev(`document.querySelector('#detail .open').textContent`);
   say(/Book a slot/.test(line) && /Taps Book 10:00/.test(line) && /to secure the Saturday slot/.test(line), `step panel shows part, cause and goal: "${line.replace(/\s+/g, ' ').slice(0, 120)}"`);
-  say(await ev(`document.querySelectorAll('#detail .open [data-outcome]').length`) === 2, 'two outcomes to pick from');
+  say(await ev(`document.querySelectorAll('#expected [data-outcome]').length`) === 2, 'two outcomes to pick from');
   say(await ev(`document.activeElement.dataset.outcome`) === '0', 'focus lands on the first outcome');
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(150);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   say(await ev(title) === 'Booked', 'picking "Slot is free" shows the Booked screen');
   say(await ev(`document.querySelector('#announce').textContent`) === 'Now on: Booked', 'screen change is announced');
-  const panel = await ev(`document.querySelector('#detail .open').textContent`);
+  const panel = await ev(`document.querySelector('#expected').textContent`);
   say(/Reserves the slot and emails a confirmation/.test(panel) && /Cancel the booking if plans change/.test(panel), 'step panel shows the effect and what the person can do now');
   await ev(tap('cancel')); await sleep(150);
   say(await ev(title) === 'Confirm cancelling' && await ev(`document.querySelectorAll('#screen [role=dialog]').length`) === 1, 'Cancel booking (one outcome) goes straight to the confirmation dialog');
@@ -45,9 +47,9 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
 
   // ── judge a step, export ──
   await ev(tap('book'));
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(150);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   await ev(`document.querySelector('#detail .open input[data-item="book"][value="agree"]').click()`);
-  say(await ev(`document.querySelector('#prog').textContent`) === '1/11 answered' && /1 answered · 10 open/.test(await ev(`document.querySelector('#overview').textContent`)), 'judging the open step counts toward all 11 steps, and the overview says what is open');
+  say(/1 answered · 10 open/.test(await ev(`document.querySelector('#overview').textContent`)), 'judging the open step counts toward all 11 steps, and the overview says what is open');
   say(await ev(`document.querySelector('fieldset.item input[name="v-book"][value="agree"]').checked`), 'the step keeps its verdict in the list');
   await load(page);
   say(await ev(title) === 'Pick a time', 'position is not saved: a reload starts at the beginning (D003)');
@@ -77,15 +79,13 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   // ── layouts (D011) ──
   await load(page);
   await ev(tap('book'));
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(150);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   for (const [label, w, mobile] of [['flow-laptop', 1280, false], ['flow-tablet', 900, false], ['flow-phone', 390, true]]) {
     await shot(label, w, mobile);
     await width(w, mobile); await sleep(250);
-    // The screen and behavior share the desktop workspace; narrow layouts stack them.
-    const connected = await ev(`(()=>{const a=document.querySelector('#upanel').getBoundingClientRect(),b=document.querySelector('#feedback').getBoundingClientRect();return innerWidth>=1100?b.left>=a.right-1&&Math.abs(a.top-b.top)<2:b.top>=a.bottom-1})()`);
-    say(connected, `${label}: the behavior sits ${w >= 1100 ? 'beside' : 'below'} the screen`);
-    say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect();return d.top>=l.bottom-1&&Math.abs(d.width-l.width)<2})()`), `${label}: the flow list sits above its open step inside the behavior panel`);
-    const small = await ev(`[...document.querySelectorAll('.is-target, #detail .open [data-outcome], #restart')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,30))`);
+    // The question sits beside the four places on a wide screen; narrow layouts stack them.
+    say(await ev(`(()=>{const a=document.querySelector('#ask').getBoundingClientRect(),p=document.querySelector('#places').getBoundingClientRect();return innerWidth>=900?p.left>=a.right-1:p.top>=a.bottom-1})()`), `${label}: the places sit ${w >= 900 ? 'beside' : 'below'} the question`);
+    const small = await ev(`[...document.querySelectorAll('.is-target, #expected [data-outcome], #restart, #back, #next, .tiles label')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,30))`);
     say(small.length === 0, `${label}: every tap target is at least 44×44 px${small.length ? ` (too small: ${small.join(' | ')})` : ''}`);
   }
   await width(1280);
@@ -93,39 +93,40 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   // ── all outcomes side by side ──
   await load(page); await width(1280);
   await ev(tap('book'));
-  const cols = await ev(`[...document.querySelectorAll('#detail .open .outcome')].map(o=>o.textContent.replace(/\\s+/g,' '))`);
-  say(cols.length === 2 && /Slot is free/.test(cols[0]) && /Someone took it first/.test(cols[1]) && /Pick another time, another day, or join/.test(cols[1] + (await ev(`document.querySelector('#detail .open').textContent`))), 'step panel shows both outcomes side by side');
-  await ev(`document.querySelectorAll('#detail .open .outcome [data-outcome]')[1].click()`); await sleep(150);
+  const cols = await ev(`[...document.querySelectorAll('#expected .outcome')].map(o=>o.textContent.replace(/\\s+/g,' '))`);
+  say(cols.length === 2 && /Slot is free/.test(cols[0]) && /Someone took it first/.test(cols[1]) && /Pick another time, another day, or join/.test(cols[1] + (await ev(`document.querySelector('#expected').textContent`))), 'step panel shows both outcomes side by side');
+  await ev(`document.querySelectorAll('#expected .outcome [data-outcome]')[1].click()`); await sleep(150);
   say(await ev(title) === 'Slot taken', 'showing the second outcome from the panel follows it');
-  say(await ev(`document.querySelectorAll('#detail .open .outcome')[1].getAttribute('data-picked')`) === 'true', 'the outcome shown is marked as picked, the other stays visible');
+  say(await ev(`document.querySelectorAll('#expected .outcome')[1].getAttribute('data-picked')`) === 'true', 'the outcome shown is marked as picked, the other stays visible');
 
-  // ── one list, and nothing said twice (D064): every step, with its journey, status and outcomes ──
+  // ── one Overview, and nothing said twice (D064): every step, with its journey, status and outcomes ──
   await load(page); await width(1280);
-  say(await ev(`document.querySelectorAll('fieldset.item[data-step]').length`) === 11, 'the list holds all 11 steps');
-  await ev(`document.querySelector('[data-open="book"]').click()`); await sleep(150);
-  say(await ev(`document.querySelectorAll('#detail .open').length`) === 1 && await ev(`document.activeElement.dataset.outcome`) === '0', 'opening a row opens that step, focus on its first outcome');
+  await ev(overview); await sleep(100);
+  say(await ev(`document.querySelectorAll('#items [data-card]').length`) === 11, 'the Overview holds all 11 steps');
+  await ev(`document.querySelector('#items [data-open="book"]').click()`); await sleep(150);
+  say(await ev(`document.querySelectorAll('#detail .open').length`) === 1 && await ev(`document.activeElement.name`) === 'v-book', 'opening a card opens that step in the tour, focus on its answer');
   const card = `document.querySelector('#detail .open')`;
-  say(await ev(`document.querySelector('fieldset.item[data-step="book"]').getAttribute('aria-current')`) === 'true', 'the opened row is marked on the left');
-  say(await ev(`(()=>{const f=document.querySelector('fieldset.item[data-step="book"]'),c=getComputedStyle(f);return c.boxShadow==='none'&&c.borderTopWidth==='2px'})()`), 'the mark is the row\'s own border, which leaves the title clear, not a ring through it');
+  say(await ev(`document.querySelector('#flowbeside [data-step="book"]').getAttribute('aria-current')`) === 'true', 'the opened step is marked on the map');
   say(await ev(`${card}.querySelector('.w-journey').textContent`) === 'Book a slot'
     && await ev(`${card}.querySelector('.w-status').textContent`) === 'In the product', 'a card names its journey and status');
-  say(await ev(`${card}.querySelectorAll('.outcome').length`) === 2, 'a card shows every outcome of its step');
-  say(/Another person booked 10:00/.test(await ev(`${card}.textContent`)), 'and why the bad one happens');
-  say(await ev(`document.querySelectorAll('#journeys, #whole, #panes, #diagrams').length`) === 0, 'the four repeat sections are gone: the diagram panel and the list are the only places');
+  say(await ev(`document.querySelectorAll('#expected .outcome').length`) === 2, 'what should happen shows every outcome of its step');
+  say(/Another person booked 10:00/.test(await ev(`document.querySelector('#expected').textContent`)), 'and why the bad one happens');
+  say(await ev(`document.querySelectorAll('#journeys, #whole, #panes, #diagrams').length`) === 0, 'the four repeat sections are gone');
+  await ev(overview); await sleep(100);
 
   // Filters are revealed explicitly, and their effects never hide silently (D046).
   await ev(reveal('#f-journey'));
   await ev(`(()=>{const s=document.querySelector('#f-journey');s.value='ask-question';s.dispatchEvent(new Event('change',{bubbles:true}))})()`); await sleep(150);
-  say(await ev(`document.querySelectorAll('#steplist fieldset.item').length`) === 2 && /Showing 2 of 11 · Show all/.test(await ev(`document.querySelector('#filterinfo').textContent`)),
+  say(await ev(`document.querySelectorAll('#items [data-card]').length`) === 2 && /Showing 2 of 11 · Show all/.test(await ev(`document.querySelector('#filterinfo').textContent`)),
     'filtering by journey leaves 2 steps and says so');
   await ev(`document.querySelector('#showall').click()`); await sleep(150);
-  say(await ev(`document.querySelectorAll('#steplist fieldset.item').length`) === 11 && await ev(`document.querySelector('#f-journey').value`) === '', '"Show all" clears the journey filter too');
+  say(await ev(`document.querySelectorAll('#items [data-card]').length`) === 11 && await ev(`document.querySelector('#f-journey').value`) === '', '"Show all" clears the journey filter too');
   await ev(`document.querySelector('#f-problems').click()`); await sleep(150);
-  const problems = await ev(`[...document.querySelectorAll('fieldset.item[data-step]')].map(c=>c.dataset.step)`);
+  const problems = await ev(`[...document.querySelectorAll('#items [data-card]')].map(c=>c.dataset.card)`);
   say(JSON.stringify(problems) === JSON.stringify(['book', 'confirm']), `"only where something goes wrong" keeps the two explained problems: ${problems.join(', ')}`);
   await ev(`document.querySelector('#f-problems').click()`); await sleep(150);
   await ev(`(()=>{const s=document.querySelector('#f-status');s.value='exists';s.dispatchEvent(new Event('change',{bubbles:true}))})()`); await sleep(150);
-  const inProduct = await ev(`[...document.querySelectorAll('fieldset.item[data-step]')].map(c=>c.dataset.step)`);
+  const inProduct = await ev(`[...document.querySelectorAll('#items [data-card]')].map(c=>c.dataset.card)`);
   say(JSON.stringify(inProduct) === JSON.stringify(['book', 'cancel', 'confirm']), `"In the product" keeps what exists today: ${inProduct.join(', ')}`);
   await ev(`document.querySelector('#showall').click()`); await sleep(150);
   await ev(`(()=>{const q=document.querySelector('#q');q.value='waiting';q.dispatchEvent(new Event('input',{bubbles:true}))})()`); await sleep(150);
@@ -133,25 +134,26 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   await ev(`document.querySelector('#showall').click()`); await sleep(150);
 
   // ── linked highlighting: the chart and the list, the only two places left ──
-  const marked = (id) => ev(`[document.querySelector('fieldset.item[data-step="${id}"]').getAttribute('aria-current'), document.querySelector('#flowbeside [data-step="${id}"]').getAttribute('aria-current')].join(',')`);
-  await ev(`document.querySelector('fieldset.item[data-step="send-question"] legend').click()`); await sleep(200);
+  // the open question in the tour, and the map: both follow any pick
+  const marked = (id) => ev(`[document.querySelector('#detail input[data-item]')?.dataset.item === '${id}', document.querySelector('#flowbeside [data-step="${id}"]').getAttribute('aria-current') === 'true'].join(',')`);
+  await ev(`document.querySelector('#items [data-open="send-question"]').click()`); await sleep(200);
   say(await marked('send-question') === 'true,true', 'selecting a card marks the step in the chart');
   say(await ev(title) === 'Ask the venue', "and moves the player to that step's screen");
   await ev(`document.querySelector('#flowbeside [data-step="join-waitlist"]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`); await sleep(200);
-  say(await marked('join-waitlist') === 'true,true' && await marked('send-question') === 'false,false', 'clicking a box in the chart moves the mark back');
+  say(await marked('join-waitlist') === 'true,true' && await ev(`document.querySelector('#flowbeside [data-step="send-question"]').getAttribute('aria-current')`) === 'false', 'clicking a box in the chart moves the mark back');
   say(await ev(title) === 'Slot taken', 'and puts the player on that step');
   await ev(`document.querySelector('#flowbeside [data-step="cancel"]').focus()`);
   await key('Enter', 'Enter', 13); await sleep(200);
   say(await marked('cancel') === 'true,true', 'Enter on a focused box selects its step');
   await ev(tap('cancel')); await sleep(200);
-  say(await ev(`document.querySelector('fieldset.item[data-step="cancel"]').getAttribute('aria-current')`) === 'true', 'tapping in the player marks the same step');
+  say(await marked('cancel') === 'true,true', 'tapping in the player marks the same step');
 
   // the other charts are tabs in the same panel, not a second section
   const tab = (name) => `[...document.querySelectorAll('#dgtabs [role=tab]')].find(t=>t.textContent.trim()==='${name}').click()`;
   await ev(tab('What happens behind booking')); await sleep(200);
   say(await ev(`document.querySelectorAll('#flowbeside .dg-lane').length`) === 3, 'the written chart has its three lanes');
   await ev(`document.querySelector('#flowbeside [data-step="book"]').dispatchEvent(new MouseEvent('click',{bubbles:true}))`); await sleep(200);
-  say(await ev(`document.querySelector('fieldset.item[data-step="book"]').getAttribute('aria-current')`) === 'true', 'a step linked in the written chart selects it in the list');
+  say(await marked('book') === 'true,true', 'a step linked in the written chart selects it');
   await ev(tab('The user flow')); await sleep(200);
 
   // ── highlight a sub-process, never hide the rest (D054) ──
@@ -169,7 +171,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   for (const [label, w, mobile] of [['list-laptop', 1280, false], ['list-tablet', 900, false], ['list-phone', 390, true]]) {
     await shot(label, w, mobile);
     await width(w, mobile); await sleep(200);
-    const small = await ev(`[...document.querySelectorAll('#detail .open [data-outcome], .flow-filters label, #showall, fieldset.item .ask')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,24))`);
+    const small = await ev(`[...document.querySelectorAll('#expected [data-outcome], #detail .tiles label, fieldset.item .ask, #back, #next')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,24))`);
     say(small.length === 0, `${label}: list targets at least 44 px${small.length ? ` (too small: ${small.join(' | ')})` : ''}`);
   }
   await width(1280);
@@ -183,26 +185,19 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(`(()=>{const box=document.querySelector('#flowbeside'),n=box.querySelector('[aria-current="true"]');if(!n)return false;const b=n.getBoundingClientRect(),r=box.getBoundingClientRect();return b.left>=r.left-1&&b.right<=r.right+1&&b.top>=r.top-1&&b.bottom<=r.bottom+1})()`), 'the chart beside the screen scrolls to where you are');
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
   await ev(tap('book'));
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(200);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(200);
   say(await ev(`document.querySelector('#flowbeside [data-node="screen:booked"]').getAttribute('aria-current')`) === 'true'
     && await ev(`document.querySelector('#flowbeside [data-step="book"]').getAttribute('aria-current')`) === 'true', 'taking a step moves both marks in the chart beside the screen');
   const under = async () => ev(`(()=>{const a=document.querySelector('#screen').getBoundingClientRect(),b=document.querySelector('#flowbeside').getBoundingClientRect();return a.top>=b.bottom-1})()`);
   for (const w of [1280, 900]) { await width(w); await sleep(200); say(await under(), `${w}px: the screen sits under the chart`); }
   await width(1280); await sleep(200);
 
-  // ── the reviewer arranges the page (D055) ──
-  const order = () => ev(`[...document.querySelectorAll('#sections [data-section]')].map(s=>s.dataset.section)`);
-  say(JSON.stringify(await order()) === JSON.stringify(['player']), 'one section: the list lives in the feedback panel (D069)');
-  say(await ev(`getComputedStyle(document.querySelector('[data-section="player"] .sec-actions')).display`) === 'none', 'no move buttons when there is nothing to move past');
-  await ev(`document.querySelector('[data-section="player"] .sec-toggle').click()`); await sleep(100);
-  say(await ev(`document.querySelector('[data-section="player"] .sec-body').hidden`) === true, 'the section collapses');
-  await load(page); await sleep(200);
-  say(await ev(`document.querySelector('[data-section="player"] .sec-toggle').getAttribute('aria-expanded')`) === 'false', 'and stays collapsed after a reload');
-  await ev(`document.querySelector('[data-section="player"] .sec-toggle').click()`);
+  // ── the export carries nothing about how the page was arranged (D003) ──
+  await ev(`document.querySelector('.min[data-min="#slot-build"]').click()`); await ev(overview);
   await ev(`document.querySelector('input[data-item="book"][value="agree"]').click()`); await sleep(100);
   await ev(`${returnReview} document.querySelector('#export').click()`);
   const arranged = await exported();
-  say(arranged && !/section|collapsed|order/.test(readFileSync(arranged, 'utf8')), 'the export carries nothing about how the page was arranged (D003)');
+  say(arranged && !/slot-|minimised|overview|collapsed/.test(readFileSync(arranged, 'utf8')), 'the export carries nothing about how the page was arranged (D003)');
 
   // ── hostile flow ──
   const bad = '<img src=x onerror="window.__pwned=1">';
@@ -212,7 +207,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   const evilPath = join(dir, 'evil-flow.json'); writeFileSync(evilPath, JSON.stringify(evil));
   await load(render(evilPath, dir));
   await ev(tap('book'));
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(150);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')), 'hostile flow: no img elements created, no script ran');
 });
 
@@ -294,22 +289,22 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   say(await ev(`document.querySelector('#flowbeside [data-node="screen:waitlisted"]').getAttribute('aria-current')`) === 'true', 'and the chart follows');
   say(await ev(`document.querySelector('#upanel [data-screens="one"]').getAttribute('aria-pressed')`) === 'true', 'the switch back is honest about where you are');
 
-  // The diagram spans the page above the connected workspace; either panel can fill the screen.
-  const stacked = () => ev(`(()=>{const d=document.querySelector('#dpanel').getBoundingClientRect(),w=document.querySelector('#workspace').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return w.top>=d.bottom-1&&Math.abs(d.width-w.width)<2&&(innerWidth>=1100?f.left>=u.right-1&&Math.abs(f.top-u.top)<2:f.top>=u.bottom-1&&Math.abs(u.width-f.width)<2)})()`);
-  for (const [w, m] of [[1280, false], [900, false], [390, true]]) { await width(w, m); await sleep(250); say(await stacked(), `${w}px: the full-width diagram precedes the responsive screen and behavior workspace`); }
+  // #100 — the question beside the four places, the map above the screen; either panel can fill the screen.
+  const laidOut = () => ev(`(()=>{const a=document.querySelector('#ask').getBoundingClientRect(),d=document.querySelector('#dpanel').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect();return u.top>=d.bottom-1&&(innerWidth>=900?d.left>=a.right-1:d.top>=a.bottom-1)})()`);
+  for (const [w, m] of [[1280, false], [900, false], [390, true]]) { await width(w, m); await sleep(250); say(await laidOut(), `${w}px: the map sits above the screen, ${w >= 900 ? 'beside' : 'below'} the question`); }
   await width(1440); await sleep(250);
-  say(await ev(`document.querySelector('#dpanel').getBoundingClientRect().width`) > 1300, 'the page uses the full width');
-  say(await ev(`document.querySelectorAll('#workspace .sizes [data-size]').length`) === 3, 'three layout choices balance the screen and behavior workspace');
+  say(await ev(`document.querySelector('#tour').getBoundingClientRect().width`) > 1300, 'the page uses the full width');
+  say(await ev(`document.querySelectorAll('#places > .slot .min').length`) === 4, 'each of the four places can be minimised');
   await width(1280); await sleep(200);
   say(await ev(`document.querySelectorAll('.panel-collapse').length`) === 0, 'no collapse buttons: full screen takes their place (D073)');
   const covers = (id) => ev(`(()=>{const r=document.querySelector('#${id}').getBoundingClientRect();return r.top<=0&&r.left<=0&&r.width>=innerWidth-1&&r.height>=innerHeight-1})()`);
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
-  await ev(`document.querySelector('#upanel .seg .panel-full').click()`); await sleep(200);
+  await ev(`document.querySelector('#upanel .panel-full').click()`); await sleep(200);
   say(await covers('upanel') && await ev(`document.querySelector('#upanel .panel-full').textContent`) === 'Exit full screen', 'the screen opens full screen from its own tab row');
   await ev(`document.querySelector('#screen [data-target="book"]').click()`); await sleep(200);
   say(!(await covers('upanel')) && await ev(`document.activeElement.dataset.outcome`) === '0', 'a tap with several outcomes leaves full screen so they can be picked');
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
-  await ev(`document.querySelector('#upanel .seg .panel-full').click()`); await sleep(200);
+  await ev(`document.querySelector('#upanel .panel-full').click()`); await sleep(200);
   await key('Escape', 'Escape', 27); await sleep(150);
   say(!(await covers('upanel')) && await ev(`document.activeElement.classList.contains('panel-full')`), 'Esc brings it back, focus on the button');
   await ev(reveal('#dpanel .panel-full'));
@@ -317,34 +312,19 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   say(await covers('dpanel') && await ev(`document.querySelector('#flowbeside').getBoundingClientRect().height`) > 600, 'the diagram opens full screen, the chart as tall as the window');
   await ev(`document.querySelector('#dpanel .panel-full').click()`); await sleep(150);
   say(!(await covers('dpanel')), 'the same button closes it');
+  await ev(overview); await sleep(100);
   await ev(`document.querySelector('#at').value='Parking'; document.querySelector('#ab').value='Say where to park.'; document.querySelector('#addbtn').click()`); await sleep(150);
-  say(await ev(`(()=>{const i=document.querySelector('#steplist').getBoundingClientRect(),a=document.querySelector('#added .addedrow').getBoundingClientRect();return a.top>=i.bottom-1})()`)
-    && /Your own feedback/.test(await ev(`document.querySelector('#added').textContent`)), 'your own feedback is listed below the steps, under its own heading');
+  say(await ev(`(()=>{const i=document.querySelector('#items').getBoundingClientRect(),a=document.querySelector('#added .addedrow').getBoundingClientRect();return a.top>=i.bottom-1})()`)
+    && /Your own feedback/.test(await ev(`document.querySelector('#added').textContent`)), 'your own feedback is listed below the questions, under its own heading');
   await ev(`document.querySelector('#added [data-del]').click()`); await sleep(100);
+  await ev(tour); await sleep(100);
 
-  // D079 — "Show this" keeps you where you were, and any section can be pinned.
+  // "Show this" keeps the question where it was: the question column stays put while the screen changes.
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
   await ev(`document.querySelector('#screen [data-target="book"]').click()`); await sleep(200);
-  await ev(`document.querySelector('#detail [data-outcome="0"]').scrollIntoView({block:'center'})`); await sleep(100);
-  const fbTop = `document.querySelector('#feedback').getBoundingClientRect().top`, before = await ev(fbTop);
-  await ev(`document.querySelector('#detail [data-outcome="0"]').click()`); await sleep(200);
-  say(Math.abs(await ev(fbTop) - before) < 2, `"Show this" keeps the feedback where it was on the window (moved ${(await ev(fbTop) - before).toFixed(0)}px)`);
-  await ev(reveal('#dpanel .pin')); await ev(reveal('#upanel .pin'));
-  await ev(`document.querySelector('#dpanel .pin').click(); document.querySelector('#upanel .pin').click()`); await sleep(200);
-  await ev(`scrollTo(0, document.body.scrollHeight)`); await sleep(200);
-  const box = (sel) => ev(`(()=>{const r=document.querySelector('${sel}').getBoundingClientRect();return {top:r.top,bottom:r.bottom}})()`);
-  let d = await box('#dpanel'), u = await box('#upanel');
-  say(Math.abs(d.top) < 2 && Math.abs(u.top - d.bottom) < 2, 'pinned diagram and screen stay at the top, one under the other: ' + JSON.stringify({ d, u }));
-  say(u.bottom <= await ev('innerHeight') * 0.8 + 2, 'and together take no more than 80% of the window');
-  await load(page); await sleep(250); await ev(`scrollTo(0, document.body.scrollHeight)`); await sleep(200);
-  d = await box('#dpanel');
-  say(Math.abs(d.top) < 2 && await ev(`document.querySelector('#dpanel .pin').getAttribute('aria-pressed')`) === 'true', 'pins survive a reload');
-  await ev(reveal('header .pin'));
-  await ev(`document.querySelector('header .pin').click()`); await sleep(200);
-  say(Math.abs((await box('header')).top) < 2 && Math.abs((await box('#dpanel')).top - (await box('header')).bottom) < 2, 'the header pins too, above the others');
-  for (const selector of ['header .pin', '#dpanel .pin', '#upanel .pin']) await ev(reveal(selector));
-  await ev(`document.querySelectorAll('.pin[aria-pressed="true"]').forEach(b => b.click())`); await sleep(200);
-  say(await ev(`document.querySelectorAll('.pinned').length`) === 0, 'Unpin lets them scroll again');
+  const askTop = `document.querySelector('#ask').getBoundingClientRect().top`, before = await ev(askTop);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(200);
+  say(Math.abs(await ev(askTop) - before) < 2, `"Show this" keeps the question where it was on the window (moved ${(await ev(askTop) - before).toFixed(0)}px)`);
   await ev('scrollTo(0,0)');
 
   // D080/D083 — every style in light and in dark, picked, drawn and remembered.
@@ -397,31 +377,15 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   say(/Class passes at gyms/.test(brief) && /example\.org/.test(brief), 'a real-life example with its source');
   say(/unverified/i.test(brief) && await ev(`document.querySelectorAll('#brief .unverified').length`) === 1, 'the example with no source is marked unverified (D050)');
   say(/ask for the money back/.test(brief), 'the risks are named');
-  say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),d=document.querySelector('#dpanel').getBoundingClientRect();return d.top>=b.bottom-1})()`),
-    'the brief precedes the full-width diagram');
-  say(await ev(`(()=>{const d=document.querySelector('#dpanel').getBoundingClientRect(),w=document.querySelector('#workspace').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return w.top>=d.bottom-1&&Math.abs(d.width-w.width)<2&&f.left>=u.right-1&&Math.abs(u.top-f.top)<2})()`),
-    'the screen and behavior sit beside each other in the workspace below the diagram');
-  say(await ev(`(()=>{const q=document.querySelector('#feedback .bar').getBoundingClientRect(),l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect();return l.top>=q.bottom-1&&d.top>=l.bottom-1&&Math.abs(l.width-d.width)<2})()`),
-    'the behavior panel contains filters, then the step list, then the open step');
-  const lw = () => ev(`[Math.round(document.querySelector('#upanel').getBoundingClientRect().width),Math.round(document.querySelector('#feedback').getBoundingClientRect().width)]`);
-  const [screenBefore, behaviorBefore] = await lw();
-  await ev(reveal('#split [data-size="detail"]'));
-  await ev(`document.querySelector('#split [data-size="detail"]').click()`); await sleep(150);
-  const [l1, d1] = await lw();
-  say(d1 > behaviorBefore + 50 && l1 < screenBefore - 50, `◨ gives the behavior more room beside the screen: ${l1}px / ${d1}px`);
-  await load(page); await width(1280); await sleep(250);
-  say(await ev(`document.querySelector('#split [data-size="detail"]').getAttribute('aria-pressed')`) === 'true', 'the width survives a reload');
-  await ev(reveal('#split [data-size="detail"]'));
-  await ev(`document.querySelector('#split [data-size="even"]').click()`); await sleep(150);
-  say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect(),a=document.querySelector('#feedback .add').getBoundingClientRect();return a.top>=Math.max(l.bottom,d.bottom)-1&&Math.abs(a.width-l.width)<2})()`),
-    'adding your own feedback sits below the list and detail, across the behavior panel');
-  await width(900); await sleep(250);
-  say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detail').getBoundingClientRect();return d.top>=l.bottom-1})()`),
-    'tablet: the steps and the open step stack');
+  say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),d=document.querySelector('#dpanel').getBoundingClientRect();return !!document.querySelector('#ask #brief')&&d.left>=b.right-1})()`),
+    'Understand: the brief sits in the question column, the map beside it');
+  await width(820); await sleep(250);
+  say(await ev(`(()=>{const a=document.querySelector('#ask').getBoundingClientRect(),p=document.querySelector('#places').getBoundingClientRect();return p.top>=a.bottom-1})()`),
+    'tablet: the question and the places stack');
   await width(1280); await sleep(250);
   say(await ev(`document.querySelectorAll('#flowbeside [data-step="cancel"].dg-brief').length`) === 1, 'what the brief points at is marked in the chart');
   await ev(`document.querySelector('#screen [data-target="book"]').click()`);
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(200);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(200);
   say(await ev(`document.querySelectorAll('#upanel.brief-here').length`) === 1, 'the screen the brief points at is marked too');
 
   // the reviewer asks back (D060)
@@ -432,7 +396,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   say(await ev(`${askBtn}.checked`) === true, 'pressing it marks the request');
   await load(page); await sleep(250);
   await ev(`document.querySelector('#screen [data-target="book"]').click()`);
-  await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(200);
+  await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(200);
   say(await ev(`${askBtn}.checked`) === true, 'the request survives a reload');
 
   await ev(`${returnReview} document.querySelector('#export').click()`);
@@ -444,7 +408,8 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   say(r.status === 0, `that export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
 
   await ev(`document.querySelector('#continue-review').click()`);
-  say(await ev(`document.querySelector('#addh').textContent`) === 'Add your own feedback' && /something unrelated/.test(await ev(`document.querySelector('.add .d').textContent`)) && await ev(`document.querySelector('#at').offsetParent !== null`), 'adding your own feedback is visible and open to anything');
+  await ev(overview); await sleep(100);
+  say(await ev(`document.querySelector('#addh').textContent`) === 'Anything else?' && /something unrelated/.test(await ev(`document.querySelector('.add .d').textContent`)) && await ev(`document.querySelector('#at').offsetParent !== null`), 'adding your own feedback is visible and open to anything');
   await shot('brief-laptop', 1280);
 });
 

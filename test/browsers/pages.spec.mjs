@@ -18,12 +18,9 @@ const render = (reviewPath, dir) => {
   return out;
 };
 
-// Reveal nested native tool disclosures through their summaries, as a reviewer would.
-async function revealTools(control) {
-  for (const disclosure of await control.locator('xpath=ancestor::details[not(@open)]').all()) {
-    await disclosure.locator(':scope > summary').click();
-  }
-}
+// #100 — the page opens on Understand. A question opens with Next, or from the Overview, as a reviewer would.
+const openStep = async (page, id) => { await page.locator('#mode-overview').click(); await page.locator(`#items [data-open="${id}"]`).click(); };
+const openNote = (page) => page.locator('#detail details.more-answer:not([open]) > summary').click();
 
 // Every page must run clean and offline: no script error, nothing fetched beyond the file itself.
 test.beforeEach(async ({ page }, info) => {
@@ -69,41 +66,41 @@ for (const name of ['index', 'loop']) {
   });
 }
 
-// #44 — a list review in the same frame as a flow: the list on the left, the open item on the right.
-test('a list review: list and open item side by side, width buttons, the first item open', async ({ page }, info) => {
+// #100 — every review is a tour: Understand, one question at a time, Return. The four places keep their order.
+test('a list review: Understand first, Next opens the first question, the four places keep their order', async ({ page }, info) => {
   await page.goto(url('examples/checkout-uat.html'));
-  await expect(page.locator('#steplist fieldset.item.row')).toHaveCount(4);
+  await expect(page.locator('#selection-title')).toHaveText('Before you start');
+  await expect(page.locator('#stepno')).toHaveText('Step 1 of 6');
+  await page.locator('#next').click();
   await expect(page.locator('#detail legend')).toHaveText('A guest can buy without creating an account');
-  await page.locator('[data-open="saved-card"]').click();
+  await expect(page.locator('#t-where')).toContainText('1 of 2');
+  expect(await page.locator('#places > .slot').evaluateAll((l) => l.map((s) => s.id))).toEqual(['slot-map', 'slot-proto', 'slot-expected', 'slot-build']);
+  await expect(page.locator('#slot-proto')).toContainText('Nothing to show');   // an empty place says so
+  await openStep(page, 'saved-card');
   await expect(page.locator('#detail legend')).toHaveText('A returning customer can pay with a saved card');
-  await expect(page.locator('#steplist [data-step="saved-card"]')).toHaveAttribute('aria-current', 'true');
-  if (info.project.use.viewport.width >= 1100) {
-    const l = await page.locator('#steplist').boundingBox(), d = await page.locator('#detail').boundingBox();
-    expect(d.x, 'the open item sits to the right of the list').toBeGreaterThan(l.x + l.width - 1);
-    await revealTools(page.locator('button[data-size="detail"]'));
-    await page.locator('button[data-size="detail"]').click();
-    expect((await page.locator('#detail').boundingBox()).width, 'more room for the open item').toBeGreaterThan(d.width + 50);
-  } else {
-    await expect(page.locator('#detail')).toBeInViewport();              // stacked: the opened item is brought into view
+  await expect(page.locator('#mode-tour')).toHaveAttribute('aria-pressed', 'true');
+  if (info.project.use.viewport.width >= 900) {
+    const a = await page.locator('#ask').boundingBox(), p = await page.locator('#places').boundingBox();
+    expect(p.x, 'the places sit to the right of the question').toBeGreaterThan(a.x + a.width - 1);
   }
 });
 
 test('a list review draws its chart, and a box opens its item (#47)', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
-  await expect(page.locator('#dpanel svg')).toBeVisible();
+  await expect(page.locator('#dpanel svg.dg')).toBeVisible();
   await expect(page.locator('.mmd')).toHaveCount(0);                  // never Mermaid source text
   // By keyboard: Firefox cannot scroll a box inside the sideways-scrolling chart into view for a pointer click.
   await page.locator('#flowbeside [data-step="declined-card"]').focus();
   await page.keyboard.press('Enter');
   await expect(page.locator('#detail legend')).toHaveText('A declined card explains itself');
-  await expect(page.locator('#steplist [data-step="declined-card"]')).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('#flowbeside [data-step="declined-card"]')).toHaveAttribute('aria-current', 'true');
 });
 
 test('checkout: answer, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
-  // #44 — the first item is open; the others open from the list on the left.
+  await page.locator('#next').click();
   await page.locator('label:has(input[name="v-guest-checkout"][value="works"])').click();
-  await page.locator('[data-open="declined-card"]').click();
+  await openStep(page, 'declined-card');
   await page.locator('label:has(input[name="v-declined-card"][value="fails"])').click();
   await page.locator('textarea[data-note="declined-card"]').fill('Customer sees error 51.');
   await page.locator('#finish').click();
@@ -119,7 +116,7 @@ test('checkout: answer, export, and the file passes the checker', async ({ page 
 test('flow: tap through, judge a step, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
   await page.locator('#screen [data-target="book"]').click();
-  await page.locator('#detail [data-outcome="0"]').click();
+  await page.locator('#expected [data-outcome="0"]').click();
   await expect(page.locator('#screen-title')).toHaveText('Booked');
   await page.locator('#detail .open label:has(input[data-item="book"][value="agree"])').click();
   await expect(page.locator('#overview')).toContainText('1 answered');
@@ -136,11 +133,11 @@ test('flow: tap through, judge a step, export, and the file passes the checker',
 test('flow: the system and data layers show with the step, and an entry can be judged', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
   await page.locator('#screen [data-target="book"]').click();
-  const detail = page.locator('#detail');
-  await expect(detail.locator('.layer').first()).toBeHidden();           // the review opens on UI + flow
-  await detail.locator('input[data-layer="system"]').check();
-  await detail.locator('input[data-layer="data"]').check();
-  const first = detail.locator('.outcome').first();
+  const build = page.locator('#build');                                  // the fourth place: how I'd build it
+  await expect(build.locator('.layer').first()).toBeHidden();            // the review opens on UI + flow
+  await build.locator('input[data-layer="system"]').check();
+  await build.locator('input[data-layer="data"]').check();
+  const first = build.locator('.outcome-build').first();
   await expect(first.locator('.layer').first()).toContainText('What runs');
   await expect(first).toContainText('Slot still has capacity');
   await expect(first).toContainText('test/fixtures/booking-app/src/booking.mjs:4');
@@ -169,13 +166,16 @@ test('two different reviews with the same id do not share answers', async ({ pag
   writeFileSync(join(dir, 'other.json'), JSON.stringify(other));
   const otherPage = render(join(dir, 'other.json'), dir);
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#next').click();
   await page.locator('label:has(input[name="v-guest-checkout"][value="fails"])').click();
   await page.locator('textarea[data-note="guest-checkout"]').fill('Given on the example page');
   await page.goto('file://' + otherPage);
   await expect(page.locator('h1')).toHaveText('Another checkout test, same id');
+  await page.locator('#next').click();
   expect(await page.locator('input[name="v-guest-checkout"][value="fails"]').isChecked(), 'answer crossed over').toBe(false);
   await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('');
   await page.goto(url('examples/checkout-uat.html'));                  // and the example keeps its own answer
+  await page.locator('#next').click();
   await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('Given on the example page');
 });
 
@@ -188,7 +188,8 @@ test('item examples show who, what, what people see, and the source or "unverifi
   const dir = mkdtempSync(join(tmpdir(), 'pw-'));
   writeFileSync(join(dir, 'ex.json'), JSON.stringify(r));
   await page.goto('file://' + render(join(dir, 'ex.json'), dir));
-  const item = page.locator('#detail fieldset.item');                   // the first item opens by itself
+  await page.locator('#next').click();
+  const item = page.locator('#expected');                               // the third place: what should happen
   await expect(item.locator('.brief-h3')).toHaveText('Where this has been done before');
   await expect(item).toContainText('What people see: A "Continue as guest" choice next to "Sign in".');
   await expect(item.locator('.brief-ex a')).toHaveAttribute('target', '_blank');
@@ -213,7 +214,8 @@ test('a hostile review runs no script and shows no injected markup', async ({ pa
 test('a hostile answer cannot break out of the exported page', async ({ page }) => {
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
   await page.goto(url('examples/checkout-uat.html'));
-  await page.locator('[data-open="declined-card"]').click();
+  await openStep(page, 'declined-card');
+  await openNote(page);                                                 // a note before any answer: one tap
   await page.locator('textarea[data-note="declined-card"]').fill(bad);
   await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#exporth').click()]);
@@ -221,7 +223,7 @@ test('a hostile answer cannot break out of the exported page', async ({ page }) 
   await download.saveAs(file);
   await page.evaluate(() => localStorage.clear());
   await page.goto('file://' + file);
-  await page.locator('[data-open="declined-card"]').click();
+  await openStep(page, 'declined-card');
   await expect(page.locator('textarea[data-note="declined-card"]')).toHaveValue(bad);
   expect(await page.locator('img').count()).toBe(0);
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
@@ -238,8 +240,8 @@ test('an approval: the exact action, approve or decline, and the export passes t
     approval: { action: 'Drop the database checkout_v1_staging', scope: 'One staging database', risk: 'high', preview: 'DROP DATABASE checkout_v1_staging;', expiresAt: iso(864e5) } });
   const reviewPath = join(dir, 'review.json'); writeFileSync(reviewPath, JSON.stringify(r));
   await page.goto('file://' + render(reviewPath, dir));
-  await page.locator('[data-open="drop-db"]').click();
-  const box = page.locator('#detail .appr');
+  await openStep(page, 'drop-db');
+  const box = page.locator('#proto-extra .appr');                       // the second place: the exact action
   await expect(box).toContainText('Drop the database checkout_v1_staging');
   await expect(box.locator('.risk')).toHaveText('High risk');
   await expect(box).toContainText('still asks for permission');
@@ -253,14 +255,13 @@ test('an approval: the exact action, approve or decline, and the export passes t
   expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'drop-db')).toMatchObject({ verdict: 'decline', approval: { risk: 'high' } });
 });
 
-// #61 — any section folds to its title bar, comes back, and is remembered in this browser.
+// #61, #100 — each of the four places folds to its title bar, comes back, and is remembered in this browser.
 for (const name of ['checkout-uat', 'flow-booking']) {
-  test(`${name}: every section can be minimised and shown again`, async ({ page }) => {
+  test(`${name}: every place can be minimised and shown again`, async ({ page }) => {
     await page.goto(url(`examples/${name}.html`));
     const sels = await page.locator('.min[data-min]').evaluateAll((l) => l.map((b) => b.dataset.min));
-    expect(sels.length).toBeGreaterThanOrEqual(6);
-    for (const sel of [...sels].reverse()) {                      // inner sections first: an outer one hides their buttons
-      await revealTools(page.locator(`.min[data-min="${sel}"]`));
+    expect(sels).toEqual(['#slot-map', '#slot-proto', '#slot-expected', '#slot-build']);
+    for (const sel of sels) {
       await page.locator(`.min[data-min="${sel}"]`).click();
       await expect(page.locator(sel)).toHaveClass(/minimised/);
       await expect(page.locator(`.min[data-min="${sel}"]`)).toHaveAttribute('aria-expanded', 'false');
@@ -268,12 +269,14 @@ for (const name of ['checkout-uat', 'flow-booking']) {
     }
     await page.reload();
     await expect(page.locator('.minimised')).toHaveCount(sels.length);
-    for (const sel of sels) {
-      await revealTools(page.locator(`.min[data-min="${sel}"]`));
-      await page.locator(`.min[data-min="${sel}"]`).click();
-    }
+    for (const sel of sels) await page.locator(`.min[data-min="${sel}"]`).click();
     await expect(page.locator('.minimised')).toHaveCount(0);
-    await expect(page.locator('#detail')).toBeVisible();
+    await page.locator('#more > summary').click();                       // someone who only wants the prototype
+    await page.locator('[data-only="#slot-proto"]').click();
+    await expect(page.locator('.minimised')).toHaveCount(3);
+    await expect(page.locator('#slot-proto')).not.toHaveClass(/minimised/);
+    await page.locator('[data-only=""]').click();
+    await expect(page.locator('.minimised')).toHaveCount(0);
   });
 }
 
@@ -304,11 +307,14 @@ test('a picture on a note: attached, re-saved, kept across a reload, and the exp
   const dir = mkdtempSync(join(tmpdir(), 'pw-pic-'));
   const png = join(ROOT, 'site/social-preview.png');                // a real 1280 × 640 PNG from the repo
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#next').click();
+  await openNote(page);
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#detail [data-picadd]').click()]);
   await chooser.setFiles(png);
   await expect(page.locator('#detail .pic img')).toHaveCount(1);
   await expect(page.locator('#detail .pic-msg')).toContainText('without hidden details');
   await page.reload();
+  await page.locator('#next').click();
   await expect(page.locator('#detail .pic img')).toHaveCount(1);
   await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
@@ -378,3 +384,32 @@ test('the sequence tab: participants with lifelines, and a comment on the fifth 
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).comments[0].edge).toEqual({ from: 'slots', to: 'booking', nth: 4 });
 });
+
+// #100 — every kind of review is a tour and has an Overview: each example, plus an explanation and
+// an approval-only review. On every step the four places keep their order, and an empty one says so.
+const KINDS = Object.fromEntries(Object.entries(PAGES).map(([name, file]) => [name, (r) => r]).concat([
+  ['explanation', (r) => { r.brief = { explains: 'Why the export is a file.' }; return r; }],
+  ['approval-only', (r) => ({ ...r, sections: undefined, items: [{ id: 'drop-db', title: 'Drop the old staging database',
+    approval: { action: 'Drop checkout_v1_staging', scope: 'One staging database', risk: 'high', expiresAt: '2099-01-01T00:00:00Z' } }] })],
+]));
+for (const [kind, shape] of Object.entries(KINDS)) {
+  test(`every kind: ${kind} walks from Understand to Return, and its Overview holds every question`, async ({ page }) => {
+    const file = PAGES[kind] || 'review.example.json';
+    const r = shape(JSON.parse(readFileSync(join(ROOT, 'examples', file), 'utf8')));
+    r.id = 'kind-' + kind;
+    const dir = mkdtempSync(join(tmpdir(), 'pw-kind-'));
+    writeFileSync(join(dir, 'r.json'), JSON.stringify(r));
+    await page.goto('file://' + render(join(dir, 'r.json'), dir));
+    const n = r.items.length + 2;
+    for (let i = 1; i <= n; i++) {
+      await expect(page.locator('#stepno')).toHaveText(`Step ${i} of ${n}`);
+      expect(await page.locator('#places > .slot').evaluateAll((l) => l.map((s) => s.id))).toEqual(['slot-map', 'slot-proto', 'slot-expected', 'slot-build']);
+      for (const id of ['#slot-map', '#slot-proto', '#slot-expected', '#slot-build'])
+        expect((await page.locator(`${id} .slot-body`).innerText()).trim().length, `${id} on step ${i} is not blank`).toBeGreaterThan(0);
+      if (i < n) await page.locator('#next').click();
+    }
+    await expect(page.locator('#selection-title')).toHaveText('Finish and send back');
+    await page.locator('#mode-overview').click();
+    await expect(page.locator('#items [data-card]')).toHaveCount(r.items.length);
+  });
+}
