@@ -652,9 +652,7 @@ function checkFeedback(f, rep, review) {
   const addedIds = added.map((a) => a?.id);
   rep.check('added ids prefixed', addedIds.every((id) => /^added-/.test(id ?? '')),
     'reviewer-added items must use the "added-" prefix so they can never be confused with items the agent asked about');
-  const addedDupes = addedIds.filter((id, i) => id && addedIds.indexOf(id) !== i);
-  rep.check('added ids unique', addedDupes.length === 0,
-    `duplicated: ${[...new Set(addedDupes)].join(', ')} — a gap or note pointing at this id would be ambiguous`);
+  checkTargetsUnique(f, rep);
 
   // Derived fields must be true.
   const s = f?.summary ?? {};
@@ -807,8 +805,18 @@ function checkFeedback(f, rep, review) {
   }
 }
 
+// #77 — a gap, a picture or a later review names what it means by id alone. Two answers with one id (an
+// item carried as added-1 and a new added-1) and it names both: refuse, never pick the first.
+function checkTargetsUnique(f, rep) {
+  const ids = [...(f?.responses ?? []).map((x) => x?.itemId), ...(f?.addedItems ?? []).map((x) => x?.id), ...(f?.comments ?? []).map((x) => x?.id)];
+  const dupes = [...new Set(ids.filter((id, i) => id && ids.indexOf(id) !== i))];
+  rep.check('answer ids unique', dupes.length === 0,
+    `${dupes.join(', ')} ${dupes.length === 1 ? 'names' : 'name'} two different answers in the feedback for "${f?.review?.id}", so a gap, a picture or a later review pointing at it could mean either. Keep this file and ask the reviewer which answer each one is; give one a new id in a copy, never guess`);
+}
+
 // ── history: an item that affects an earlier decision must quote it truthfully ──────────────────
 function checkHistory(r, earlier, rep) {
+  for (const f of earlier) checkTargetsUnique(f, rep);
   const byReview = Object.fromEntries(earlier.map((f) => [f?.review?.id, f]));
   const misquotes = [];
   for (const item of r?.items ?? []) {
