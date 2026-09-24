@@ -40,6 +40,8 @@ try {
 const UNSET = 'unset';
 const APPROVAL_VERDICTS = new Set(['approve', 'decline', UNSET]);
 const ID = /^[a-z0-9][a-z0-9._-]{0,63}$/;
+// #87 — what a follow-up says it did with a proposed change: what the next review shows, never "accepted".
+const OUTCOMES = ['drawn', 'drawn-differently', 'not-drawn', 'question'];
 
 const load = (p) => {
   try { return JSON.parse(readFileSync(p, 'utf8')); }
@@ -133,6 +135,24 @@ function checkReview(r, rep) {
   const fieldKeys = new Set((r?.fields ?? []).map((f) => f.key));
   const strayFields = items.flatMap((i) => Object.keys(i?.fields ?? {}).filter((k) => !fieldKeys.has(k)).map((k) => `${i.id}.${k}`));
   rep.check('item fields declared', strayFields.length === 0, `field(s) used but never declared: ${strayFields.join(', ')}`);
+
+  // #87 — what an item answers: a comment or proposal id, or, for a proposal, what the agent did with it.
+  const answerList = items.flatMap((i) => (i?.answers ?? []).map((a) => ({ item: i.id, a })));
+  if (answerList.length) {
+    const bad = [];
+    for (const { item, a } of answerList) {
+      if (typeof a === 'string') { if (!/^(comment|proposal)-\d{1,4}$/.test(a)) bad.push(`${item}: "${a}" is no comment or proposal id`); continue; }
+      const w = `${item}: ${a?.id}`;
+      const stray = Object.keys(a ?? {}).filter((k) => !['review', 'id', 'outcome', 'why'].includes(k));
+      if (!/^proposal-\d{1,4}$/.test(a?.id ?? '')) bad.push(`${w}: an outcome is said of only a proposal (proposal-1); answer a comment by its id alone`);
+      else if (!ID.test(a?.review ?? '')) bad.push(`${w}: "review" must name the earlier review it came from`);
+      else if (!OUTCOMES.includes(a?.outcome)) bad.push(`${w}: "${a?.outcome}" is not an outcome; use ${OUTCOMES.join(', ')}`);
+      else if (a.outcome !== 'drawn' && !String(a.why ?? '').trim()) bad.push(`${a.id} is "${a.outcome}" without a "why"`);
+      else if (stray.length) bad.push(`${w}: unknown ${stray.join(', ')}`);
+    }
+    rep.check('answers well-formed', bad.length === 0,
+      `${bad.join(' · ')}. Say what the next review shows (drawn, drawn differently, not drawn, or a question) and why, or the reviewer cannot tell what became of their change`);
+  }
 
   // Warnings: shape that is legal but usually a mistake.
   rep.warn('add-your-own disabled', r?.allowAddedItems === false,
@@ -837,6 +857,27 @@ function checkHistory(r, earlier, rep) {
 // ── followup: nothing the reviewer left open is dropped in the next round (#52) ────────────────────
 // An earlier item is carried when the next review has an item with the same id, or one whose `affects`
 // quotes it. No status field: the files already hold the state, and a second copy could disagree.
+// #87 — every chart of a review by id, the drawn user flow included.
+function chartsOf(r) {
+  const charts = Object.fromEntries((r?.diagrams ?? []).map((d) => [d.id, d]));
+  if (r?.flow) charts['user-flow'] = flowAsDiagram(r);
+  return charts;
+}
+
+// #87 — is the proposed change there in the next diagram? Only the part the change names is compared,
+// so the agent may redraw the rest.
+function proposalDrawn(p, before, after) {
+  const node = (d, id) => (d?.nodes ?? []).find((n) => n.id === id);
+  const pair = (d) => (d?.edges ?? []).filter((e) => e.from === p.from && e.to === p.to);
+  if (p.op === 'rename') return node(after, p.node)?.label === p.text;
+  if (p.op === 'remove-node') return !node(after, p.node);
+  if (p.op === 'add-node') return (after?.nodes ?? []).some((n) => n.label === p.text && (after.edges ?? []).some((e) => e.from === p.from && e.to === n.id));
+  if (p.op === 'add-edge') return pair(after).length > pair(before).length;
+  if (p.op === 'remove-edge') return pair(after).length < pair(before).length;
+  if (p.op === 'relabel-edge') return pair(after).some((e) => e.label === p.text);
+  return false;
+}
+
 function checkFollowup(next, review, f, rep) {
   const carriers = (id) => (next?.items ?? []).filter((i) => i.id === id
     || (i.affects ?? []).some((a) => a?.decision?.review === review?.id && a?.decision?.itemId === id));
@@ -870,7 +911,28 @@ function checkFollowup(next, review, f, rep) {
     else if (q.kind === 'explain' && !c.some((i) => itemText(i) && itemText(i) !== before[q.itemId]))
       unanswered.push(`"${q.title}" asked for an explanation, and its text is unchanged. Explain it again in "summary" or "body", in other words than before`);
   }
-  const answered = new Set((next?.items ?? []).flatMap((i) => i.answers ?? []));
+  const answerList = (next?.items ?? []).flatMap((i) => (i.answers ?? []).map((a) => ({ item: i.id, a })));
+  const answered = new Set(answerList.map(({ a }) => (typeof a === 'string' ? a : a?.id)));
+  // #87 — an outcome must be what the next review shows: checked against both diagrams, never taken on trust.
+  const outcomes = answerList.filter(({ a }) => a && typeof a === 'object');
+  if (outcomes.length) {
+    const proposal = Object.fromEntries((f?.proposals ?? []).map((p) => [p.id, p]));
+    const [before, after] = [review, next].map(chartsOf);
+    const said = {}, wrong = [];
+    for (const { item, a } of outcomes) {
+      const w = `${item}: ${a.id}`;
+      if (a.review !== review?.id) { wrong.push(`${w} names review "${a.review}", but this follow-up is to "${review?.id}"`); continue; }
+      const p = proposal[a.id];
+      if (!p) { wrong.push(`${w} is no proposal in the feedback for "${review?.id}"`); continue; }
+      if (said[a.id] && said[a.id] !== a.outcome) wrong.push(`${a.id} is answered both "${said[a.id]}" and "${a.outcome}"`);
+      said[a.id] = a.outcome;
+      const drawn = proposalDrawn(p, before[p.diagram], after[p.diagram]);
+      if (a.outcome === 'drawn' && !drawn) wrong.push(`${w} says drawn, but "${p.label}" is not changed that way in the next "${p.diagram}"`);
+      if (a.outcome === 'not-drawn' && drawn) wrong.push(`${w} says not drawn, but the next diagram has the change`);
+    }
+    rep.check('proposal outcomes true', wrong.length === 0,
+      `${wrong.join(' · ')}. Say what the next review actually shows, or the reviewer is told something the page contradicts`);
+  }
   if ((f?.comments ?? []).length) {
     const open = f.comments.filter((c) => !answered.has(c.id)).map((c) => `${c.id} on "${c.label}"`);
     rep.check('comments answered', open.length === 0,

@@ -159,8 +159,17 @@
           "approval": {"$ref": "#/$defs/approval"},
           "answers": {
             "type": "array",
-            "description": "#60 — in a follow-up review: the reviewer's comments and proposed changes this item answers, by id (comment-1, proposal-2). `check followup` refuses a round that leaves one unanswered.",
-            "items": {"type": "string", "pattern": "^(comment|proposal)-[0-9]{1,4}$"}
+            "description": "#60 — in a follow-up review: the reviewer's comments and proposed changes this item answers, by id (comment-1, proposal-2). `check followup` refuses a round that leaves one unanswered. #87 — for a proposal, an object may say what the next review shows: `drawn` (checked against the diagrams), `drawn-differently`, `not-drawn` (checked) or `question`, with `why` unless drawn.",
+            "items": {"oneOf": [
+              {"type": "string", "pattern": "^(comment|proposal)-[0-9]{1,4}$"},
+              {"type": "object", "additionalProperties": false, "required": ["review", "id", "outcome"],
+                "properties": {
+                  "review": {"type": "string", "description": "The earlier review the proposal came from."},
+                  "id": {"type": "string", "pattern": "^proposal-[0-9]{1,4}$"},
+                  "outcome": {"enum": ["drawn", "drawn-differently", "not-drawn", "question"], "description": "What the next review shows, never agreement or permission."},
+                  "why": {"type": "string", "description": "Required unless drawn: the reason, or the question for the reviewer."}
+                }}
+            ]}
           },
           "affects": {
             "type": "array",
