@@ -39,6 +39,7 @@ test('database: column links, keyboard selection, comments and proposals survive
   await page.locator('#showchanges').click();
   await expect(chart).toContainText('Example members');
   await expect(chart).toContainText('Recorded by');
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#export').click();
   const dir = mkdtempSync(join(tmpdir(), 'database-browser-')), out = join(dir, 'feedback.json');
   await (await download).saveAs(out);
@@ -65,6 +66,7 @@ test('database: hostile labels and example cells remain inert, including the exp
   await expect(page.locator('.dg-database')).toBeVisible();
   expect(await page.evaluate(() => window.databaseAttack)).toBeUndefined();
   await expect(page.locator('.dg-database img, .dg-database script')).toHaveCount(0);
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#exporth').click();
   const exported = join(dir, 'answered.html'); await (await download).saveAs(exported);
   await page.goto(pathToFileURL(exported).href);
@@ -84,6 +86,7 @@ test('database: commenting after a proposed removal keeps the original relations
   await expect(page.locator('.dg-edge')).toHaveAttribute('data-nth', '1');
   await page.locator('.dg-edge').focus(); await page.keyboard.press('Enter');
   await page.locator('textarea[data-comment="comment-2"]').fill('This is still the creator relationship.');
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#export').click();
   const dir = mkdtempSync(join(tmpdir(), 'database-removed-')), out = join(dir, 'feedback.json');
   await (await download).saveAs(out);

@@ -18,6 +18,13 @@ const render = (reviewPath, dir) => {
   return out;
 };
 
+// Reveal nested native tool disclosures through their summaries, as a reviewer would.
+async function revealTools(control) {
+  for (const disclosure of await control.locator('xpath=ancestor::details[not(@open)]').all()) {
+    await disclosure.locator(':scope > summary').click();
+  }
+}
+
 // Every page must run clean and offline: no script error, nothing fetched beyond the file itself.
 test.beforeEach(async ({ page }, info) => {
   info.problems = [];
@@ -73,6 +80,7 @@ test('a list review: list and open item side by side, width buttons, the first i
   if (info.project.use.viewport.width >= 1100) {
     const l = await page.locator('#steplist').boundingBox(), d = await page.locator('#detail').boundingBox();
     expect(d.x, 'the open item sits to the right of the list').toBeGreaterThan(l.x + l.width - 1);
+    await revealTools(page.locator('button[data-size="detail"]'));
     await page.locator('button[data-size="detail"]').click();
     expect((await page.locator('#detail').boundingBox()).width, 'more room for the open item').toBeGreaterThan(d.width + 50);
   } else {
@@ -98,6 +106,7 @@ test('checkout: answer, export, and the file passes the checker', async ({ page 
   await page.locator('[data-open="declined-card"]').click();
   await page.locator('label:has(input[name="v-declined-card"][value="fails"])').click();
   await page.locator('textarea[data-note="declined-card"]').fill('Customer sees error 51.');
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.json');
   await download.saveAs(file);
@@ -114,6 +123,7 @@ test('flow: tap through, judge a step, export, and the file passes the checker',
   await expect(page.locator('#screen-title')).toHaveText('Booked');
   await page.locator('#detail .open label:has(input[data-item="book"][value="agree"])').click();
   await expect(page.locator('#overview')).toContainText('1 answered');
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.json');
   await download.saveAs(file);
@@ -140,6 +150,7 @@ test('flow: the system and data layers show with the step, and an entry can be j
   await first.locator('input[data-lv="book/capacity-guard"][value="disagree"]').check();
   await first.locator('textarea[data-lvnote="book/capacity-guard"]').fill('Two people can pass this check at once.');
   await expect(first.locator('details.judge').first().locator('summary')).toHaveText('Judged: Disagree');
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.json');
   await download.saveAs(file);
@@ -204,6 +215,7 @@ test('a hostile answer cannot break out of the exported page', async ({ page }) 
   await page.goto(url('examples/checkout-uat.html'));
   await page.locator('[data-open="declined-card"]').click();
   await page.locator('textarea[data-note="declined-card"]').fill(bad);
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#exporth').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.html');
   await download.saveAs(file);
@@ -233,6 +245,7 @@ test('an approval: the exact action, approve or decline, and the export passes t
   await expect(box).toContainText('still asks for permission');
   await expect(page.locator('#detail input[name="v-drop-db"]')).toHaveCount(2);   // approve, decline: never the verdict set
   await page.locator('label:has(input[name="v-drop-db"][value="decline"])').click();
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(dir, 'feedback.json'); await download.saveAs(file);
   const c = check('pair', reviewPath, file);
@@ -247,6 +260,7 @@ for (const name of ['checkout-uat', 'flow-booking']) {
     const sels = await page.locator('.min[data-min]').evaluateAll((l) => l.map((b) => b.dataset.min));
     expect(sels.length).toBeGreaterThanOrEqual(6);
     for (const sel of [...sels].reverse()) {                      // inner sections first: an outer one hides their buttons
+      await revealTools(page.locator(`.min[data-min="${sel}"]`));
       await page.locator(`.min[data-min="${sel}"]`).click();
       await expect(page.locator(sel)).toHaveClass(/minimised/);
       await expect(page.locator(`.min[data-min="${sel}"]`)).toHaveAttribute('aria-expanded', 'false');
@@ -254,7 +268,10 @@ for (const name of ['checkout-uat', 'flow-booking']) {
     }
     await page.reload();
     await expect(page.locator('.minimised')).toHaveCount(sels.length);
-    for (const sel of sels) await page.locator(`.min[data-min="${sel}"]`).click();
+    for (const sel of sels) {
+      await revealTools(page.locator(`.min[data-min="${sel}"]`));
+      await page.locator(`.min[data-min="${sel}"]`).click();
+    }
     await expect(page.locator('.minimised')).toHaveCount(0);
     await expect(page.locator('#detail')).toBeVisible();
   });
@@ -273,6 +290,7 @@ test('comments on the diagram: pick a box by keyboard and an arrow, export, and 
   await page.keyboard.press('Enter');
   await page.keyboard.type('Keep the cart when this happens.');
   await expect(page.locator('#flowbeside .dg-commented')).toHaveCount(2);
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-cmt-')), 'feedback.json');
   await download.saveAs(file);
@@ -292,6 +310,7 @@ test('a picture on a note: attached, re-saved, kept across a reload, and the exp
   await expect(page.locator('#detail .pic-msg')).toContainText('without hidden details');
   await page.reload();
   await expect(page.locator('#detail .pic img')).toHaveCount(1);
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(dir, 'feedback.json'); await download.saveAs(file);
   const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
@@ -316,6 +335,7 @@ test('a proposed change: rename a box, see it drawn, export it, and the checker 
   await expect(page.locator('#flowbeside .dg-proposed')).toHaveCount(1);
   await page.locator('#showchanges').click();                        // back to the agent's own diagram
   await expect(page.locator('#flowbeside [data-node="pay"]')).toHaveAttribute('aria-label', 'Takes the payment');
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-prop-')), 'feedback.json');
   await download.saveAs(file);
@@ -350,6 +370,7 @@ test('the sequence tab: participants with lifelines, and a comment on the fifth 
   await page.keyboard.press('Enter');
   await expect(page.locator('#comments .cmt-on')).toContainText('held');
   await page.keyboard.type('Say what the member sees while this happens.');
+  await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-seq-')), 'feedback.json');
   await download.saveAs(file);

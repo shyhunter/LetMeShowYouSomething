@@ -624,7 +624,7 @@ node bin/render.mjs examples/review.example.json out.html
 One self-contained page that fetches nothing — a URL appears only as a source the reviewer may
 choose to click — light, dark and a few styles to pick (D080), sections that can be pinned (D079) and minimised to their title bar (#61), verdicts as real radio groups
 inside real fieldsets so keyboard support is not bolted on. Answers autosave to `localStorage`;
-**Export feedback.json** writes a file that passes `bin/check.mjs`.
+**Finish review** opens a summary; **Download JSON for the agent** writes a file that passes `bin/check.mjs`.
 
 It inlines `lib/build-feedback.mjs` **verbatim**, so the page and the test suite run one
 implementation of the export shape — it cannot drift from what the checker expects without both
@@ -632,46 +632,55 @@ failing at once.
 
 **A review with a `flow` gets a player**, with the list of steps inside it:
 
-- the **diagram**, full width, with the **screen** under it, also full width (D068);
+- the **brief** before the full-width **How this works** diagram;
 - the **screen**, drawn from its components by `lib/draw-components.mjs` (also inlined verbatim).
   Only elements a step points at are buttons; everything else is a still wireframe;
-- **What I need you to decide** (or **What this explains**, when the brief asks no `question`), full width, then **your feedback** under it (D074): the filters,
-  then the steps on the left — one row each, answered or open, with a count of both on top — and the
-  open step on the right: its goal, every outcome side by side, the verdict, the note, and "Show me an
-  example" / "Explain this" as checkboxes. The two share the row in three steps (◧ ◫ ◨), remembered
-  in this browser. Tapping on the screen, in the chart or on a row opens a step there;
-- **Add your own feedback**, full width under both, open to anything, related or not (D072), with
+- a **named selection** connecting **What the user sees** and **What should happen**. On a wide
+  screen these share a row; on a phone they stack. The behavior list opens the selected detail:
+  goal, outcomes, verdict, note, and "Show me an example" / "Explain this" checkboxes. Search stays
+  visible; advanced filters and remembered width preferences live in named tool disclosures;
+- **Add your own feedback**, below the behavior workspace, open to anything, related or not (D072), with
   what you added listed below it.
 
 **Everything appears once** (D064). There is one list of steps, not four: each card carries its
 journey, its status, its goal and every outcome, and the filters above it — search, verdict, gaps
 only, journey, status, "only where something goes wrong" — are the only way the list narrows.
 Every diagram is a tab in the diagram panel, never a second gallery further down. Selecting a step
-in the chart marks it in the list, and the other way round.
+in the chart marks it in the list, and the other way round. A screen shared by multiple behaviors
+offers their names rather than silently choosing one. An unlinked node or arrow has a precise
+comment target, not an unrelated item verdict. Selection itself records no answer.
 
-**Nothing is hidden silently.** Every filter says "Showing N of M" and offers "Show all".
+**Nothing is hidden silently.** A narrowing filter says "Showing N of M" and offers "Show all".
+The selected detail stays open with an explanation when it falls outside the filters. Diagram
+tabs retain selection and explain when it is not represented there.
 
-**The diagram, then the screen under it** (D068), each the full width of the page. Above the diagram, **tabs** — the user flow, every
-written chart, and System design, which says what it is for rather than standing
-empty until the system diagrams land. The focus tab opens first. Under them, **a chip per
+**The diagram is the primary inspection surface.** Above it, **tabs** show the user flow and every
+written chart. The focus tab opens first. Under them, **a chip per
 sub-process**: press one to mark its boxes, what leads into them lightly, the rest dimmed but still
 there; press it again to clear.
 
-Either panel opens **full screen** (the screen panel as a third tab beside This screen / All screens) and closes with Esc (D073). The walk-through as a whole collapses. All of that arrangement is remembered in the reviewer's own browser
+Either panel opens **full screen** from its named tools and closes with Esc (D073). Display,
+pinning and minimise controls remain available; the walk-through as a whole collapses. Saved arrangement stays in the reviewer's own browser
 and never leaves it.
 
-Under the two panels, a review with a `brief` shows **what the agent needs decided** (D071, D074): the
+Before inspection, a review with a `brief` shows **what the agent needs decided**: the
 question first, then what it is explaining, its recommendation, precedents (each with its source, or
-marked unverified), and the risks; the reviewer's feedback follows under it. Inside the diagram panel, **sub-processes are a column that switches off** (D066), grouped
+marked unverified), and the risks. Inside the diagram panel, **sub-processes are a column that switches off** (D066), grouped
 into what is in the product, what is planned and what is only suggested, each saying how much of it
 is judged. The screen panel shows one screen or, at a press, **every screen at once** (D067). What the
 brief points at is ringed in the chart, and the screen panel says "look here". Every item offers **Show me an example** and **Explain this** as checkboxes — the questions that
 travel back as `requests`.
 
-Answers leave as **Export feedback.json**, or as **Export feedback.html** (D076): the whole page —
-every chart, screen, step and the brief — with the answers written into it, so whoever opens it sees
-everything, not a summary. An exported copy keeps its own answers in the browser, apart from the
-original's. Exporting sends nothing: the reviewer returns the file themselves.
+**Finish review** summarizes actual answers, unanswered items, choices, gaps, requests, comments,
+pictures and proposals using the same feedback builder. A partial review is allowed; finishing
+does not answer, send, grant permission or implement a proposal. Positive answers do not conceal
+outstanding requests. Ambiguous legacy target ids are not turned into guessed navigation links.
+Storage-failure warnings remain visible independently of download status.
+
+Answers leave as **Download JSON for the agent**, or as **Download answered HTML** (D076): the whole
+page — every chart, screen, step and the brief — with the answers written into it, so whoever opens
+it sees everything, not a summary. An exported copy keeps its own answers in the browser, apart
+from the original's. Downloading sends nothing: the reviewer returns either file themselves.
 
 **Reading an answered page** (#78). The page holds the review and the answers each on one line of its
 script, as JSON: `const REVIEW = {…};` and `const SEED = {…};` (the answers as the page keeps them, plus
