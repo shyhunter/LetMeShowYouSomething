@@ -5,12 +5,13 @@ answers go back to the agent as a file it checks before it acts.
 
 ```
 agent ──► review.json ──► render ──► one HTML page ──► a person judges each item ──► Export
-agent ◄── check (PASS) ◄── feedback.json ◄──────────────────────────────────────────┘
+agent ◄── check (PASS) ◄── feedback.json ◄── the answered page, read as data ◄──────┘
 ```
 
 It is an agent skill: one folder with instructions, a renderer and a checker. The format in
 between (`review.v1` and `feedback.v1`) is written down as a [protocol](PROTOCOL.md), so any agent,
-script or tool can write the question or read the answer.
+script or tool can write the question or read the answer. Which file owns which part, and what ships
+today versus what is only proposed: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Why
 
@@ -77,8 +78,9 @@ node bin/check.mjs review examples/review.example.json
 # 2. It becomes one page
 node bin/render.mjs examples/review.example.json review.html
 
-# 3. The reviewer opens review.html, answers, and presses "Export feedback.json".
-#    The agent checks what came back before acting on it
+# 3. The reviewer opens review.html, answers, and sends back the page (Export feedback.html)
+#    or its feedback.json. The agent checks what came back before acting on it:
+node bin/answer.mjs examples/review.example.json answered.html feedback.json   # a returned page
 node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
 ```
 
