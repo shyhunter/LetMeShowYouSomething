@@ -513,11 +513,28 @@ decision with one way out is refused rather than drawn. The page shows the same 
 changes**. The agent's own diagram is never altered by the file; the next round draws the change, or
 says why not.
 
+**What became of a proposal** (#87). The item in the next review that answers a proposal can say what
+it shows, instead of just listing the id:
+
+```json
+"answers": [{ "review": "checkout-uat-2026-09", "id": "proposal-2", "outcome": "not-drawn",
+              "why": "The amount is already on the button." }]
+```
+
+`outcome` is one of `drawn`, `drawn-differently`, `not-drawn` or `question`, and `why` is required
+unless it is `drawn` (for a question, `why` is the question). The outcome says what the next review
+shows, never that the agent agreed, built or may do anything. `review` names the review the
+proposal came from, so an id is never matched on its own. A plain id (`"proposal-2"`) is still valid
+and says only that the item answers it. The reviewer disagrees the usual way, by answering that item:
+a disagreement is a gap and is carried (#88). The earlier outcome is never rewritten.
+
 | check | refuses |
 |---|---|
 | `proposals well-formed` | a proposal without its own `proposal-N` id, without a known `op`, or without the part it is on in words |
 | `proposals fit the diagram` | a change on a part that is not there, one that cannot be applied, or a result that breaks the diagram's own rules |
 | `proposals answered` (`followup`) | a follow-up review with no item whose `answers` lists the proposal's id |
+| `answers well-formed` (`review`) | an `answers` entry that is no comment or proposal id, or an outcome that is not one of the four, is said of a comment, names no review, or has no `why` when not drawn |
+| `proposal outcomes true` (`followup`) | `drawn` when the next diagram lacks the change, `not-drawn` when it has it, an outcome naming another review or an unknown proposal, or two different outcomes for one proposal |
 
 ### Pictures
 

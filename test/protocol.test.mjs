@@ -11,6 +11,7 @@ import './ai-drawing.test.mjs';
 import './ai-examples.test.mjs';
 import './feedback-identity.test.mjs';
 import './answered-html.test.mjs';
+import './proposal-outcomes.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
