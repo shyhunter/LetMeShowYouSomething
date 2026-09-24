@@ -4,6 +4,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
+// Use the visible disclosure summary before interacting with a secondary control.
+const reveal = (selector) => `(() => {
+  const control = document.querySelector(${JSON.stringify(selector)}), ancestors = [];
+  for (let el = control.parentElement; el; el = el.parentElement) if (el.tagName === 'DETAILS') ancestors.unshift(el);
+  for (const details of ancestors) if (!details.open) details.querySelector(':scope > summary').click();
+})()`;
+const returnReview = `if (!document.querySelector('#return-review').open) document.querySelector('#finish').click();`;
+
 const FLOW = join(REPO, 'examples/flow-booking.review.json');
 const title = `document.querySelector('#screen-title')?.textContent`;
 const tap = (id) => `document.querySelector('#screen [data-target="${id}"]').click()`;
@@ -43,7 +51,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(`document.querySelector('fieldset.item input[name="v-book"][value="agree"]').checked`), 'the step keeps its verdict in the list');
   await load(page);
   say(await ev(title) === 'Pick a time', 'position is not saved: a reload starts at the beginning (D003)');
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
   const r = file ? checkPair(FLOW, file) : { status: 1, stdout: 'no download' };
   say(r.status === 0, `export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
@@ -73,9 +81,10 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   for (const [label, w, mobile] of [['flow-laptop', 1280, false], ['flow-tablet', 900, false], ['flow-phone', 390, true]]) {
     await shot(label, w, mobile);
     await width(w, mobile); await sleep(250);
-    // As drawn (D057): the step panel is under the two panels, the full width of the page.
-    const under = await ev(`(()=>{const a=document.querySelector('#screen').getBoundingClientRect(),b=document.querySelector('#detail .open').getBoundingClientRect();return b.top>=a.bottom-1})()`);
-    say(under, `${label}: the step panel sits under the screen`);
+    // The screen and behavior share the desktop workspace; narrow layouts stack them.
+    const connected = await ev(`(()=>{const a=document.querySelector('#upanel').getBoundingClientRect(),b=document.querySelector('#feedback').getBoundingClientRect();return innerWidth>=1100?b.left>=a.right-1&&Math.abs(a.top-b.top)<2:b.top>=a.bottom-1})()`);
+    say(connected, `${label}: the behavior sits ${w >= 1100 ? 'beside' : 'below'} the screen`);
+    say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect();return d.top>=l.bottom-1&&Math.abs(d.width-l.width)<2})()`), `${label}: the flow list sits above its open step inside the behavior panel`);
     const small = await ev(`[...document.querySelectorAll('.is-target, #detail .open [data-outcome], #restart')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,30))`);
     say(small.length === 0, `${label}: every tap target is at least 44×44 px${small.length ? ` (too small: ${small.join(' | ')})` : ''}`);
   }
@@ -104,7 +113,8 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(/Another person booked 10:00/.test(await ev(`${card}.textContent`)), 'and why the bad one happens');
   say(await ev(`document.querySelectorAll('#journeys, #whole, #panes, #diagrams').length`) === 0, 'the four repeat sections are gone: the diagram panel and the list are the only places');
 
-  // filters live in one bar, and never hide silently (D046)
+  // Filters are revealed explicitly, and their effects never hide silently (D046).
+  await ev(reveal('#f-journey'));
   await ev(`(()=>{const s=document.querySelector('#f-journey');s.value='ask-question';s.dispatchEvent(new Event('change',{bubbles:true}))})()`); await sleep(150);
   say(await ev(`document.querySelectorAll('#steplist fieldset.item').length`) === 2 && /Showing 2 of 11 · Show all/.test(await ev(`document.querySelector('#filterinfo').textContent`)),
     'filtering by journey leaves 2 steps and says so');
@@ -190,7 +200,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(`document.querySelector('[data-section="player"] .sec-toggle').getAttribute('aria-expanded')`) === 'false', 'and stays collapsed after a reload');
   await ev(`document.querySelector('[data-section="player"] .sec-toggle').click()`);
   await ev(`document.querySelector('input[data-item="book"][value="agree"]').click()`); await sleep(100);
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const arranged = await exported();
   say(arranged && !/section|collapsed|order/.test(readFileSync(arranged, 'utf8')), 'the export carries nothing about how the page was arranged (D003)');
 
@@ -250,6 +260,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
 
   // every screen at once, the way the chart shows every step (sketch, 2026-09-18)
   say(await ev(`document.querySelector('#allscreens').hidden`) === true && await ev(`document.querySelector('#screen').hidden`) === false, 'one screen to begin with');
+  await ev(reveal('#upanel [data-screens="all"]'));
   await ev(`document.querySelector('#upanel [data-screens="all"]').click()`); await sleep(250);
   const minis = await ev(`[...document.querySelectorAll('#allscreens [data-screen]')].map(m=>m.dataset.screen)`);
   say(minis.length === 10 && minis[0] === 'slot-list', `"All screens" shows all ten: ${minis.join(', ')}`);
@@ -273,6 +284,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   await ev(`document.querySelector('#linkswitch').click()`); await sleep(150);
   say(await ev(`document.querySelectorAll('#allscreens .links').length`) === 0 && await ev(`document.querySelector('#linkswitch').getAttribute('aria-checked')`) === 'false', 'switching it off removes the connections');
   await load(page); await sleep(200);
+  await ev(reveal('#upanel [data-screens="all"]'));
   await ev(`document.querySelector('#upanel [data-screens="all"]').click()`); await sleep(250);
   say(await ev(`document.querySelectorAll('#allscreens .links').length`) === 0, 'and they stay off after a reload');
   await ev(`document.querySelector('#linkswitch').click()`); await sleep(150);
@@ -282,12 +294,12 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   say(await ev(`document.querySelector('#flowbeside [data-node="screen:waitlisted"]').getAttribute('aria-current')`) === 'true', 'and the chart follows');
   say(await ev(`document.querySelector('#upanel [data-screens="one"]').getAttribute('aria-pressed')`) === 'true', 'the switch back is honest about where you are');
 
-  // the two panels: the screen under the diagram, both full width (D068), either full screen (D073)
-  const stacked = () => ev(`(()=>{const d=document.querySelector('#dpanel').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect();return u.top>=d.bottom-1&&Math.abs(d.width-u.width)<2})()`);
-  for (const [w, m] of [[1280, false], [900, false], [390, true]]) { await width(w, m); await sleep(250); say(await stacked(), `${w}px: the screen sits under the diagram, the same width`); }
+  // The diagram spans the page above the connected workspace; either panel can fill the screen.
+  const stacked = () => ev(`(()=>{const d=document.querySelector('#dpanel').getBoundingClientRect(),w=document.querySelector('#workspace').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return w.top>=d.bottom-1&&Math.abs(d.width-w.width)<2&&(innerWidth>=1100?f.left>=u.right-1&&Math.abs(f.top-u.top)<2:f.top>=u.bottom-1&&Math.abs(u.width-f.width)<2)})()`);
+  for (const [w, m] of [[1280, false], [900, false], [390, true]]) { await width(w, m); await sleep(250); say(await stacked(), `${w}px: the full-width diagram precedes the responsive screen and behavior workspace`); }
   await width(1440); await sleep(250);
   say(await ev(`document.querySelector('#dpanel').getBoundingClientRect().width`) > 1300, 'the page uses the full width');
-  say(await ev(`document.querySelectorAll('#stage [data-size]').length`) === 0, 'no width buttons: nothing shares a row any more');
+  say(await ev(`document.querySelectorAll('#workspace .sizes [data-size]').length`) === 3, 'three layout choices balance the screen and behavior workspace');
   await width(1280); await sleep(200);
   say(await ev(`document.querySelectorAll('.panel-collapse').length`) === 0, 'no collapse buttons: full screen takes their place (D073)');
   const covers = (id) => ev(`(()=>{const r=document.querySelector('#${id}').getBoundingClientRect();return r.top<=0&&r.left<=0&&r.width>=innerWidth-1&&r.height>=innerHeight-1})()`);
@@ -300,12 +312,13 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   await ev(`document.querySelector('#upanel .seg .panel-full').click()`); await sleep(200);
   await key('Escape', 'Escape', 27); await sleep(150);
   say(!(await covers('upanel')) && await ev(`document.activeElement.classList.contains('panel-full')`), 'Esc brings it back, focus on the button');
+  await ev(reveal('#dpanel .panel-full'));
   await ev(`document.querySelector('#dpanel .panel-full').click()`); await sleep(200);
   say(await covers('dpanel') && await ev(`document.querySelector('#flowbeside').getBoundingClientRect().height`) > 600, 'the diagram opens full screen, the chart as tall as the window');
   await ev(`document.querySelector('#dpanel .panel-full').click()`); await sleep(150);
   say(!(await covers('dpanel')), 'the same button closes it');
   await ev(`document.querySelector('#at').value='Parking'; document.querySelector('#ab').value='Say where to park.'; document.querySelector('#addbtn').click()`); await sleep(150);
-  say(await ev(`(()=>{const i=document.querySelector('#items').getBoundingClientRect(),a=document.querySelector('#added .addedrow').getBoundingClientRect();return a.top>=i.bottom-1})()`)
+  say(await ev(`(()=>{const i=document.querySelector('#steplist').getBoundingClientRect(),a=document.querySelector('#added .addedrow').getBoundingClientRect();return a.top>=i.bottom-1})()`)
     && /Your own feedback/.test(await ev(`document.querySelector('#added').textContent`)), 'your own feedback is listed below the steps, under its own heading');
   await ev(`document.querySelector('#added [data-del]').click()`); await sleep(100);
 
@@ -316,23 +329,26 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   const fbTop = `document.querySelector('#feedback').getBoundingClientRect().top`, before = await ev(fbTop);
   await ev(`document.querySelector('#detail [data-outcome="0"]').click()`); await sleep(200);
   say(Math.abs(await ev(fbTop) - before) < 2, `"Show this" keeps the feedback where it was on the window (moved ${(await ev(fbTop) - before).toFixed(0)}px)`);
+  await ev(reveal('#dpanel .pin')); await ev(reveal('#upanel .pin'));
   await ev(`document.querySelector('#dpanel .pin').click(); document.querySelector('#upanel .pin').click()`); await sleep(200);
   await ev(`scrollTo(0, document.body.scrollHeight)`); await sleep(200);
   const box = (sel) => ev(`(()=>{const r=document.querySelector('${sel}').getBoundingClientRect();return {top:r.top,bottom:r.bottom}})()`);
   let d = await box('#dpanel'), u = await box('#upanel');
-  say(Math.abs(d.top) < 2 && Math.abs(u.top - d.bottom) < 2, 'pinned diagram and screen stay at the top, one under the other');
+  say(Math.abs(d.top) < 2 && Math.abs(u.top - d.bottom) < 2, 'pinned diagram and screen stay at the top, one under the other: ' + JSON.stringify({ d, u }));
   say(u.bottom <= await ev('innerHeight') * 0.8 + 2, 'and together take no more than 80% of the window');
   await load(page); await sleep(250); await ev(`scrollTo(0, document.body.scrollHeight)`); await sleep(200);
   d = await box('#dpanel');
   say(Math.abs(d.top) < 2 && await ev(`document.querySelector('#dpanel .pin').getAttribute('aria-pressed')`) === 'true', 'pins survive a reload');
+  await ev(reveal('header .pin'));
   await ev(`document.querySelector('header .pin').click()`); await sleep(200);
   say(Math.abs((await box('header')).top) < 2 && Math.abs((await box('#dpanel')).top - (await box('header')).bottom) < 2, 'the header pins too, above the others');
+  for (const selector of ['header .pin', '#dpanel .pin', '#upanel .pin']) await ev(reveal(selector));
   await ev(`document.querySelectorAll('.pin[aria-pressed="true"]').forEach(b => b.click())`); await sleep(200);
   say(await ev(`document.querySelectorAll('.pinned').length`) === 0, 'Unpin lets them scroll again');
   await ev('scrollTo(0,0)');
 
   // D080/D083 — every style in light and in dark, picked, drawn and remembered.
-  const pick = (id, v) => ev(`(()=>{const s=document.querySelector('#${id}');s.value='${v}';s.dispatchEvent(new Event('change'))})()`);
+  const pick = async (id, v) => { await ev(reveal('#' + id)); return ev(`(()=>{const s=document.querySelector('#${id}');s.value='${v}';s.dispatchEvent(new Event('change'))})()`); };
   const bg = () => ev(`getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()`);
   const seen = new Set();
   for (const st of ['mac84', 'cyber', 'newsletter', 'shyhunter']) for (const mode of ['light', 'dark']) {
@@ -351,7 +367,8 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   await shot('drawn-tablet', 900);
   await shot('drawn-phone', 390, true);
 
-  const small = await ev(`[...document.querySelectorAll('#dgtabs [role=tab], #chips [data-part], #stage .panel-full')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,20))`);
+  await ev(reveal('#dpanel .panel-full')); await ev(reveal('#upanel .panel-full'));
+  const small = await ev(`[...document.querySelectorAll('#dgtabs [role=tab], #chips [data-part], #dpanel .panel-full, #upanel .panel-full')].filter(el=>{const r=el.getBoundingClientRect();return r.width&&(r.width<44||r.height<44)}).map(el=>el.textContent.trim().slice(0,20))`);
   say(small.length === 0, `tabs, chips and panel buttons are at least 44px: ${small.length ? small.join(', ') : 'all fine'}`);
   await shot('drawn-laptop', 1280);
 });
@@ -380,21 +397,24 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   say(/Class passes at gyms/.test(brief) && /example\.org/.test(brief), 'a real-life example with its source');
   say(/unverified/i.test(brief) && await ev(`document.querySelectorAll('#brief .unverified').length`) === 1, 'the example with no source is marked unverified (D050)');
   say(/ask for the money back/.test(brief), 'the risks are named');
-  say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),s=document.querySelector('#stage').getBoundingClientRect();return b.top>=s.bottom-1})()`),
-    'the brief sits under the diagram and the screen');
-  say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return f.top>=b.bottom-1&&Math.abs(b.width-f.width)<2})()`),
-    'what to decide sits above your feedback, the same width (D074)');
-  say(await ev(`(()=>{const q=document.querySelector('#feedback .bar').getBoundingClientRect(),l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect(),b=document.querySelector('#brief').getBoundingClientRect();return q.top>=b.bottom-1&&l.top>=q.bottom-1&&d.left>=l.right-1&&Math.abs(l.top-d.top)<4})()`),
-    'the filters sit under it, then the steps on the left and the open step on the right');
-  const lw = () => ev(`[Math.round(document.querySelector('#steplist').getBoundingClientRect().width),Math.round(document.querySelector('#detail').getBoundingClientRect().width)]`);
+  say(await ev(`(()=>{const b=document.querySelector('#brief').getBoundingClientRect(),d=document.querySelector('#dpanel').getBoundingClientRect();return d.top>=b.bottom-1})()`),
+    'the brief precedes the full-width diagram');
+  say(await ev(`(()=>{const d=document.querySelector('#dpanel').getBoundingClientRect(),w=document.querySelector('#workspace').getBoundingClientRect(),u=document.querySelector('#upanel').getBoundingClientRect(),f=document.querySelector('#feedback').getBoundingClientRect();return w.top>=d.bottom-1&&Math.abs(d.width-w.width)<2&&f.left>=u.right-1&&Math.abs(u.top-f.top)<2})()`),
+    'the screen and behavior sit beside each other in the workspace below the diagram');
+  say(await ev(`(()=>{const q=document.querySelector('#feedback .bar').getBoundingClientRect(),l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect();return l.top>=q.bottom-1&&d.top>=l.bottom-1&&Math.abs(l.width-d.width)<2})()`),
+    'the behavior panel contains filters, then the step list, then the open step');
+  const lw = () => ev(`[Math.round(document.querySelector('#upanel').getBoundingClientRect().width),Math.round(document.querySelector('#feedback').getBoundingClientRect().width)]`);
+  const [screenBefore, behaviorBefore] = await lw();
+  await ev(reveal('#split [data-size="detail"]'));
   await ev(`document.querySelector('#split [data-size="detail"]').click()`); await sleep(150);
   const [l1, d1] = await lw();
-  say(d1 > l1 + 100, `◨ gives the open step the room: ${l1}px / ${d1}px`);
+  say(d1 > behaviorBefore + 50 && l1 < screenBefore - 50, `◨ gives the behavior more room beside the screen: ${l1}px / ${d1}px`);
   await load(page); await width(1280); await sleep(250);
   say(await ev(`document.querySelector('#split [data-size="detail"]').getAttribute('aria-pressed')`) === 'true', 'the width survives a reload');
+  await ev(reveal('#split [data-size="detail"]'));
   await ev(`document.querySelector('#split [data-size="even"]').click()`); await sleep(150);
-  say(await ev(`(()=>{const f=document.querySelector('#steplist').getBoundingClientRect(),a=document.querySelector('#feedback .add').getBoundingClientRect();return a.top>=f.bottom-1&&a.width>f.width*1.5})()`),
-    'adding your own feedback sits under both, full width');
+  say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detailbox').getBoundingClientRect(),a=document.querySelector('#feedback .add').getBoundingClientRect();return a.top>=Math.max(l.bottom,d.bottom)-1&&Math.abs(a.width-l.width)<2})()`),
+    'adding your own feedback sits below the list and detail, across the behavior panel');
   await width(900); await sleep(250);
   say(await ev(`(()=>{const l=document.querySelector('#steplist').getBoundingClientRect(),d=document.querySelector('#detail').getBoundingClientRect();return d.top>=l.bottom-1})()`),
     'tablet: the steps and the open step stack');
@@ -415,7 +435,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   await ev(`document.querySelector('#detail .open [data-outcome="0"]').click()`); await sleep(200);
   say(await ev(`${askBtn}.checked`) === true, 'the request survives a reload');
 
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
   const out = file ? JSON.parse(readFileSync(file, 'utf8')) : {};
   say(JSON.stringify(out.requests || []) === JSON.stringify([{ itemId: 'book', title: 'Taps Book 10:00', kind: 'example', note: null }]),
@@ -423,6 +443,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   const r = file ? checkPair(path, file) : { status: 1, stdout: 'no download' };
   say(r.status === 0, `that export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
 
+  await ev(`document.querySelector('#continue-review').click()`);
   say(await ev(`document.querySelector('#addh').textContent`) === 'Add your own feedback' && /something unrelated/.test(await ev(`document.querySelector('.add .d').textContent`)) && await ev(`document.querySelector('#at').offsetParent !== null`), 'adding your own feedback is visible and open to anything');
   await shot('brief-laptop', 1280);
 });

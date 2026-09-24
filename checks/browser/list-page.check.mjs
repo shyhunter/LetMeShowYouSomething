@@ -4,6 +4,14 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
+// Use the visible disclosure summary before interacting with a secondary control.
+const reveal = (selector) => `(() => {
+  const control = document.querySelector(${JSON.stringify(selector)}), ancestors = [];
+  for (let el = control.parentElement; el; el = el.parentElement) if (el.tagName === 'DETAILS') ancestors.unshift(el);
+  for (const details of ancestors) if (!details.open) details.querySelector(':scope > summary').click();
+})()`;
+const returnReview = `if (!document.querySelector('#return-review').open) document.querySelector('#finish').click();`;
+
 const CHECKOUT = join(REPO, 'examples/review.example.json');
 const DECISION = join(REPO, 'examples/decision-review.example.json');
 const DATABASE = join(REPO, 'examples/database-booking.review.json');
@@ -15,8 +23,9 @@ await withChrome('ai-page', async ({ dir, say, ev, load, key, type, exported, sh
   await ev(`document.querySelector('#commentmode').click(); document.querySelector('[data-node="model"]').focus()`);
   await key('Enter', 'Enter', 13); await type('Explain this invented model call.');
   say(await ev(`!document.querySelector('[data-prop="add-node"]') && !!document.querySelector('[data-prop="add-edge"]')`), 'agent controls refuse a generic box addition but retain arrows');
-  await ev(`document.querySelector('#export').click()`); const file = await exported();
+  await ev(`${returnReview} document.querySelector('#export').click()`); const file = await exported();
   say(file && checkPair(AI, file).status === 0, 'AI comment export passes the checker');
+  await ev(`document.querySelector('#continue-review').click()`);
   await shot('ai-desktop', 1280); await shot('ai-phone', 390, true);
 });
 await withChrome('ai-hostile', async ({ dir, say, ev, load, exported }) => {
@@ -29,7 +38,7 @@ await withChrome('ai-hostile', async ({ dir, say, ev, load, exported }) => {
   await load(render(rp, dir));
   const safe = `!window.__aiAttack && !document.querySelector('.dg-agent img, .dg-agent script')`;
   say(await ev(safe), 'AI hostile text is inert');
-  await ev(`document.querySelector('#exporth').click()`); const file = await exported('.feedback.html');
+  await ev(`${returnReview} document.querySelector('#exporth').click()`); const file = await exported('.feedback.html');
   if (file) await load(file);
   say(file && await ev(safe), 'AI hostile text stays inert after HTML export');
 });
@@ -44,9 +53,10 @@ await withChrome('database-page', async ({ dir, say, ev, load, key, type, export
   await ev(`document.querySelector('#commentmode').click()`);
   await ev(`document.querySelector('.dg-edge[data-nth="1"]').focus()`);
   await key('Enter', 'Enter', 13); await type('Explain the second relationship.');
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
   say(file && checkPair(DATABASE, file).status === 0, 'database relationship comment export passes the checker');
+  await ev(`document.querySelector('#continue-review').click()`);
   await shot('database-desktop', 1280);
   await shot('database-phone', 390, true);
 });
@@ -63,6 +73,7 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
   say(await ev(`document.querySelectorAll('#detail fieldset.item').length`) === 1, 'and opens one of them beside the list');
   say(await ev("[...document.querySelectorAll('textarea,input')].every(el => el.type==='radio' || el.closest('label') || document.querySelector(`label[for=\"${el.id}\"]`))"), 'every text field has a label');
   await media('light'); await shot('checkout-light', 1280);
+  await ev(reveal('#filters .chip'));
   say(await ev(`(()=>{const c=[...document.querySelectorAll('#filters .chip')];return c[1].getBoundingClientRect().left-c[0].getBoundingClientRect().right})()`) >= 4, 'filter chips are spaced apart');
   await media('dark'); await shot('checkout-dark', 1280);
   say(await ev("getComputedStyle(document.querySelector('input[type=radio]')).colorScheme") === 'dark', 'dark mode: native controls use the dark scheme');
@@ -78,16 +89,17 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
   await ev(`document.querySelector('#at').focus()`); await type('Currency flips mid-flow'); await ev(`document.querySelector('#addbtn').click()`);
   await load(page); await ev(open('declined-card'));
   say(await ev(`document.querySelector('textarea[data-note="declined-card"]').value`) === 'Customer sees error 51.' && await ev("document.querySelectorAll('.addedrow').length") === 1, 'autosave keeps note and added item across reload');
+  await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   say(await ev(`${rows}.length`) === 2, '"Gaps only" shows the 2 gaps');
   await ev(`document.querySelector('[data-f="all"]').click()`);
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
   const r = file ? checkPair(CHECKOUT, file) : { status: 1, stdout: 'no download' };
   say(r.status === 0, `export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
 
   // The HTML export is the whole page with the answers in it (D076): open it and everything is there.
-  await ev(`document.querySelector('#exporth').click()`);
+  await ev(`${returnReview} document.querySelector('#exporth').click()`);
   const htmlFile = await exported('.feedback.html');
   const exportPage = htmlFile ? readFileSync(htmlFile, 'utf8') : '';
   say(exportPage.startsWith('<!doctype html>') && (exportPage.match(/^const SEED = \{/gm) || []).length === 1, 'HTML export is the whole page, the answers seeded once inside its script');
@@ -110,17 +122,19 @@ await withChrome('decision-page', async ({ dir, say, ev, load, key, exported }) 
   await key(' ', 'Space', 32);
   say(await ev(`${stored()}.choices.storage`) === 'opt-db', 'keyboard picks opt-db');
   say(/Chosen/.test(await ev(`document.querySelector('#steplist [data-step="opt-db"]').textContent`)), 'and the list marks it Chosen');
+  await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   const gaps = await ev(`[...${rows}].map(r=>r.querySelector('legend').textContent)`);
   say(!gaps.some((t) => t.startsWith('Export a file now')), '"Gaps only" after a pick hides unrated options');
   await ev(`document.querySelector('[data-f="all"]').click()`);
   await ev(open('challenge-forgotten-file')); await ev(`document.querySelector('input[data-item="challenge-forgotten-file"][value="agree"]').click()`);
   await ev(open('challenge-browser-storage')); await ev(`document.querySelector('input[data-item="challenge-browser-storage"][value="disagree"]').click()`);
+  await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
   const doubtGaps = await ev(`[...${rows}].map(r=>r.querySelector('legend').textContent)`);
   say(doubtGaps.some((t) => t.startsWith('A reviewer who forgets')) && !doubtGaps.some((t) => t.startsWith('Autosave in the browser can lose')), 'doubts: an agreed concern is a gap, a rejected one is not (D051)');
   await ev(`document.querySelector('[data-f="all"]').click()`);
-  await ev(`document.querySelector('#export').click()`);
+  await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
   const r = file ? checkPair(DECISION, file) : { status: 1, stdout: 'no download' };
   say(r.status === 0, `export passes the checker: ${r.stdout.trim().split('\n').pop()}`);
@@ -144,7 +158,7 @@ await withChrome('export-hostile', async ({ dir, say, ev, load, exported }) => {
   await load(render(CHECKOUT, dir)); await ev(open('declined-card'));
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
   await ev(`(()=>{const t=document.querySelector('textarea[data-note="declined-card"]');t.value=${JSON.stringify(bad)};t.dispatchEvent(new Event('input',{bubbles:true}))})()`);
-  await ev(`document.querySelector('#exporth').click()`);
+  await ev(`${returnReview} document.querySelector('#exporth').click()`);
   const file = await exported('.feedback.html');
   const text = file ? readFileSync(file, 'utf8') : '';
   say(!text.includes('</script><script>window.__pwned'), 'the answer is escaped inside the exported script');

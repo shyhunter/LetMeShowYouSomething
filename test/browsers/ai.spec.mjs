@@ -37,10 +37,12 @@ test('AI: captions, stops, keyboard comments and allowed proposals survive both 
   await page.locator('[data-ptext="relabel-edge"]').fill('Checked and ready'); await page.locator('[data-prop="relabel-edge"]').click();
   await page.locator('#showchanges').click(); await expect(chart).toContainText('Draft a candidate'); await expect(chart).toContainText('Checked and ready');
   const dir = mkdtempSync(join(tmpdir(), 'ai-export-')), fp = join(dir, 'feedback.json');
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#export').click(); await (await download).saveAs(fp);
   const checked = spawnSync(process.execPath, [join(root, 'bin/check.mjs'), 'pair', reviewPath, fp], { encoding: 'utf8' });
   expect(checked.status, checked.stdout + checked.stderr).toBe(0);
   const feedback = JSON.parse(readFileSync(fp, 'utf8')); expect(feedback.comments).toHaveLength(2); expect(feedback.proposals).toHaveLength(2);
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const html = page.waitForEvent('download'); await page.locator('#exporth').click(); const hp = join(dir, 'answered.html'); await (await html).saveAs(hp);
   await page.goto(pathToFileURL(hp).href); await expect(page.locator('textarea[data-comment="comment-1"]')).toHaveValue('Clarify the context.');
   await expect(page.locator('.dg-agent')).toContainText('Total: 1400');
@@ -53,6 +55,7 @@ test('AI: hostile labels, stops and token labels remain text in the page and HTM
   d.tokenUsage.parts[0].label = attack;
   const { dir, hp } = rendered(review); await page.goto(pathToFileURL(hp).href);
   await expect(page.locator('.dg-agent img, .dg-agent script')).toHaveCount(0); expect(await page.evaluate(() => window.aiAttack)).toBeUndefined();
+  if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#exporth').click(); const out = join(dir, 'answered.html'); await (await download).saveAs(out);
   await page.goto(pathToFileURL(out).href); await expect(page.locator('.dg-agent img, .dg-agent script')).toHaveCount(0); expect(await page.evaluate(() => window.aiAttack)).toBeUndefined();
 });

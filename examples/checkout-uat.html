@@ -553,17 +553,71 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
   select:not(.screen *){-webkit-appearance:none;appearance:none;height:44px;padding:4px 30px 4px 10px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;
     background:linear-gradient(45deg,transparent 50%,var(--mut) 50%) right 16px center/5px 5px no-repeat,linear-gradient(135deg,var(--mut) 50%,transparent 50%) right 11px center/5px 5px no-repeat,var(--surf)}
 }
+/* #74 — one connected review, with tooling secondary to the human task. */
+.wrap.frame{max-width:1600px;margin-inline:auto}
+.review-kicker{font:600 11px var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
+.review-start{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:20px}
+.review-start .btn{font-size:14px;padding:11px 20px}
+.panel-tools>summary{cursor:pointer;min-height:44px;display:list-item;padding:10px 12px;font-size:12.5px;color:var(--ink2)}
+.panel-tools[open]{flex-basis:100%;border:1px solid var(--line2);border-radius:8px;background:var(--surf2)}
+.tool-content{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px}
+.tool-content .sizes{display:flex;gap:6px}
+#brief{margin:0 0 24px}
+#workspace{display:grid;gap:18px;grid-template-columns:minmax(0,1fr);margin-top:22px;align-items:start}
+#workspace>.selection-head{grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:12px}
+#selection-title{font-size:20px;overflow-wrap:anywhere}
+#selection-meta,#diagram-selection{font-size:13px;color:var(--mut);margin:6px 0}
+#related-items{display:flex;gap:8px;flex-wrap:wrap}
+#workspace #upanel,#workspace #feedback{margin-top:0;min-width:0}
+#workspace #detailbox{position:static}
+/* A pinned screen joins the page's vertical pin stack. The grid must not stop its sticky
+   position at the workspace's bottom before the other pinned panels reach theirs. */
+#workspace:has(>#upanel.pinned){display:contents}
+#workspace .split{grid-template-columns:minmax(0,1fr)}
+#workspace .split>.sizes{grid-column:1/-1}
+#workspace #detail{scroll-margin-top:80px}
+#workspace #steplist{max-height:300px;overflow:auto}
+#workspace:has(#upanel) #steplist{max-height:210px}
+#workspace:has(#upanel) #feedback{padding:16px}
+.selection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-block:8px}
+.response-heading{font:600 13px var(--sans);margin:18px 0 8px;color:var(--ink)}
+.response-extra{margin-top:12px}
+.response-extra>summary{cursor:pointer;min-height:44px;padding:10px 0;color:var(--ink3);font-size:13px}
+.done{z-index:7;gap:14px;padding:12px 8px;margin-top:24px;box-shadow:0 -8px 20px var(--bg)}
+#review-progress{flex:1;font:13px var(--mono);color:var(--ink2)}
+#save-warning{border:1px solid var(--bad);border-left-width:4px;padding:12px;color:var(--ink);background:var(--surf);overflow-wrap:anywhere}
+#return-review{width:min(680px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line2);border-radius:16px;background:var(--surf);color:var(--ink2);padding:24px}
+#return-review::backdrop{background:rgba(0,0,0,.5)}
+#return-review h2{font-size:24px}
+#return-review .summary-counts{display:flex;gap:12px;flex-wrap:wrap;padding:14px 0;border-block:1px solid var(--line);font:13px var(--mono)}
+#return-review li{margin:6px 0;overflow-wrap:anywhere}
+#return-review .summary-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+#return-review .btn{min-height:44px}
+:focus-visible{scroll-margin-block:100px}
+.dg-selected .dg-shape{stroke:var(--ac);stroke-width:3}
+.dg-edge.dg-selected path:not(.dg-hit){stroke:var(--ac);stroke-width:3}
+@media(min-width:1100px){
+  #workspace:has(#upanel){grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
+  #workspace:not(:has(#upanel)) .split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  #workspace:not(:has(#upanel)) .split[data-size="list"]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
+  #workspace:not(:has(#upanel)) .split[data-size="detail"]{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
+  #workspace:has(#upanel):has(.split[data-size="list"]){grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+  #workspace:has(#upanel):has(.split[data-size="detail"]){grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)}
+}
+@media(max-width:699px){.wrap.frame{padding-inline:12px}.done{position:static}.done .panel-tools{flex-basis:100%}#return-review{padding:18px}.panel-title{white-space:normal}.tool-content{padding:6px}.review-start{gap:8px}#workspace #steplist{max-height:240px}}
 </style>
 </head><body>
 <a class="skip" href="#items">Skip to the items</a>
 <div class="wrap frame">
 <header>
+  <p class="review-kicker">Understand · Inspect · Decide · Explain · Return</p>
   <div class="htop min-head">
     <div>
       <h1>Checkout rebuild — acceptance pass</h1>
       <p class="sub">Four flows, before we open it to real payments</p>
     </div>
     <div class="htools">
+      <details class="panel-tools" id="display-tools"><summary>Display &amp; header tools</summary><div class="tool-content">
       <label class="style-pick">Style <select id="style">
         <option value="">Default</option><option value="mac84">Macintosh 1984</option><option value="cyber">Cyberpunk</option>
         <option value="newsletter">Newsletter</option><option value="shyhunter">ShyHunter</option>
@@ -573,23 +627,28 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
       </select></label>
       <button class="btn pin" type="button" aria-pressed="false">Pin</button>
       <button class="btn min" type="button" data-min="header" aria-expanded="true" aria-label="Minimise the header">Minimise</button>
+      </div></details>
     </div>
   </div>
   <div class="intro" id="intro"></div>
   
+  <div class="review-start"><button class="btn pri" type="button" id="start-review">Start review</button><span>4 items to review · Your answers stay in this browser until you download a copy.</span></div>
 </header>
 
 <div id="stage" class="stage">
     <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-head min-head">
-        <span class="panel-title">Diagram</span>
+        <span class="panel-title">How this works</span>
         <button class="btn" id="commentmode" type="button" aria-pressed="false">Comment</button>
         <button class="btn" id="showchanges" type="button" aria-pressed="false" hidden>Show my changes</button>
+        <details class="panel-tools" id="diagram-tools"><summary>Diagram tools</summary><div class="tool-content">
         <button class="btn pin" type="button" aria-pressed="false">Pin</button>
         <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
         <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
+        </div></details>
       </div>
       <div class="panel-body">
+        <p class="hint">Select anything that looks wrong, incomplete or unclear. Selecting is not answering.</p>
         <div id="dgtabs" role="tablist" aria-label="Which diagram"></div>
         <div class="dg-body">
 
@@ -602,16 +661,16 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 </div>
 
     <section id="feedback" aria-labelledby="fb-h">
-      <div class="min-head sec-bar"><h2 id="fb-h">Your feedback</h2><button class="btn min" type="button" data-min="#feedback" aria-expanded="true" aria-label="Minimise your feedback">Minimise</button></div>
+      <div class="min-head sec-bar"><h2 id="fb-h">What should happen</h2><button class="btn min" type="button" data-min="#feedback" aria-expanded="true" aria-label="Minimise your feedback">Minimise</button></div>
       <p id="overview" class="hint" aria-live="polite"></p>
       <div id="split" class="split" data-size="even">
-        <div class="sizes" role="group" aria-label="How the row is shared">
+        <details class="panel-tools sizes"><summary>Layout tools</summary><div class="tool-content" role="group" aria-label="How the row is shared">
           <button class="btn" type="button" data-size="list" aria-pressed="false" aria-label="Give the list more room">◧</button>
           <button class="btn" type="button" data-size="even" aria-pressed="true" aria-label="Share the row evenly">◫</button>
           <button class="btn" type="button" data-size="detail" aria-pressed="false" aria-label="Give the open item more room">◨</button>
-        </div>
+        </div></details>
         <div id="steplist"><div class="min-head sec-bar"><h3>Items</h3><button class="btn min" type="button" data-min="#steplist" aria-expanded="true" aria-label="Minimise the list">Minimise</button></div></div>
-        <div id="detailbox"><div class="min-head sec-bar"><h3>The open item</h3><button class="btn min" type="button" data-min="#detailbox" aria-expanded="true" aria-label="Minimise the open item">Minimise</button></div>
+        <div id="detailbox"><div class="min-head sec-bar"><h3>Inspect &amp; respond</h3><button class="btn min" type="button" data-min="#detailbox" aria-expanded="true" aria-label="Minimise the open item">Minimise</button></div>
         <aside id="detail" aria-label="The item you opened"></aside></div>
       </div>
     </section>
@@ -620,8 +679,10 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <div class="bar" role="search">
   <label class="skip" for="q">Search items</label>
   <input type="search" id="q" placeholder="Search…" autocomplete="off">
+  <details class="panel-tools" id="filters-tools"><summary>Filters</summary><div class="tool-content">
   <div id="filters" role="group" aria-label="Filter items"></div>
 
+  </div></details>
   <output class="prog" id="prog" aria-live="polite"></output>
   <p id="filterinfo" class="filterinfo" aria-live="polite"></p>
 </div>
@@ -641,11 +702,22 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 <main id="items"></main>
 
 <div class="done">
-  <button class="btn pri" id="export" type="button">Export feedback.json</button>
-  <button class="btn" id="exporth" type="button">Export feedback.html</button>
+  <output id="review-progress" aria-live="polite"></output>
+  <button class="btn pri" id="finish" type="button">Finish review</button>
+  <details class="panel-tools" id="review-tools"><summary>Review tools</summary><div class="tool-content">
   <button class="btn" id="reset" type="button">Clear my answers</button>
-  <span class="note" id="footnote">Answers save in this browser as you go. Exporting saves a file; nothing is sent from this page.</span>
+  </div></details>
+  <span class="note" id="footnote">Answers save in this browser as you go. Downloading saves a file; nothing is sent from this page.</span>
 </div>
+<p id="save-warning" role="alert" hidden></p>
+<dialog id="return-review" aria-labelledby="return-heading">
+  <h2 id="return-heading" tabindex="-1">Review summary</h2>
+  <div id="finish-summary"></div>
+  <p>Downloading does not send your feedback. Return the downloaded file through your chosen channel.</p>
+  <p class="note">Return either downloaded file to the agent. JSON can be checked directly; the answered HTML can be read as data and checked with bin/answer.mjs.</p>
+  <div class="summary-actions"><button class="btn pri" id="export" type="button">Download JSON for the agent</button><button class="btn" id="exporth" type="button">Download answered HTML</button><button class="btn" id="continue-review" type="button">Continue reviewing</button></div>
+  <p id="download-status" role="status"></p>
+</dialog>
 <p class="made"><svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M52.67 42.02 A22 22 0 1 1 46.14 17.65"/><path d="M37.18 18.22 L46.91 18.29 L45.15 8.72"/><path d="M21.5 35.50 L28.5 42.50 L42.5 28.00"/></g></svg>Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
 
@@ -1489,6 +1561,118 @@ function flowAsDiagram(review) {
   return { id: 'user-flow', kind: 'flowchart', title: 'The user flow', nodes, edges };
 }
 
+// SPDX-License-Identifier: MIT-0
+// Resolve one explicit review selection without changing the review or choosing a guessed item.
+// Self-contained so the renderer can inline the same function that the unit tests exercise.
+function resolveReviewSelection(review, target) {
+  if (!review || !target || typeof target !== 'object' || Array.isArray(target)) return null;
+  const list = value => Array.isArray(value) ? value : [];
+  const find = (values, id) => {
+    if (typeof id !== 'string' || !id) return null;
+    const matches = list(values).filter(value => value?.id === id);
+    return matches.length === 1 ? matches[0] : null;
+  };
+  const items = list(review.items), screens = list(review.flow?.screens);
+  const result = { target: null, label: null, itemId: null, screenId: null,
+    relatedItemIds: [], diagramId: null, commentTarget: null, layerKey: null, outcomeIndex: null };
+  const setItem = item => {
+    if (item.step && !find(screens, item.step.from)) return false;
+    result.itemId = item.id;
+    result.relatedItemIds = [item.id];
+    result.screenId = item.step?.from ?? null;
+    return true;
+  };
+  const setScreen = screen => {
+    const related = items.filter(item => item?.step?.from === screen.id);
+    if (related.some(item => !find(items, item.id))) return false;
+    result.screenId = screen.id;
+    result.relatedItemIds = related.map(item => item.id);
+    return true;
+  };
+  if (target.kind === 'item') {
+    const item = find(items, target.itemId);
+    if (!item || !setItem(item)) return null;
+    result.target = { kind: 'item', itemId: item.id };
+    result.label = item.title ?? null;
+  } else if (target.kind === 'screen') {
+    const screen = find(screens, target.screenId);
+    if (!screen || !setScreen(screen)) return null;
+    if (result.relatedItemIds.length === 1) result.itemId = result.relatedItemIds[0];
+    result.target = { kind: 'screen', screenId: screen.id };
+    result.label = screen.title ?? null;
+  } else if (target.kind === 'outcome' || target.kind === 'layer') {
+    const item = find(items, target.itemId);
+    if (!item || !setItem(item)) return null;
+    const outcomes = list(item.step?.outcomes);
+    let index = target.outcomeIndex, entry = null, layer = null;
+    if (target.kind === 'layer') {
+      if (typeof target.entryId !== 'string' || !target.entryId) return null;
+      const matches = [];
+      outcomes.forEach((outcome, outcomeIndex) => {
+        for (const key of ['system', 'data']) for (const candidate of list(outcome?.[key]))
+          if (candidate?.id === target.entryId) matches.push({ entry: candidate, layer: key, index: outcomeIndex });
+      });
+      if (matches.length !== 1) return null;
+      ({ index, entry, layer } = matches[0]);
+    }
+    if (!Number.isInteger(index) || index < 0 || index >= outcomes.length) return null;
+    const outcome = outcomes[index], screen = find(screens, outcome?.to);
+    if (!screen) return null;
+    result.screenId = screen.id;
+    result.outcomeIndex = index;
+    if (entry) {
+      result.target = { kind: 'layer', itemId: item.id, entryId: entry.id };
+      result.layerKey = `${item.id}/${entry.id}`;
+      result.label = (layer === 'system' ? entry.name : entry.entity) ?? null;
+    } else {
+      result.target = { kind: 'outcome', itemId: item.id, outcomeIndex: index };
+      result.label = (outcome.label || outcome.effect) ?? null;
+    }
+  } else if (target.kind === 'node' || target.kind === 'edge') {
+    const diagram = find(review.diagrams, target.diagramId);
+    if (!diagram) return null;
+    result.diagramId = diagram.id;
+    if (target.kind === 'node') {
+      const node = find(diagram.nodes, target.nodeId);
+      if (!node) return null;
+      if (node.step !== undefined) {
+        const item = find(items, node.step);
+        if (!item || !setItem(item)) return null;
+      } else if (diagram.id === 'user-flow' && node.id.startsWith('screen:')) {
+        const screen = find(screens, node.id.slice('screen:'.length));
+        if (!screen || !setScreen(screen)) return null;
+      }
+      result.target = { kind: 'node', diagramId: diagram.id, nodeId: node.id };
+      result.label = node.label ?? null;
+      result.commentTarget = { node: node.id };
+    } else {
+      const from = find(diagram.nodes, target.from), to = find(diagram.nodes, target.to);
+      if (!from || !to) return null;
+      const edges = list(diagram.edges);
+      let edge;
+      const on = { from: from.id, to: to.id };
+      if (target.nth !== undefined) {
+        if (!Number.isInteger(target.nth) || target.nth < 0 || target.nth >= edges.length) return null;
+        edge = edges[target.nth];
+        on.nth = target.nth;
+      } else {
+        const matches = edges.filter(candidate => candidate?.from === from.id && candidate?.to === to.id);
+        if (matches.length !== 1) return null;
+        edge = matches[0];
+      }
+      if (!edge || edge.from !== from.id || edge.to !== to.id) return null;
+      result.target = { kind: 'edge', diagramId: diagram.id, ...on };
+      result.commentTarget = { edge: on };
+      if (diagram.kind === 'database') {
+        if (!find(from.columns, edge.fromColumn) || !find(to.columns, edge.toColumn)) return null;
+        result.label = `${from.label}.${edge.fromColumn} (many) → ${to.label}.${edge.toColumn} (one)`;
+      } else result.label = `${from.label} → ${to.label}`;
+      if (edge.label) result.label += ` (${edge.label})`;
+    }
+  } else return null;
+  return result;
+}
+
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
 const LS = 'letmeshowyousomething:' + REVIEW.id + ':234a4b760485' + (SEED ? ':copy:' + SEED.exportedAt : '');
@@ -1499,7 +1683,7 @@ try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store
 // Answers are kept in this browser as you go. When it cannot keep them all (pictures take room), say so:
 // exporting keeps everything, and nothing is lost silently.
 const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); return true; }
-  catch { const f = document.getElementById('footnote'); if (f) f.textContent = 'This browser cannot keep all your answers (pictures take room). Export now so nothing is lost.'; return false; } };
+  catch { const f = document.getElementById('save-warning'); if (f) { f.hidden = false; f.textContent = 'This browser cannot keep all your answers (pictures take room). Your current answers are still here. Finish review and download a copy before leaving.'; } return false; } };
 
 const $ = (s) => document.querySelector(s);
 // #77 — every id an answer can have or is still pointed at by (a removed comment's proposals keep its
@@ -1697,13 +1881,20 @@ function render(){
   const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
   $('#prog').textContent = answered + '/' + REVIEW.items.length + ' answered' + (shown!==REVIEW.items.length ? ' · '+shown+' shown' : '');
   // D046 — a filter never hides silently
-  $('#filterinfo').innerHTML = shown !== REVIEW.items.length ? 'Showing ' + shown + ' of ' + REVIEW.items.length + ' · <button type="button" class="btn" id="showall">Show all</button>' : '';
+  const activeFilters = [];
+  if (filter !== 'all') activeFilters.push($('#filters [data-f="' + CSS.escape(filter) + '"]')?.textContent || filter);
+  if (q) activeFilters.push('Search: ' + q);
+  for (const id of ['#f-journey', '#f-status']) if ($(id)?.value) activeFilters.push($(id).selectedOptions[0].textContent);
+  if ($('#f-problems')?.checked) activeFilters.push('Only where something goes wrong');
+  $('#filterinfo').innerHTML = shown !== REVIEW.items.length || activeFilters.length ? 'Showing ' + shown + ' of ' + REVIEW.items.length + ' · <button type="button" class="btn" id="showall">Show all</button>' + (activeFilters.length ? ' · ' + esc(activeFilters.join(' · ')) : '') : '';
   renderAdded();
   $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
+  $('#review-progress').textContent = answered + ' / ' + REVIEW.items.length + ' answered';
   const open = REVIEW.items.find(s => s.id === selected);
   $('#detail').innerHTML = open ? itemHtml(open, (REVIEW.sections || []).find(s => s.id === open.sectionId), true)
     : REVIEW.flow ? '<p class="hint">Tap a highlighted element on the screen, or pick a step on the left. Its goal, outcomes and your answer open here.</p>'
-    : '<p class="hint">Pick an item on the left. It opens here, with your answer.</p>';
+    : '<p class="hint">Pick an item to inspect it and give your answer.</p>';
+  renderSelection();
 }
 
 // D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
@@ -1721,6 +1912,7 @@ function stepRow(it, cur, sec){
     ${!it.step && (it.summary || it.body) ? `<p class="row-sum">${esc(String(it.summary || it.body).slice(0, 140))}${String(it.summary || it.body).length > 140 ? '…' : ''}</p>` : ''}
     <p class="row-meta">${it.step ? `<span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
       <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span>` : (chosen ? '<span class="w-status">Chosen</span>' : '') + (rec ? '<span class="w-journey">Recommended</span>' : '') + (it.approval ? '<span class="w-status">Approval</span>' : '')}${store.notes[it.id] ? '<span>· note</span>' : ''}
+      ${store.requests[it.id]?.example || store.requests[it.id]?.explain ? '<span>· request outstanding</span>' : ''}
       <span class="row-v">${o ? esc(o.label) : 'Open'}</span></p>
   </fieldset>`;
 }
@@ -1781,7 +1973,7 @@ function examplesHtml(list){
 
 function itemHtml(it, sec, full){
   const cur = store.verdicts[it.id] || 'unset';
-  if (!full && (it.step || !REVIEW.flow)) return stepRow(it, cur, sec);
+  if (!full) return stepRow(it, cur, sec);
   const choosing = sec && sec.mode === 'choose-one';
   const chosen = choosing && store.choices[sec.id] === it.id;
   const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
@@ -1809,6 +2001,7 @@ function itemHtml(it, sec, full){
     ${examplesHtml(it.examples)}
     ${it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''}
     ${it.approval ? approvalHtml(it.approval) : ''}
+    <h3 class="response-heading">Your response · ${esc(it.title)}</h3>
     <div class="verdicts" role="radiogroup" aria-label="${it.approval ? 'Approve or decline' : 'Verdict for'}: ${esc(it.title)}">
       ${opts.map(o=>`<label class="v-${TONE[o.tone]}">
         <input type="radio" name="v-${esc(it.id)}" value="${esc(o.value)}" ${cur===o.value?'checked':''}
@@ -1827,7 +2020,7 @@ function itemHtml(it, sec, full){
 function renderAdded(){
   const box = $('#added'); if (!box) return;
   box.innerHTML = (store.added.length ? '<h3 class="added-h">Your own feedback</h3>' : '') + store.added.map((a,i)=>`<div class="addedrow">
-    <div class="t">${esc(a.title)}${a.body?`<div class="b">${esc(a.body)}</div>`:''}</div>
+    <div class="t"><button class="btn" type="button" data-select-added="${esc(a.id)}">${esc(a.title)}</button>${a.body?`<div class="b">${esc(a.body)}</div>`:''}</div>
     <button class="btn" type="button" data-del="${i}" aria-label="Remove ${esc(a.title)}">Remove</button></div>`).join('');
 }
 
@@ -1886,7 +2079,12 @@ document.addEventListener('click', e => {
   const card = e.target.closest('fieldset.item.row[data-step]');
   if (card && !e.target.closest('input,textarea,label,button')) return openItem(card.dataset.step);
   const d = e.target.closest('[data-del]');
-  if (d){ const [gone] = store.added.splice(+d.dataset.del,1); dropPictures(gone.id); save(); render(); }
+  if (d){
+    const removed = store.added.splice(+d.dataset.del,1)[0];
+    if (selection?.target.kind === 'added' && selection.target.id === removed?.id) { selection = null; selected = null; }
+    if (removed) dropPictures(removed.id);
+    save(); render(); $('#at').focus();
+  }
 });
 const addBtn = $('#addbtn');
 if (addBtn) addBtn.addEventListener('click', () => {
@@ -1899,7 +2097,8 @@ if (addBtn) addBtn.addEventListener('click', () => {
 $('#export').addEventListener('click', () => {
   const out = buildFeedback(REVIEW, store);
   saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
-  $('#footnote').textContent = `Exported ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Nothing was sent: send the file back yourself.`;
+  $('#footnote').textContent = `Downloaded ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Nothing was sent: return the file yourself.`;
+  $('#download-status').textContent = 'Downloaded JSON. Return this file to the agent; nothing was sent automatically.';
 });
 const saveAs = (text, type, name) => {
   const a = document.createElement('a');
@@ -1912,20 +2111,102 @@ $('#exporth').addEventListener('click', () => {
   const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
   $('#footnote').textContent = 'Exported the whole page with your answers. Nothing was sent: send this file back yourself; the agent can read it or the .json.';
+  $('#download-status').textContent = 'Downloaded answered HTML. Return this file to the agent for checked import; nothing was sent automatically.';
+});
+// Finish is a view of the existing contract, not a new definition of answered or approved.
+function finishSummary(){
+  const out = buildFeedback(REVIEW, store);
+  const counts = OPTS.map(o => ({ ...o, approval: false })).concat(APPROVAL_OPTS.map(o => ({ ...o, approval: true }))).map(o => {
+    const count = out.responses.filter(r => r.verdict === o.value && !!r.approval === o.approval).length;
+    return count ? '<span>' + count + ' ' + esc(o.label) + '</span>' : '';
+  }).join('');
+  const targets = out.responses.map(r => ({ id: r.itemId, title: r.title, kind: 'item' }))
+    .concat((out.addedItems || []).map(a => ({ id: a.id, title: a.title, kind: 'added' })))
+    .concat((out.layerVerdicts || []).map(l => ({ id: l.id, title: l.entry, kind: 'layer' })));
+  const link = (id, text) => {
+    const matches = targets.filter(t => t.id === id);
+    if (matches.length !== 1) return esc(text || id) + ' — target is ambiguous or unavailable; preserve the file and ask for clarification.';
+    const t = matches[0];
+    return '<button class="btn" type="button" data-summary-target="' + esc(id) + '" data-summary-kind="' + t.kind + '">' + esc(text || t.title) + '</button>';
+  };
+  const choices = (out.choices || []).map(c => '<li>' + esc(c.sectionLabel) + ': ' + esc(c.title || 'No option chosen') + '</li>').join('');
+  const gaps = out.gaps.map(id => '<li>' + link(id) + '</li>').join('');
+  const requests = (out.requests || []).map(r => '<li>' + link(r.itemId, (r.kind === 'example' ? 'Show an example: ' : 'Explain: ') + r.title) + '</li>').join('');
+  const partial = out.summary.unset || (out.choices || []).some(c => !c.itemId);
+  $('#finish-summary').innerHTML = '<p>' + (partial ? 'Partial review — unanswered items and choices are kept, never treated as agreement.' : 'All items have an answer. Answers are not permission to act.') + '</p>'
+    + '<div class="summary-counts"><span>' + out.summary.answered + ' / ' + out.summary.total + ' answered</span><span>' + out.summary.unset + ' unanswered</span>' + counts + '</div>'
+    + '<p>' + out.gaps.length + ' gaps · ' + (out.requests || []).length + ' requests · ' + out.summary.added + ' added items · ' + (out.comments || []).length + ' comments · ' + (out.pictures || []).length + ' pictures · ' + (out.proposals || []).length + ' proposed changes</p>'
+    + (choices ? '<h3>Choices</h3><ul>' + choices + '</ul><p>Unrated alternatives in a chosen section stay unanswered, but are not gaps.</p>' : '')
+    + (gaps ? '<h3>Needs attention</h3><ul>' + gaps + '</ul>' : '<p>No derived gaps. Check any outstanding requests before continuing.</p>')
+    + (requests ? '<h3>Requests still needing a response</h3><ul>' + requests + '</ul>' : '')
+    + ((out.proposals || []).length ? '<p>Proposed changes are suggestions, not confirmation that anything has been implemented.</p>' : '');
+}
+let summaryDestination = false;
+$('#finish').addEventListener('click', () => { summaryDestination = false; finishSummary(); $('#download-status').textContent = ''; $('#return-review').showModal(); $('#return-heading').focus(); });
+$('#continue-review').addEventListener('click', () => $('#return-review').close());
+$('#return-review').addEventListener('close', () => { if (!summaryDestination) $('#finish').focus({ preventScroll: true }); });
+$('#finish-summary').addEventListener('click', e => {
+  const b = e.target.closest('[data-summary-target]'); if (!b) return;
+  summaryDestination = true;
+  $('#return-review').close();
+  if (b.dataset.summaryKind === 'item') openItem(b.dataset.summaryTarget);
+  else if (b.dataset.summaryKind === 'layer') {
+    const [itemId, entryId] = b.dataset.summaryTarget.split('/');
+    openItem(itemId);
+    focusResponse(itemId + '/' + entryId);
+  } else { selectTarget({ kind: 'added', id: b.dataset.summaryTarget }); revealRegion($('#detail')); $('#selection-title').focus(); }
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
+  if (selection?.target.kind === 'added') { selection = null; selected = null; }
   store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] }; save(); render();
+  if ($('#dpanel')) {
+    showChanges = false; $('#showchanges').setAttribute('aria-pressed', 'false'); $('#showchanges').textContent = 'Show my changes';
+    renderComments(); showChangesBtn(); drawStageChart();
+  }
 });
 // ── flow player (D002: outcomes are picked, never computed · D003: position lives in memory only) ──
 const FLOW = REVIEW.flow || null;
 let at = FLOW ? FLOW.start : null, pending = null, last = null;
-let selected = null;   // the one step marked across every view; memory only (D003)
-// #44 — a list review opens on its first item; a flow waits for the first tap on the screen.
-if (!FLOW) selected = (REVIEW.items[0] || {}).id || null;
+const selectionReview = { ...REVIEW, diagrams: (FLOW ? [flowAsDiagram(REVIEW)] : []).concat(REVIEW.diagrams || []) };
+let selection = !FLOW && REVIEW.items.length ? resolveReviewSelection(selectionReview, { kind: 'item', itemId: REVIEW.items[0].id }) : null;
+let selected = selection?.itemId || null; // derived compatibility value for drawing; never saved
+function selectTarget(target, keepDetail = false){
+  const added = target.kind === 'added' && store.added.filter(a => a.id === target.id);
+  const next = added ? (added.length === 1 ? { target: { kind: 'added', id: target.id }, label: added[0].title, itemId: null, screenId: null, relatedItemIds: [] } : null)
+    : resolveReviewSelection(selectionReview, target);
+  if (!next) return false;
+  selection = next; selected = next.itemId;
+  at = next.screenId;
+  const owner = REVIEW.items.find(i => i.id === selected);
+  pending = owner?.step && next.outcomeIndex == null ? owner : null;
+  last = owner?.step && next.outcomeIndex != null ? { step: owner, outcome: owner.step.outcomes[next.outcomeIndex] } : null;
+  if (keepDetail) { if (FLOW) drawPlayer(); else if ($('#dpanel')) drawStageChart(); renderSelection(); }
+  else if (FLOW) drawAll();
+  else { render(); if ($('#dpanel')) drawStageChart(); }
+  if ($('#announce')) $('#announce').textContent = 'Selected: ' + next.label;
+  return true;
+}
+function renderSelection(){
+  if (!$('#selection-title')) return;
+  const it = REVIEW.items.find(i => i.id === selected);
+  $('#selection-title').textContent = 'Selected: ' + (selection?.label || it?.title || 'choose something to inspect');
+  $('#selection-meta').textContent = (selection?.layerKey ? 'Layer response: ' + selection.label + ' · Within: ' + it.title
+    : it ? 'Your answer applies to: ' + it.title : selection?.target.kind === 'added' ? 'Your added feedback; not a verdict on another item.'
+    : selection?.screenId ? 'Choose a related behavior below. This screen has no separate verdict.' : 'Selecting something does not record an answer.')
+    + (it && !visible(it) ? ' · Selected item is outside the current filters.' : '');
+  $('#related-items').innerHTML = !selected ? (selection?.relatedItemIds || []).map(id => '<button class="btn" type="button" data-open="' + esc(id) + '">' + esc(REVIEW.items.find(i => i.id === id)?.title) + '</button>').join('') : '';
+  $('#selection-actions').innerHTML = (selection?.commentTarget ? '<button class="btn" id="comment-selected" type="button">Comment / propose a change</button>' : '')
+    + (it ? '<button class="btn" id="inspect-response" type="button">Go to response</button>' : '');
+  if (selection?.target.kind === 'added') {
+    const a = store.added.find(x => x.id === selection.target.id);
+    $('#detail').innerHTML = '<h3>' + esc(a?.title) + '</h3><p>' + esc(a?.body) + '</p>' + (a?.note ? '<p>' + esc(a.note) + '</p>' : '');
+  }
+}
 function openItem(id){
-  if (FLOW) selectStep(id);
-  else { selected = id; render(); if ($('#dpanel')) drawStageChart(); document.querySelector('#detail input[type=radio]')?.focus({ preventScroll: true }); }
+  if (!selectTarget({ kind: 'item', itemId: id })) return;
+  revealRegion($('#detail'));
+  $('#detail input[type=radio]')?.focus({ preventScroll: true });
   // Stacked (under 1100 px) the open item sits below the whole list: bring it into view. Side by side
   // it is already beside the row, and nothing moves (D079).
   if (matchMedia('(max-width:1099px)').matches) $('#detail').scrollIntoView({ block: 'start' });
@@ -1953,10 +2234,7 @@ const partSteps = (partId) => new Set(!partId ? [] : STEPS.filter(s => {
 }).map(s => s.id));
 function drawAll(){ drawTabs(); drawChips(); drawPlayer(); drawAllScreens(); render(); }
 function selectStep(id){
-  const st = STEPS.find(s => s.id === id); if (!st) return;
-  selected = id; at = st.step.from; pending = st; last = null;
-  drawAll();
-  $('#announce').textContent = 'Selected: ' + st.title + ', on ' + screenTitle(at);
+  selectTarget({ kind: 'item', itemId: id });
 }
 
 // D057 — one diagram panel with tabs, the focus tab first (D059), and an empty tab that says what it is for (D062).
@@ -1993,8 +2271,26 @@ function drawStageChart(){
   // Sub-processes belong to a flow: a chart with no steps and no parts (a system diagram) hides them.
   if ($('#subproc')) $('#subproc').hidden = !(d.nodes || []).some(n => n.step !== undefined || n.part !== undefined);
   const mine = (store.proposals || []).filter(p => p.diagram === chartTab);
-  const shown = showChanges && mine.length ? applyProposals(d, mine) : { diagram: d, added: [] };
-  box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: commenting, originalEdges: d.edges || [] });
+  // This index belongs only to the drawing copy. Proposal preview may remove/relabel arrows,
+  // but a comment must still name the original arrow, never its new position in the preview.
+  const drawing = { ...d, edges: (d.edges || []).map((edge, index) => ({ ...edge, reviewEdgeIndex: index })) };
+  const shown = showChanges && mine.length ? applyProposals(drawing, mine) : { diagram: drawing, added: [] };
+  box.innerHTML = drawDiagram(shown.diagram, { selected, here: 'screen:' + at, part: partHighlight, partSteps: partSteps(partHighlight), commentable: true, originalEdges: d.edges || [] });
+  const nodes = new Set(shown.diagram.nodes.map(n => n.id));
+  const drawnEdges = shown.diagram.edges.filter(e => nodes.has(e.from) && nodes.has(e.to) && (['sequence', 'database'].includes(d.kind) || e.kind !== 'association'));
+  box.querySelectorAll('.dg-edge').forEach((el, index) => {
+    const edge = drawnEdges[index], nth = edge?.reviewEdgeIndex;
+    if (!Number.isInteger(nth)) { el.dataset.previewOnly = 'true'; el.removeAttribute('tabindex'); el.removeAttribute('role'); return; }
+    if (['sequence', 'database'].includes(d.kind) || d.edges.filter(e => e.from === edge.from && e.to === edge.to).length > 1) el.dataset.nth = String(nth);
+  });
+  const target = selection?.target;
+  let represented = [];
+  if (target?.diagramId === chartTab && target.kind === 'node') represented = [...box.querySelectorAll('[data-node="' + CSS.escape(target.nodeId) + '"]')];
+  else if (target?.diagramId === chartTab && target.kind === 'edge') represented = [...box.querySelectorAll('.dg-edge')].filter(e => e.dataset.from === target.from && e.dataset.to === target.to && (target.nth == null || +e.dataset.nth === target.nth));
+  else if (selected) represented = [...box.querySelectorAll('[data-step="' + CSS.escape(selected) + '"]')];
+  else if (selection?.screenId && chartTab === 'user-flow') represented = [...box.querySelectorAll('[data-node="' + CSS.escape('screen:' + selection.screenId) + '"]')];
+  represented.forEach(el => { el.classList.add('dg-selected'); el.setAttribute('aria-current', 'true'); });
+  if ($('#diagram-selection')) $('#diagram-selection').textContent = selection ? selection.label + (represented.length ? ' · selected here' : ' · not represented in this diagram') : '';
   if (showChanges) for (const id of shown.added.concat(mine.map(p => p.node).filter(Boolean)))
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-proposed');
   markComments();
@@ -2067,16 +2363,15 @@ function drawLinks(){
 function drawPlayer(){
   const s = FLOW.screens.find(x => x.id === at);
   const targets = new Set(stepsFrom(at).map(i => i.step.on));
-  $('#screen').innerHTML = `<h2 id="screen-title" class="screen-title" tabindex="-1">${esc(s.title)}</h2>`
+  $('#screen').innerHTML = s ? `<h2 id="screen-title" class="screen-title" tabindex="-1">${esc(s.title)}</h2>`
     + (s.blocks || []).map(b => drawBlock(b, { targets })).join('')
-    + (s.end ? '<p class="end">An end of this flow. Restart to try another path.</p>' : '');
+    + (s.end ? '<p class="end">An end of this flow. Restart to try another path.</p>' : '') : '<p class="hint">No screen is linked to this selection. Choose a behavior, view all screens, or restart.</p>';
   drawStageChart();
   $('#upanel').classList.toggle('brief-here', (((REVIEW.brief || {}).highlights || {}).screens || []).includes(at));
 }
 
 function go(st, o){
-  pending = null; last = { step: st, outcome: o }; at = o.to; selected = st.id;
-  drawAll();
+  if (!selectTarget({ kind: 'outcome', itemId: st.id, outcomeIndex: st.step.outcomes.indexOf(o) })) return;
   $('#announce').textContent = 'Now on: ' + FLOW.screens.find(x => x.id === at).title;
   // No scroll (D079): a pick made down in the feedback must not throw the reviewer back up the page.
   $('#screen-title').focus({ preventScroll: true });
@@ -2085,6 +2380,61 @@ function go(st, o){
 // D074, #44 — every page: filters, then the list | the open item, then your own feedback, full width.
 $('#split').before($('.bar')); $('#steplist').append($('#items'));
 if ($('.add')) $('#feedback').append($('.add'));
+// The brief precedes inspection, and the selected screen and behavior form one workspace.
+if ($('#brief')) $('header').after($('#brief'));
+const workspace = document.createElement('section'); workspace.id = 'workspace'; workspace.setAttribute('aria-labelledby', 'selection-title');
+workspace.innerHTML = '<div class="selection-head"><p class="review-kicker">Inspect together</p><h2 id="selection-title" tabindex="-1">Choose something to inspect</h2><p id="selection-meta"></p><div id="related-items"></div><div id="selection-actions" class="selection-actions"></div></div>';
+$('#feedback').before(workspace);
+if ($('#upanel')) workspace.append($('#upanel'));
+workspace.append($('#feedback'));
+$('#related-items').addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) openItem(b.dataset.open); });
+$('#selection-actions').addEventListener('click', e => {
+  if (e.target.closest('#comment-selected') && selection?.commentTarget) {
+    chartTab = selection.diagramId; drawTabs(); drawStageChart(); revealRegion($('#dpanel')); addComment(selection.commentTarget);
+  }
+  if (e.target.closest('#inspect-response')) {
+    focusResponse(selection?.layerKey);
+  }
+});
+document.addEventListener('click', e => {
+  const added = e.target.closest('[data-select-added]');
+  if (added) { selectTarget({ kind: 'added', id: added.dataset.selectAdded }); revealRegion($('#detail')); $('#selection-title').focus(); }
+  const judge = e.target.closest('details.judge');
+  const key = judge?.querySelector('[data-lv]')?.dataset.lv;
+  if (key) { const [itemId, entryId] = key.split('/'); selectTarget({ kind: 'layer', itemId, entryId }, true); }
+});
+document.addEventListener('focusin', e => {
+  const key = e.target.dataset.lv || e.target.dataset.lvnote;
+  if (key && selection?.layerKey !== key) { const [itemId, entryId] = key.split('/'); selectTarget({ kind: 'layer', itemId, entryId }, true); }
+});
+if ($('#dpanel')) { const status = document.createElement('p'); status.id = 'diagram-selection'; status.setAttribute('aria-live', 'polite'); $('#dgtabs').after(status); }
+$('#start-review').addEventListener('click', () => {
+  for (const id of ['#dpanel', '#feedback', '#steplist', '#detailbox']) mins = mins.filter(x => x !== id);
+  applyMins();
+  const region = $('#dpanel') || $('#workspace');
+  revealRegion(region);
+  region.setAttribute('tabindex', '-1'); region.focus(); region.scrollIntoView({ block: 'start' });
+});
+function revealRegion(region){
+  for (let el = region; el; el = el.parentElement) {
+    if (el.classList.contains('sec-body')) { el.hidden = false; el.parentElement.querySelector('.sec-toggle')?.setAttribute('aria-expanded', 'true'); }
+    if (el.classList.contains('minimised')) { mins = mins.filter(sel => $(sel) !== el); applyMins(); }
+  }
+}
+function focusResponse(layerKey){
+  revealRegion($('#detail'));
+  const entry = layerKey && $('#detail input[data-lv="' + CSS.escape(layerKey) + '"]');
+  if (entry) {
+    const layer = entry.closest('.layer');
+    const kind = layer?.classList.contains('layer-system') ? 'system' : layer?.classList.contains('layer-data') ? 'data' : null;
+    if (kind) {
+      layers().add(kind); showLayers();
+      document.querySelectorAll('input[data-layer="' + kind + '"]').forEach(x => { x.checked = true; });
+    }
+    entry.closest('details.judge').open = true;
+    entry.focus();
+  } else $('#detail input[type=radio]')?.focus();
+}
 // The list and the open item share the row in three steps, remembered in this browser only.
 let splitSize = 'even';
 try { splitSize = localStorage.getItem(LS + ':split') || 'even'; } catch {}
@@ -2202,17 +2552,19 @@ function addComment(on){
 if ($('#dpanel')) {
   // Clicking a box in the chart opens that step or item.
   const chartPick = (target) => {
+    const n = target.closest('#flowbeside [data-node]'), edgeEl = target.closest('#flowbeside .dg-edge');
+    if (!n && !edgeEl) return false;
+    if (edgeEl?.dataset.previewOnly) return false;
+    const edge = edgeEl && { from: edgeEl.dataset.from, to: edgeEl.dataset.to, ...(edgeEl.dataset.nth !== undefined ? { nth: +edgeEl.dataset.nth } : {}) };
+    const identity = n ? { kind: 'node', diagramId: chartTab, nodeId: n.dataset.node } : { kind: 'edge', diagramId: chartTab, ...edge };
+    if (!selectTarget(identity)) return false;
     if (commenting) {
-      const n = target.closest('#flowbeside [data-node]'), e = target.closest('#flowbeside .dg-edge');
-      if (!n && !e) return false;
       // The same pair can be joined more than once (a sequence): keep which arrow was picked.
-      const edge = e && (e.dataset.nth !== undefined ? { from: e.dataset.from, to: e.dataset.to, nth: +e.dataset.nth } : { from: e.dataset.from, to: e.dataset.to });
       addComment(n ? { node: n.dataset.node } : { edge });
       return true;
     }
-    const node = target.closest('#flowbeside [data-step]'); if (!node) return false;
-    if (FLOW) selectStep(node.dataset.step); else openItem(node.dataset.step);
-    $('#flowbeside [data-step="' + CSS.escape(node.dataset.step) + '"]')?.focus({ preventScroll: true });
+    const selector = n ? '[data-node="' + CSS.escape(n.dataset.node) + '"]' : '.dg-edge[data-from="' + CSS.escape(edge.from) + '"][data-to="' + CSS.escape(edge.to) + '"]' + (edge.nth == null ? '' : '[data-nth="' + edge.nth + '"]');
+    $('#flowbeside ' + selector)?.focus({ preventScroll: true });
     return true;
   };
   $('#flowbeside').addEventListener('click', e => chartPick(e.target));
@@ -2265,7 +2617,7 @@ if ($('#dpanel')) {
   });
 
   // D073 — either panel opens full screen, and Esc or the same button brings it back.
-  $('#stage').addEventListener('click', e => {
+  document.addEventListener('click', e => {
     const b = e.target.closest('.panel-full'); if (!b) return;
     const panel = b.closest('.panel'); setFull(panel, !panel.classList.contains('full')); b.focus();
   });
@@ -2281,16 +2633,17 @@ if (FLOW) {
   showLayers();
   $('#screen').addEventListener('click', e => {
     const t = e.target.closest('[data-target]'); if (!t) return;
-    const st = stepsFrom(at).find(i => i.step.on === t.dataset.target); if (!st) return;
-    selected = st.id;
+    const matches = stepsFrom(at).filter(i => i.step.on === t.dataset.target);
+    if (matches.length !== 1) { selectTarget({ kind: 'screen', screenId: at }); $('#selection-title').focus(); return; }
+    const st = matches[0];
     if (st.step.outcomes.length === 1) return go(st, st.step.outcomes[0]);
     // The outcomes are picked in the feedback panel, so a full-screen screen steps aside for it.
     if ($('#upanel.full')) setFull($('#upanel'), false);
-    pending = st; last = null; drawAll();
+    selectTarget({ kind: 'item', itemId: st.id });
     const first = document.querySelector('#detail [data-outcome]'); if (first) first.focus();
   });
   $('#restart').addEventListener('click', () => {
-    at = FLOW.start; pending = null; last = null; selected = null; drawAll();
+    selectTarget({ kind: 'screen', screenId: FLOW.start });
     $('#announce').textContent = 'Now on: ' + FLOW.screens.find(x => x.id === at).title;
     $('#screen-title').focus();
   });
@@ -2333,18 +2686,20 @@ if (FLOW) {
     drawLinks();
   });
   // Pointing at a screen keeps its own connections bright and fades the rest.
-  $('#allscreens').addEventListener('mouseover', e => {
-    const m = e.target.closest('.mini'), svg = $('#allscreens .links'); if (!svg) return;
+  const emphasizeScreen = target => {
+    const m = target?.closest('.mini'), svg = $('#allscreens .links'); if (!svg) return;
     svg.classList.toggle('focus', !!m);
     svg.querySelectorAll('g').forEach(g => g.classList.toggle('hot', !!m && (g.dataset.from === m.dataset.screen || g.dataset.to === m.dataset.screen)));
-  });
-  $('#allscreens').addEventListener('mouseleave', () => $('#allscreens .links')?.classList.remove('focus'));
+  };
+  $('#allscreens').addEventListener('mouseover', e => emphasizeScreen(e.target));
+  $('#allscreens').addEventListener('focusin', e => emphasizeScreen(e.target));
+  $('#allscreens').addEventListener('focusout', e => emphasizeScreen(e.relatedTarget));
+  $('#allscreens').addEventListener('mouseleave', () => emphasizeScreen(document.activeElement));
   $('#allscreens').addEventListener('click', e => {
     const b = e.target.closest('[data-screen]'); if (!b) return;
-    at = b.dataset.screen; pending = null; last = null;
     screensView = 'one';
     $('#upanel .seg').querySelectorAll('[data-screens]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.screens === 'one')));
-    drawAll();
+    selectTarget({ kind: 'screen', screenId: b.dataset.screen });
     $('#announce').textContent = 'Now on: ' + screenTitle(at);
     $('#screen-title').focus();
   });
@@ -2358,7 +2713,7 @@ if (FLOW) {
 
   // D055 — the reviewer arranges the page: sections collapse and move, remembered in this browser only.
   const SECTIONS = [['player', 'Walk through it']];
-  const pieces = { player: ['#stage', '#brief', '#feedback', '.player-bar'] };
+  const pieces = { player: ['#stage', '#workspace', '.player-bar'] };
   let arrangement = { order: SECTIONS.map(s => s[0]), collapsed: {} };
   try { arrangement = Object.assign(arrangement, JSON.parse(localStorage.getItem(LS + ':sections') || '{}')); } catch {}
   const saveArrangement = () => { try { localStorage.setItem(LS + ':sections', JSON.stringify(arrangement)); } catch {} };
