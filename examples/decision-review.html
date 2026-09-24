@@ -1984,8 +1984,11 @@ function renderTour(){
 
 
 // D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
-const ASKS = [['example', 'Show me an example'], ['explain', 'Explain this']];
-const asksRow = (id) => `<div class="asks-row">${ASKS.map(([kind, label]) => `<label class="ask"><input type="checkbox"
+// #105 — a request is read when the file reaches the agent, and answered in its next round: the tip says so,
+// on hover, and to a screen reader as the checkbox's description.
+const ASKS = [['example', 'Show me an example', 'The agent sees this once you send the file back, and shows a real example in its next round.'],
+  ['explain', 'Explain this', 'The agent sees this once you send the file back, and explains it again, differently, in its next round.']];
+const asksRow = (id) => `<div class="asks-row">${ASKS.map(([kind, label, tip]) => `<label class="ask" title="${tip}"><input type="checkbox" title="${tip}"
   data-ask="${esc(kind)}" data-for="${esc(id)}"${(store.requests[id] || {})[kind] ? ' checked' : ''}> ${label}</label>`).join('')}</div>`;
 
 // D098 — one tap, every layer answers: under each outcome, what runs (system) and what changes (data),

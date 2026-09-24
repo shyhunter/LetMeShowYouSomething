@@ -82,6 +82,9 @@ test('workspace: a positive answer does not hide an outstanding request', async 
   await page.locator('#detail input[data-item][value="works"]').check();
   await page.locator('#detail input[data-ask="explain"]').check();
   await expect(page.locator('#detail input[data-ask="explain"]')).toBeChecked();
+  // #105 — the tip says when a request is read: once the file reaches the agent.
+  await expect(page.locator('#detail label.ask:has([data-ask="explain"])')).toHaveAttribute('title', /once you send the file back/);
+  await expect(page.locator('#detail input[data-ask="example"]')).toHaveAccessibleDescription(/next round/);
   await expect(page.locator('#finish')).toBeVisible({ timeout: 2000 });
   await page.locator('#finish').click();
   await expect(page.locator('#finish-summary')).toContainText('1 request');
