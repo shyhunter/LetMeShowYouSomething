@@ -1,11 +1,11 @@
 ---
 name: letmeshowyousomething
-description: Use when a human's judgement is needed on several things at once (options to choose from, a plan to approve, test results, drafts, an agent's own doubts), when the person deciding has no AI account or works offline, or when a feedback.json from such a review comes back to be read and acted on.
+description: Use when a human's judgement is needed on several things at once (options to choose from, a plan to approve, test results, drafts, an agent's own doubts), when the person deciding has no AI account or works offline, or when the answered page or feedback.json from such a review comes back to be read and acted on.
 ---
 
 # Let me show you something
 
-The agent writes a `review.json`. It becomes one offline HTML page. The human judges each item and exports a `feedback.json`. The agent checks that file and acts on it. The format is in `PROTOCOL.md`; the checker is what makes the answers trustworthy.
+The agent writes a `review.json`. It becomes one offline HTML page, the only file the human gets. The human judges each item and sends the answered page (or a `feedback.json`) back. The agent checks it and acts on it. The format is in `PROTOCOL.md`; the checker is what makes the answers trustworthy.
 
 `<skill>` below is this skill's folder.
 
@@ -38,6 +38,11 @@ node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
 ```
 
 ## 2. Hand it over
+
+**Hand over one file: the HTML page.** `review.json` is your working file: write it, check it, render it, and keep it, because reading the answers needs it (step 3). Do not give the person the JSON, a Markdown copy or any second file unless they asked for that format.
+
+- **They asked for another format** (Markdown for a wiki, the JSON itself): give that, and say in one line what it loses: no verdict buttons, and no answers that come back checked. Offer the page as well. Never present an unchecked format as the review.
+- **Rendering fails or the page cannot be shared from here**: say so, and ask how to go on. Never hand-write an HTML page yourself, and never paste the raw JSON as the review.
 
 Tell the user: open the HTML file (or send it to the reviewer), give each item a verdict and a note, press **Comment** on the diagram to comment on any box or arrow and propose a change to it (rename, remove, add a box or an arrow), **Add a picture** to show what they saw, ask back with **Show me an example** or **Explain this** where something is unclear, add anything missing, press **Export feedback.html** (the whole page with their answers, easy to forward) or **Export feedback.json**, and send that one file back. Exporting sends nothing by itself. Then stop and wait.
 
