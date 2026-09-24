@@ -58,11 +58,13 @@ check.
 | `schemas/` | `review.v1` and `feedback.v1`, served at the address their `$id` names |
 | `bin/check.mjs` | the checker: `review`, `feedback`, `pair`, `history`, `followup` |
 | `bin/render.mjs` | one review file in, one offline HTML page out |
-| `bin/answer.mjs` | answers given in chat, written as a checked feedback file |
+| `bin/answer.mjs` | an answered page (read as data) or answers given in chat, written as a checked feedback file |
 | `bin/pictures.mjs` | the pictures a reviewer attached, written out as files to look at |
 | `lib/` | the pieces the page and the checker share: the builder, the layouts, the drawings |
 | `examples/` | the worked examples, and the pages generated from them |
 | `test/`, `checks/browser/` | the unit tests, the cross-browser tests, the real-Chrome checks |
+| `conformance/` | the same task for any agent, checked the same way, and the runs recorded so far |
+| `docs/ARCHITECTURE.md` | which file owns which part, what ships and what is only proposed |
 
 ## Asking for a human's judgement
 

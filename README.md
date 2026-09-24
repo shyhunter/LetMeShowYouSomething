@@ -5,7 +5,7 @@ answers go back to the agent as a file it checks before it acts.
 
 ```
 agent ──► review.json ──► render ──► one HTML page ──► a person judges each item ──► Export
-agent ◄── check (PASS) ◄── feedback.json ◄──────────────────────────────────────────┘
+agent ◄── check (PASS) ◄── feedback.json ◄── the answered page, read as data ◄──────┘
 ```
 
 It is an agent skill: one folder with instructions, a renderer and a checker. The format in
@@ -77,8 +77,9 @@ node bin/check.mjs review examples/review.example.json
 # 2. It becomes one page
 node bin/render.mjs examples/review.example.json review.html
 
-# 3. The reviewer opens review.html, answers, and presses "Export feedback.json".
-#    The agent checks what came back before acting on it
+# 3. The reviewer opens review.html, answers, and sends back the page (Export feedback.html)
+#    or its feedback.json. The agent checks what came back before acting on it:
+node bin/answer.mjs examples/review.example.json answered.html feedback.json   # a returned page
 node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
 ```
 
@@ -110,6 +111,9 @@ the address their `$id` names, for example
 [`schema/review.v1.json`](https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json). The
 page in this repo is one way to show a review. A terminal prompt, a native app or a printed sheet
 would be just as valid, as long as what comes back passes the checker.
+
+Which file owns which part (the contract, the checks, the page, the agent's steps, the plans) is in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Development
 
