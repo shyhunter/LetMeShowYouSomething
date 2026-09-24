@@ -2,6 +2,10 @@
 
 **v1 · draft**
 
+This file is the authority on what a review and a feedback file may say and what each field means.
+Where another file (SKILL.md, the page, a comment) disagrees, this one wins and the other has a bug.
+Which file owns everything else: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
 Two files. An agent shows a human a set of things to judge (`review`), and the human's judgement
 comes back as data any agent can act on (`feedback`).
 

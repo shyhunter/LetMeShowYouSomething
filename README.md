@@ -10,7 +10,8 @@ agent ◄── check (PASS) ◄── feedback.json ◄── the answered page
 
 It is an agent skill: one folder with instructions, a renderer and a checker. The format in
 between (`review.v1` and `feedback.v1`) is written down as a [protocol](PROTOCOL.md), so any agent,
-script or tool can write the question or read the answer.
+script or tool can write the question or read the answer. Which file owns which part, and what ships
+today versus what is only proposed: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Why
 
@@ -111,9 +112,6 @@ the address their `$id` names, for example
 [`schema/review.v1.json`](https://shyhunter.github.io/LetMeShowYouSomething/schema/review.v1.json). The
 page in this repo is one way to show a review. A terminal prompt, a native app or a printed sheet
 would be just as valid, as long as what comes back passes the checker.
-
-Which file owns which part (the contract, the checks, the page, the agent's steps, the plans) is in
-[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Development
 

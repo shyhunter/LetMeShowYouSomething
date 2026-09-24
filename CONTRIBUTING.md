@@ -1,7 +1,8 @@
 # Working on this repository
 
 The skill is plain files and Node. There is nothing to install to use it, and one test-only
-dependency to check it. This page is what you need before your first change.
+dependency to check it. This page is what you need before your first change. Which file owns which
+part, and what ships versus what is only proposed, is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
 ## Run everything
 
