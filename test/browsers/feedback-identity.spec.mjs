@@ -23,6 +23,7 @@ test('#77: a carried added-1 is never reused, and a removed item takes its pictu
   const round2 = { ...base, id: 'identity-browser-2', items: [...base.items, { id: 'added-1', title: 'Earlier concern', sectionId: base.items[0].sectionId }] };
   const { dir, rp, hp } = rendered(round2);
   await page.goto(pathToFileURL(hp).href);
+  await page.locator('#start-review').click();
   await page.locator('#mode-overview').click();                       // #100 — "Anything else?" closes the Overview
   await addItem(page, 'New unrelated concern');
   await addItem(page, 'Removed later');
@@ -42,6 +43,7 @@ test('#77: a carried added-1 is never reused, and a removed item takes its pictu
 test('#77: a new comment never takes the id a removed comment\'s proposed change still points at', async ({ page }) => {
   const { hp } = rendered({ ...base, id: 'identity-browser-comments' });
   await page.goto(pathToFileURL(hp).href);
+  await page.locator('#start-review').click();
   await page.locator('#commentmode').click();
   await page.locator('#dpanel [data-node="guest"]').first().focus(); await page.keyboard.press('Enter');
   await page.locator('textarea[data-comment="comment-1"]').fill('Rename this.');

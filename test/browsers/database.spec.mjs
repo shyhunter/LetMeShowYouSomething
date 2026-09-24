@@ -17,6 +17,7 @@ test.afterEach(async ({}, info) => { expect(info.faults).toEqual([]); });
 
 test('database: column links, keyboard selection, comments and proposals survive export', async ({ page }) => {
   await page.goto(pathToFileURL(join(root, 'examples/database-booking.html')).href);
+  await page.locator('#start-review').click();
   const chart = page.locator('.dg-database');
   await expect(chart.locator('.dg-k-table')).toHaveCount(2);
   for (const label of ['Member id', 'text identifier', 'Key', 'Many', 'One', 'Example data', 'booking-example-1']) await expect(chart).toContainText(label);
@@ -63,6 +64,7 @@ test('database: hostile labels and example cells remain inert, including the exp
   const rendered = spawnSync(process.execPath, [join(root, 'bin/render.mjs'), rp, hp], { encoding: 'utf8' });
   expect(rendered.status, rendered.stderr).toBe(0);
   await page.goto(pathToFileURL(hp).href);
+  await page.locator('#start-review').click();
   await expect(page.locator('.dg-database')).toBeVisible();
   expect(await page.evaluate(() => window.databaseAttack)).toBeUndefined();
   await expect(page.locator('.dg-database img, .dg-database script')).toHaveCount(0);
@@ -70,6 +72,7 @@ test('database: hostile labels and example cells remain inert, including the exp
   const download = page.waitForEvent('download'); await page.locator('#exporth').click();
   const exported = join(dir, 'answered.html'); await (await download).saveAs(exported);
   await page.goto(pathToFileURL(exported).href);
+  await page.locator('#start-review').click();
   await expect(page.locator('.dg-database')).toBeVisible();
   expect(await page.evaluate(() => window.databaseAttack)).toBeUndefined();
   await expect(page.locator('.dg-database img, .dg-database script')).toHaveCount(0);
@@ -77,6 +80,7 @@ test('database: hostile labels and example cells remain inert, including the exp
 
 test('database: commenting after a proposed removal keeps the original relationship target', async ({ page }) => {
   await page.goto(pathToFileURL(join(root, 'examples/database-booking.html')).href);
+  await page.locator('#start-review').click();
   await page.locator('#commentmode').click();
   await page.locator('.dg-edge[data-nth="0"]').focus(); await page.keyboard.press('Enter');
   await page.locator('textarea[data-comment="comment-1"]').fill('Remove the attendee relationship.');
@@ -109,6 +113,7 @@ test('database: wide column text and a long self-reference label fit their alloc
   const rendered = spawnSync(process.execPath, [join(root, 'bin/render.mjs'), rp, hp], { encoding: 'utf8' });
   expect(rendered.status, rendered.stderr).toBe(0);
   await page.goto(pathToFileURL(hp).href);
+  await page.locator('#start-review').click();
   const faults = await page.locator('.dg-database').evaluate(svg => {
     const bounds = svg.getBoundingClientRect(), faults = [];
     for (const text of svg.querySelectorAll('text')) {

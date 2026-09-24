@@ -10,6 +10,8 @@ const reveal = (selector) => `(() => {
   for (let el = control.parentElement; el; el = el.parentElement) if (el.tagName === 'DETAILS') ancestors.unshift(el);
   for (const details of ancestors) if (!details.open) details.querySelector(':scope > summary').click();
 })()`;
+// #105 — every page opens on Understand; the checks begin after Start.
+const start = `document.querySelector('#start-review').offsetParent && document.querySelector('#start-review').click()`;
 const returnReview = `if (!document.querySelector('#return-review').open) document.querySelector('#finish').click();`;
 
 const FLOW = join(REPO, 'examples/flow-booking.review.json');
@@ -20,13 +22,13 @@ const tap = (id) => `document.querySelector('#screen [data-target="${id}"]').cli
 
 await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sleep, exported }) => {
   const page = render(FLOW, dir);
-  await load(page);
+  { await load(page); await ev(start); }
 
   // ── navigation ──
   say(await ev(title) === 'Pick a time', 'opens on the start screen');
   say(JSON.stringify(await ev(`[...document.querySelectorAll('#screen [data-target]')].map(b=>b.tagName+':'+b.dataset.target)`)) === JSON.stringify(['BUTTON:help', 'BUTTON:book']), 'only the two step targets are tappable, as real buttons: Ask a question and Book 10:00');
-  say(/0 answered · 11 open/.test(await ev(`document.querySelector('#overview').textContent`)) && /Tap a highlighted/.test(await ev(`document.querySelector('#detail').textContent`)), 'the feedback panel opens with the overview and invites the first tap');
-  say(await ev(`document.querySelector('#stepno').textContent`) === 'Step 1 of 13' && await ev(`document.querySelectorAll('#detail .open').length`) === 0, 'the tour counts all 11 steps between Understand and Return; nothing open yet');
+  say(/0 of 11 answered · 11 open/.test(await ev(`document.querySelector('#overview').textContent`)) && await ev(`!!document.querySelector('#start-mini').offsetParent`), 'after Start the progress says what is open, and Understand folds to one bar');
+  say(await ev(`document.querySelector('#stepno').textContent`) === 'Step 2 of 13' && await ev(`document.querySelectorAll('#detail .open').length`) === 1, 'the tour counts all 11 steps between Understand and Return; Start opens the first');
   say(await ev(`document.querySelectorAll('#stepline').length`) === 0, 'the step appears in one place only: no step line above the panels');
   await ev(tap('book'));
   const line = await ev(`document.querySelector('#detail .open').textContent`);
@@ -49,9 +51,9 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   await ev(tap('book'));
   await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   await ev(`document.querySelector('#detail .open input[data-item="book"][value="agree"]').click()`);
-  say(/1 answered · 10 open/.test(await ev(`document.querySelector('#overview').textContent`)), 'judging the open step counts toward all 11 steps, and the overview says what is open');
+  say(/1 of 11 answered · 10 open/.test(await ev(`document.querySelector('#overview').textContent`)), 'judging the open step counts toward all 11 steps, and the overview says what is open');
   say(await ev(`document.querySelector('fieldset.item input[name="v-book"][value="agree"]').checked`), 'the step keeps its verdict in the list');
-  await load(page);
+  { await load(page); await ev(start); }
   say(await ev(title) === 'Pick a time', 'position is not saved: a reload starts at the beginning (D003)');
   await ev(`${returnReview} document.querySelector('#export').click()`);
   const file = await exported();
@@ -64,7 +66,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   }
 
   // ── keyboard only ──
-  await load(page);
+  { await load(page); await ev(start); }
   await ev(`document.querySelector('#screen-title').focus()`);
   await key('Tab', 'Tab', 9);
   say(await ev('document.activeElement.dataset.target') === 'help', 'Tab from the screen heading reaches Ask a question first');
@@ -77,7 +79,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(title) === 'Slot taken' && await ev('document.activeElement.id') === 'screen-title', 'Enter shows the result and moves focus to the new screen heading');
 
   // ── layouts (D011) ──
-  await load(page);
+  { await load(page); await ev(start); }
   await ev(tap('book'));
   await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   for (const [label, w, mobile] of [['flow-laptop', 1280, false], ['flow-tablet', 900, false], ['flow-phone', 390, true]]) {
@@ -91,7 +93,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   await width(1280);
 
   // ── all outcomes side by side ──
-  await load(page); await width(1280);
+  { await load(page); await ev(start); } await width(1280);
   await ev(tap('book'));
   const cols = await ev(`[...document.querySelectorAll('#expected .outcome')].map(o=>o.textContent.replace(/\\s+/g,' '))`);
   say(cols.length === 2 && /Slot is free/.test(cols[0]) && /Someone took it first/.test(cols[1]) && /Pick another time, another day, or join/.test(cols[1] + (await ev(`document.querySelector('#expected').textContent`))), 'step panel shows both outcomes side by side');
@@ -100,7 +102,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   say(await ev(`document.querySelectorAll('#expected .outcome')[1].getAttribute('data-picked')`) === 'true', 'the outcome shown is marked as picked, the other stays visible');
 
   // ── one Overview, and nothing said twice (D064): every step, with its journey, status and outcomes ──
-  await load(page); await width(1280);
+  { await load(page); await ev(start); } await width(1280);
   await ev(overview); await sleep(100);
   say(await ev(`document.querySelectorAll('#items [data-card]').length`) === 11, 'the Overview holds all 11 steps');
   await ev(`document.querySelector('#items [data-open="book"]').click()`); await sleep(150);
@@ -177,7 +179,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   await width(1280);
 
   // ── the flow beside the screen (D053) ──
-  await load(page); await width(1280); await sleep(200);
+  { await load(page); await ev(start); } await width(1280); await sleep(200);
   say(await ev(`document.querySelectorAll('#flowbeside svg').length`) === 1, 'the user-flow chart sits beside the screen');
   say(await ev(`document.querySelector('#flowbeside [data-node="screen:slot-list"]').getAttribute('aria-current')`) === 'true', 'the screen you are on is marked in that chart');
   await ev(tap('help'));
@@ -205,7 +207,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
   const evil = JSON.parse(readFileSync(FLOW, 'utf8'), function (k, v) { return typeof v === 'string' && !KEEP.has(k) && isNaN(Number(k)) ? bad : v; });
   evil.id = 'evil-flow';
   const evilPath = join(dir, 'evil-flow.json'); writeFileSync(evilPath, JSON.stringify(evil));
-  await load(render(evilPath, dir));
+  { await load(render(evilPath, dir)); await ev(start); }
   await ev(tap('book'));
   await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(150);
   say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')), 'hostile flow: no img elements created, no script ran');
@@ -215,7 +217,7 @@ await withChrome('flow-page', async ({ dir, say, ev, load, key, shot, width, sle
 //    the screen under the diagram, a collapse each (D068).
 await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sleep }) => {
   const page = render(FLOW, dir);
-  await load(page); await width(1280); await sleep(250);
+  { await load(page); await ev(start); } await width(1280); await sleep(250);
 
   const tabs = () => ev(`[...document.querySelectorAll('#dgtabs [role=tab]')].map(t=>t.textContent.trim())`);
   const selectedTab = () => ev(`document.querySelector('#dgtabs [role=tab][aria-selected="true"]').textContent.trim()`);
@@ -278,7 +280,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   say(await ev(`document.querySelector('#linkswitch').hidden`) === false && await ev(`document.querySelector('#linkswitch').getAttribute('aria-checked')`) === 'true', 'a Connections switch, on by default');
   await ev(`document.querySelector('#linkswitch').click()`); await sleep(150);
   say(await ev(`document.querySelectorAll('#allscreens .links').length`) === 0 && await ev(`document.querySelector('#linkswitch').getAttribute('aria-checked')`) === 'false', 'switching it off removes the connections');
-  await load(page); await sleep(200);
+  { await load(page); await ev(start); } await sleep(200);
   await ev(reveal('#upanel [data-screens="all"]'));
   await ev(`document.querySelector('#upanel [data-screens="all"]').click()`); await sleep(250);
   say(await ev(`document.querySelectorAll('#allscreens .links').length`) === 0, 'and they stay off after a reload');
@@ -300,7 +302,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   const covers = (id) => ev(`(()=>{const r=document.querySelector('#${id}').getBoundingClientRect();return r.top<=0&&r.left<=0&&r.width>=innerWidth-1&&r.height>=innerHeight-1})()`);
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
   await ev(`document.querySelector('#upanel .panel-full').click()`); await sleep(200);
-  say(await covers('upanel') && await ev(`document.querySelector('#upanel .panel-full').textContent`) === 'Exit full screen', 'the screen opens full screen from its own tab row');
+  say(await covers('upanel') && await ev(`document.querySelector('#upanel .panel-full').getAttribute('aria-label')`) === 'Exit full screen', 'the screen opens full screen from its own tab row');
   await ev(`document.querySelector('#screen [data-target="book"]').click()`); await sleep(200);
   say(!(await covers('upanel')) && await ev(`document.activeElement.dataset.outcome`) === '0', 'a tap with several outcomes leaves full screen so they can be picked');
   await ev(`document.querySelector('#restart').click()`); await sleep(150);
@@ -340,7 +342,7 @@ await withChrome('drawn-page', async ({ dir, say, ev, load, key, shot, width, sl
   }
   say(seen.size === 8, `each style looks different in light and dark: ${seen.size} backgrounds for 8 combinations`);
   await pick('style', 'mac84'); await pick('theme', 'dark');
-  await load(page); await sleep(200);
+  { await load(page); await ev(start); } await sleep(200);
   say(await ev(`document.querySelector('#style').value + '/' + document.querySelector('#theme').value`) === 'mac84/dark' && await bg() === '#000000', 'Macintosh 1984 in dark survives a reload');
   await pick('style', ''); await pick('theme', '');
 
@@ -370,7 +372,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   };
   const path = join(dir, 'brief.json'); writeFileSync(path, JSON.stringify(review));
   const page = render(path, dir);
-  await load(page); await width(1280); await sleep(250);
+  { await load(page); await ev(start); } await width(1280); await sleep(250);
 
   const brief = await ev(`document.querySelector('#brief')?.textContent || ''`);
   say(/store credit/.test(brief) && /Keep store credit/.test(brief), 'the brief explains the cause and gives the recommendation');
@@ -394,7 +396,7 @@ await withChrome('brief-page', async ({ dir, say, ev, load, width, sleep, shot, 
   say(await ev(`!!${askBtn}`) && await ev(`!!document.querySelector('#detail .open [data-ask="explain"]')`), 'the open step offers "show me an example" and "explain this" as checkboxes');
   await ev(`${askBtn}.click()`); await sleep(150);
   say(await ev(`${askBtn}.checked`) === true, 'pressing it marks the request');
-  await load(page); await sleep(250);
+  { await load(page); await ev(start); } await sleep(250);
   await ev(`document.querySelector('#screen [data-target="book"]').click()`);
   await ev(`document.querySelector('#expected [data-outcome="0"]').click()`); await sleep(200);
   say(await ev(`${askBtn}.checked`) === true, 'the request survives a reload');
@@ -422,7 +424,7 @@ await withChrome('brief-hostile', async ({ dir, say, ev, load, width, sleep }) =
   for (const j of review.flow.parts) j.title = bad;                 // the chips
   for (const d of review.diagrams || []) d.title = bad;             // the tabs
   const path = join(dir, 'hostile-brief.json'); writeFileSync(path, JSON.stringify(review));
-  await load(render(path, dir)); await width(1280); await sleep(300);
+  { await load(render(path, dir)); await ev(start); } await width(1280); await sleep(300);
   say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')),
     'markup in the brief, the examples, the risks, the chips and the tabs stays text');
   say(await ev(`document.querySelector('#brief .brief-explains').textContent`) === bad, 'it is shown, escaped, not swallowed');

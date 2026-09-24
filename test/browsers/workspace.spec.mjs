@@ -27,18 +27,33 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => expect(page.errors).toEqual([]));
 
-test('tour: Understand shows the brief beside the map; More holds the look; the Overview holds the filters', async ({ page }) => {
+// #105 — Understand is its own first screen: short cards and one action. After Start it folds to one bar.
+test('tour: Understand alone first, one action; it folds after Start and opens again', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await expect(page.locator('#t-start #brief')).toBeVisible({ timeout: 2000 });
-  await expect(page.locator('#slot-map #dpanel')).toBeVisible();
-  await expect(page.locator('#more')).not.toHaveAttribute('open');
+  await expect(page.locator('#start')).toBeVisible({ timeout: 2000 });
+  for (const hidden of ['#tour', '#progress', '#mode-overview', '#finish', '#more', '#start-mini']) await expect(page.locator(hidden)).toBeHidden();
+  const visibleButtons = await page.locator('button:visible').evaluateAll(l => l.map(b => b.id || b.textContent.trim()));
+  expect(visibleButtons, 'Start is the only button').toEqual(['start-review']);
+  const cards = page.locator('#start-cards > li');
+  expect(await cards.count()).toBeGreaterThanOrEqual(5);
+  for (const text of await cards.locator(':scope > div > p:first-of-type').allInnerTexts())
+    expect(text.split(/[.!?](\s|$)/).filter(x => x && x.trim()).length, `one sentence: ${text}`).toBeLessThanOrEqual(1);
+  await expect(page.locator('#start-cards')).toContainText('11 questions in 5 parts.');
+  await page.locator('#start-cards details summary').first().click();       // longer text is one tap away, never dropped
+  await expect(page.locator('#start-cards details[open]')).toHaveCount(1);
+  await page.locator('#start-review').click();
+  await expect(page.locator('#start')).toBeHidden();
+  await expect(page.locator('#start-mini')).toBeVisible();
+  await expect(page.locator('#selection-title')).toBeFocused();
+  await page.locator('#start-mini').click();
+  await expect(page.locator('#start')).toBeVisible();
+  await page.locator('#start-review').click();
   await page.locator('#more > summary').click();
   await expect(page.locator('#style')).toBeVisible();
   await expect(page.locator('#theme')).toBeVisible();
   await page.locator('#mode-overview').click();
-  await expect(page.locator('#ov-top #brief')).toBeVisible();
+  await expect(page.locator('#ov-top #brief')).toBeVisible();              // the Overview keeps the full brief
   await expect(page.locator('#ov-top #dpanel')).toBeVisible();
-  await expect(page.locator('#filters-tools')).not.toHaveAttribute('open');
   await page.locator('#filters-tools > summary').click();
   await expect(page.locator('#f-journey')).toBeVisible();
   await expect(page.locator('#f-status')).toBeVisible();
@@ -46,6 +61,7 @@ test('tour: Understand shows the brief beside the map; More holds the look; the 
 
 test('workspace: finishing a partial review changes no answers and retains both downloads', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   const before = await answers(page);
   await expect(page.locator('#finish')).toBeVisible({ timeout: 2000 });
   await page.locator('#finish').click();
@@ -62,7 +78,7 @@ test('workspace: finishing a partial review changes no answers and retains both 
 
 test('workspace: a positive answer does not hide an outstanding request', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await page.locator('#detail input[data-item][value="works"]').check();
   await page.locator('#detail input[data-ask="explain"]').check();
   await expect(page.locator('#detail input[data-ask="explain"]')).toBeChecked();
@@ -78,6 +94,7 @@ test('workspace: a positive answer does not hide an outstanding request', async 
 test('workspace: selecting a shared screen never silently selects the first behavior', async ({ page }) => {
   const { url, review } = pageFor('flow-booking.review.json');
   await page.goto(url);
+  await page.locator('#start-review').click();
   await expect(page.locator('#selection-title')).toBeVisible({ timeout: 2000 });
   await page.locator('[data-screens="all"]').click();
   await page.locator('.mini[data-screen="slot-list"]').click();
@@ -92,6 +109,7 @@ test('workspace: selecting a shared screen never silently selects the first beha
 
 test('workspace: unlinked diagram objects expose comment context, not stale verdicts', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   await openStep(page, 'book');
   await page.locator('[data-tab="booking-behind"]').click();
   await expect(page.locator('#selection-title')).toBeVisible({ timeout: 2000 });
@@ -108,11 +126,12 @@ test('workspace: unlinked diagram objects expose comment context, not stale verd
 
 test('workspace: navigation leaves feedback unchanged and typing preserves the editor', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   const before = await answers(page);
   await openStep(page, 'book');
   await page.locator('#expected [data-outcome="0"]').click();
   expect(await answers(page)).toBe(before);
-  await page.locator('#detail details.more-answer > summary').click();
+  await page.locator('#detail input[data-item="book"]').first().check();   // the note comes after an answer
   const editor = page.locator('#detail textarea[data-note="book"]');
   await editor.fill('First');
   await editor.evaluate(el => { el.dataset.identityProbe = 'same'; el.setSelectionRange(2, 2); });
@@ -126,9 +145,9 @@ test('workspace: navigation leaves feedback unchanged and typing preserves the e
 
 test('workspace: storage failures remain visible after finishing and exporting', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); }; });
-  await page.locator('#next').click();
-  await page.locator('#detail details.more-answer > summary').click();
+  await page.locator('#detail input[data-item]').first().check();     // the note comes after an answer
   await page.locator('#detail textarea[data-note]').fill('Keep this unsaved answer.');
   await expect(page.locator('#save-warning')).toBeVisible({ timeout: 2000 });
   await page.locator('#finish').click();
@@ -141,6 +160,7 @@ test('workspace: storage failures remain visible after finishing and exporting',
 
 test('workspace: filters and unrelated diagram tabs keep the named selection', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   await openStep(page, 'book');
   await page.locator('#mode-overview').click();
   await page.locator('#q').fill('no matching behavior');
@@ -159,6 +179,7 @@ test('workspace: parallel arrows select and comment on the original exact index'
   await page.goto(pageFor('flow-booking.review.json', r => {
     const d = r.diagrams[0]; d.edges.push({ ...d.edges[0], label: 'Second route' });
   }).url);
+  await page.locator('#start-review').click();
   await page.locator('[data-tab="booking-behind"]').click();
   const edge = page.locator('#flowbeside .dg-edge').last();
   const nth = Number(await edge.getAttribute('data-nth'));
@@ -172,6 +193,7 @@ test('workspace: parallel arrows select and comment on the original exact index'
 
 test('workspace: a removed earlier message does not change later comment identity in preview', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   await page.locator('[data-tab="booking-calls"]').click();
   await page.locator('#flowbeside .dg-edge[data-nth="0"]').focus();
   await page.keyboard.press('Enter');
@@ -190,6 +212,7 @@ test('workspace: a removed earlier message does not change later comment identit
 
 test('workspace: summary target closes the dialog and focuses the selected response', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#finish').click();
   const target = page.locator('[data-summary-kind="item"]').last();
   const id = await target.getAttribute('data-summary-target');
@@ -204,6 +227,7 @@ test('workspace: layer context keeps its exact answer key and note editor', asyn
   const entry = item.step.outcomes.flatMap(o => o.system || [])[0];
   const key = item.id + '/' + entry.id;
   await page.goto(url);
+  await page.locator('#start-review').click();
   await openStep(page, item.id);
   await page.locator('#build [data-layer="system"]').check();
   const judge = page.locator('#build details.judge').filter({ has: page.locator('[data-lv="' + key + '"]') });
@@ -219,6 +243,7 @@ test('workspace: layer context keeps its exact answer key and note editor', asyn
 
 test('workspace: added feedback has a named inspection target and safe removal focus', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#mode-overview').click();
   await page.locator('#at').fill('Additional concern');
   await page.locator('#addbtn').click();
@@ -242,8 +267,8 @@ test('tour: Start, Next and Back walk Understand, every question and Return; Ret
   await expect(page.locator('#next')).toContainText('Skip for now');   // skipping is allowed, and says so
   await page.locator('#detail input[data-item]').first().check();
   await expect(page.locator('#next')).toContainText('Next');
-  await expect(page.locator('.pseg').first().locator('.track i')).toHaveAttribute('style', 'width:50%');
-  await page.locator('.pseg').nth(1).click();                         // a section of the progress bar jumps there
+  await expect(page.locator('.pseg').nth(1).locator('.track i')).toHaveAttribute('style', 'width:50%');   // after Understand
+  await page.locator('.pseg').nth(2).click();                         // a section of the progress bar jumps there
   await expect(page.locator('#stepno')).toHaveText('Step 4 of 6');
   for (let i = 0; i < 2; i++) await page.locator('#next').click();
   await expect(page.locator('#selection-title')).toHaveText('Finish and send back');
@@ -259,6 +284,7 @@ test('tour: Start, Next and Back walk Understand, every question and Return; Ret
 
 test('workspace: screen overview connections respond to keyboard focus', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   await page.locator('[data-screens="all"]').click();
   await page.mouse.move(0, 0);
   await expect(page.locator('#allscreens .links')).not.toHaveClass(/focus/);
@@ -269,6 +295,7 @@ test('workspace: screen overview connections respond to keyboard focus', async (
 
 test('workspace: unanswered choices remain partial even when every option has a verdict', async ({ page }) => {
   await page.goto(pageFor('decision-review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#mode-overview').click();                     // the Overview: every question answerable on one page
   const ids = await page.locator('#items [data-card]').evaluateAll(els => els.map(el => el.dataset.card));
   expect(ids).toHaveLength(6);
@@ -282,14 +309,15 @@ test('workspace: mixed flows retain non-step approvals and diagram-free lists st
   await page.goto(pageFor('flow-booking.review.json', r => {
     r.items.push({ id: 'approve-demo', title: 'Approve this synthetic action', approval: { action: 'Preview only', scope: 'Synthetic review', risk: 'low', expiresAt: '2099-01-01T00:00:00Z' } });
   }).url);
+  await page.locator('#start-review').click();
   await openStep(page, 'approve-demo');
   await expect(page.locator('#selection-title')).toContainText('Approve this synthetic action');
   await expect(page.locator('#detail input[data-item="approve-demo"]')).toHaveCount(2);
   await expect(page.locator('#screen')).toContainText('No screen is linked');
   await page.goto(pageFor('review.example.json', r => { delete r.diagrams; }).url);
+  await page.locator('#start-review').click();
   await expect(page.locator('#dpanel')).toHaveCount(0);
   await expect(page.locator('#slot-map')).toContainText('no map');
-  await page.locator('#start-review').click();
   await expect(page.locator('#selection-title')).toBeFocused();
   await page.locator('#finish').click();
   await expect(page.locator('#return-review')).toBeVisible();
@@ -300,7 +328,7 @@ test('workspace: custom approval-like vocabulary is counted separately from perm
     r.verdictSet.options[0] = { value: 'approve', label: 'Looks right', tone: 'positive' };
     r.items.push({ id: 'permission-demo', sectionId: r.sections[0].id, title: 'Synthetic permission', approval: { action: 'Preview only', scope: 'Synthetic review', risk: 'low', expiresAt: '2099-01-01T00:00:00Z' } });
   }).url);
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await page.locator('#detail input[data-item][value="approve"]').check();
   await openStep(page, 'permission-demo');
   await page.locator('#detail input[value="approve"]').check();
@@ -312,6 +340,7 @@ test('workspace: custom approval-like vocabulary is counted separately from perm
 
 test('workspace: active filters remain explicit when all items match', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#mode-overview').click();
   await page.locator('#filters-tools > summary').click();
   await page.locator('[data-f="unset"]').click();
@@ -322,6 +351,7 @@ test('workspace: active filters remain explicit when all items match', async ({ 
 
 test('workspace: reset cancellation preserves answers and confirmed reset clears removed selection', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#mode-overview').click();
   await page.locator('#at').fill('A concern to reset');
   await page.locator('#addbtn').click();
@@ -338,6 +368,7 @@ test('workspace: reset cancellation preserves answers and confirmed reset clears
 
 test('workspace: confirmed reset removes comment and proposed-change previews', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#start-review').click();
   await page.locator('#flowbeside [data-node="pay"]').focus(); await page.keyboard.press('Enter');
   await page.locator('#comment-selected').click();
   await page.locator('#comments textarea').fill('Explain payment');
@@ -354,6 +385,7 @@ test('workspace: confirmed reset removes comment and proposed-change previews', 
 
 test('workspace: Go to response reopens a selected layer and focuses its answer', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
+  await page.locator('#start-review').click();
   await openStep(page, 'book');
   await page.locator('#build [data-layer="system"]').check();
   const judge = page.locator('#build details.judge').filter({ has: page.locator('[data-lv="book/capacity-guard"]') });
@@ -371,6 +403,7 @@ test('workspace: proposal outcome objects do not break item rendering', async ({
     review.items[0].answers = [{ review: 'earlier-round', id: 'proposal-1', outcome: 'not-drawn', why: 'Still open' }];
   });
   await page.goto(url);
+  await page.locator('#start-review').click();
   await openStep(page, 'guest-checkout');
   await expect(page.locator('#detail input[data-item="guest-checkout"]')).toHaveCount(4);
   await expect(page.locator('#selection-title')).toContainText(review.items[0].title);

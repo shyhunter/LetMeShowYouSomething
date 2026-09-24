@@ -631,19 +631,20 @@ implementation of the export shape — it cannot drift from what the checker exp
 failing at once.
 
 **Every review is a guided tour** (#100), whatever it asks: a flow, a list, a choice, doubts, an
-approval, an explanation, or a diagram. **Understand** comes first: the brief (what the agent needs
-decided, what it explains, its recommendation, precedents each with its source or marked unverified,
-the risks), how to answer, what happens next, and a list of the parts to come. Then **one question at
-a time**, then **Return**: the summary, both downloads, and **Anything else?**, open to anything,
+approval, an explanation, or a diagram. **Understand** comes first, on its own screen (#105):
+short numbered cards, each with a symbol and one sentence (what the agent needs decided or explains,
+its recommendation, what it will ask, precedents, the risks, how to answer, what happens next), the
+rest of each behind "More", never dropped, and one action: **Start**. After Start it folds to one
+**About this review** bar that opens it again. Then **one question at a time**, then **Return**: the summary, both downloads, and **Anything else?**, open to anything,
 related or not (D072). **Back** and **Next** are always visible with "Step N of M"; an unanswered
-question can be skipped and stays open. A **progress bar** is split into coloured parts: the review's
-sections, a flow's journeys, or one part. Each part fills as it is answered, and a tap jumps there.
+question can be skipped and stays open. A **progress bar** runs from Understand to Return through coloured
+parts: the review's sections, a flow's journeys, or one part. Each part fills as it is answered, and a tap jumps there.
 
 **Every question has the same layout.** On the left: the part and position ("Book a slot · 2 of 3"),
 the question, why it is asked, and the answer as big tiles, each with a symbol, in the review's own
 words and tones (approve or decline for an approval). **Show me an example** and **Explain this** are
-checkboxes beside them, the questions that travel back as `requests`. The note and pictures open with
-one tap, and on their own once answered. On the right, **four places, always in this order**:
+checkboxes beside them, the questions that travel back as `requests`. The note and pictures come once
+answered: "What should be different?" after a critical answer, "Anything to add?" otherwise. On the right, **four places, always in this order**:
 
 1. **Map**: the diagram, with the question's boxes marked "you are here" and answered steps marked.
    Every chart is a tab (the focus tab first); a flow has **a chip per sub-process** (a column that
@@ -659,7 +660,7 @@ one tap, and on their own once answered. On the right, **four places, always in 
    reference and its own verdict (D098); an item's file reference.
 
 A place with nothing for this question keeps its spot and says so. Each place can be minimised to its
-title bar, or all but the prototype; the map and the screen open **full screen** and close with Esc
+title bar with its − button, or all but the prototype with **Prototype only**; the map and the screen open **full screen** and close with Esc
 (D073). Selecting a box, an arrow or a screen names what is selected: a screen shared by several
 behaviors offers their names rather than silently choosing one, and an unlinked node or arrow has a
 precise comment target, not an unrelated item verdict. Selection itself records no answer.
@@ -668,7 +669,7 @@ precise comment target, not an unrelated item verdict. Selection itself records 
 answerable in place, grouped in the same coloured parts, each with its places a tap away. Its search
 and filters (verdict, gaps only, journey, status, "only where something goes wrong") never hide
 silently: a narrowing filter says "Showing N of M" and offers "Show all". **More** holds everything
-else: style and mode, the four places, and clearing your answers. Where you are, which view, and what
+else: style and mode, and clearing your answers. Where you are, which view, and what
 is minimised stay in the reviewer's own browser and never leave it.
 
 **Finish** summarizes actual answers, unanswered items, choices, gaps, requests, comments,
