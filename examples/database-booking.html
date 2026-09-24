@@ -164,9 +164,6 @@ fieldset.item{border:1px solid var(--line);border-radius:10px;background:var(--s
 fieldset.item[data-v]:not([data-v="unset"]){border-left:3px solid var(--tone,var(--line2))}
 legend{padding:0 4px;font-weight:600;color:var(--ink);font-size:14.5px;line-height:1.4}
 .body{font-size:13.5px;color:var(--ink3);margin:2px 0 10px;max-width:74ch}
-.flds{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
-.fld{display:flex;gap:9px;font-size:13px;align-items:baseline}
-.fld .k{font:500 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--fk,var(--mut));min-width:78px;flex:none}
 .fld .val{color:var(--ink3)}
 .ref{font:11px var(--mono);color:var(--sub);margin-bottom:10px}
 
@@ -257,7 +254,7 @@ fieldset.item.chosen{border:2px solid var(--ac)}
 @media (min-width:700px){.frame header{padding-inline:20px}}
 .frame .bar{position:static}
 #player{margin-bottom:10px}
-.item .k,#brief .k{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-right:6px}
+.item .k,#brief .k,#expected .k,.ov-grid .k{font:600 10px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin-right:6px}
 #restart{min-height:44px;min-width:44px}
 /* The page as drawn (D068): the diagram, then the screen below it, each full width.
    Either one opens full screen (D073): it covers the window until Esc or "Exit full screen". */
@@ -354,8 +351,6 @@ body:has(.panel.full){overflow:hidden}
 fieldset.item[aria-current="true"]{border:2px solid var(--ac)}
 .j-title{font-size:14px;color:var(--ink);overflow-wrap:anywhere}
 .basis,.j-count{font-size:12px;color:var(--mut)}
-.outcome-cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:8px 0}
-.outcome{border:1px solid var(--line2);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:4px}
 .outcome[data-picked="true"]{border-color:var(--ac);background:var(--ac-bg)}
 .outcome p{margin:0;font-size:13px}
 .outcome [data-outcome]{min-height:44px;align-self:flex-start;margin-top:4px}
@@ -559,9 +554,8 @@ header.top{display:flex;gap:12px 18px;align-items:flex-start;justify-content:spa
 .tiles label:has(input:checked){border-color:var(--tc);background:var(--tcb);color:var(--tc);box-shadow:0 0 0 2px var(--tcb)}
 .tiles label:has(input:checked) .dot{background:var(--tc);color:var(--surf)}
 .tiles label:has(input:focus-visible){outline:2px solid var(--ac);outline-offset:2px}
-.more-answer{margin-top:10px}
-.more-answer>summary{cursor:pointer;min-height:44px;display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ac)}
-.more-answer[open]>summary{margin-bottom:6px}
+.explain{display:grid;gap:6px;margin-top:10px}
+.explain .qprompt{margin:0}
 .slot{background:var(--surf);border:1px solid var(--line);border-radius:14px;min-width:0}
 .slot-head{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--line)}
 .slot.minimised .slot-head{border-bottom:0}
@@ -570,7 +564,28 @@ header.top{display:flex;gap:12px 18px;align-items:flex-start;justify-content:spa
 .slot-body{padding:12px;min-width:0}
 .slot .panel{border:0;padding:0;background:none}
 .empty-slot{margin:0;font-size:13.5px;color:var(--mut);display:flex;gap:8px;align-items:center}
-.btn.min{min-height:34px}
+.btn.icon{min-width:36px;min-height:36px;padding:0}
+.btn.icon .ic{width:18px;height:18px}
+.btn.icon.panel-full{min-width:44px;min-height:44px}
+@media (pointer:coarse){.btn.icon{min-width:44px;min-height:44px}}
+.places-head{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.places-head .row{display:flex;gap:6px}
+.places-head .btn[aria-pressed="true"]{background:var(--ac);border-color:var(--ac);color:var(--on-ac)}
+.prog-sum{font:600 12px var(--mono);color:var(--mut);display:inline-flex;gap:6px;align-items:center}
+.expected{display:grid;gap:8px}
+.exp{border:1px solid var(--line);border-radius:10px;padding:9px 12px;background:var(--surf);font-size:14px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:4px 10px;align-items:start}
+.exp>:not(.ei){grid-column:2}
+.exp .ei{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;grid-row:span 2}
+.exp>b{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ek)}
+.exp p{margin:0}
+.exp.ok{--ek:var(--ok)}.exp.ok .ei{background:var(--ok-bg);color:var(--ok)}
+.exp.fail{--ek:var(--bad)}.exp.fail .ei{background:var(--bad-bg);color:var(--bad)}
+.exp.info{--ek:var(--ac)}.exp.info .ei{background:var(--ac-bg);color:var(--ac)}
+.outcome.exp[data-picked="true"]{border-color:var(--ac);box-shadow:0 0 0 2px var(--ac-bg)}
+.outcome.exp [data-outcome]{justify-self:start}
+.w-line{margin:0}
+#detail .w-journey{display:none}
+.w-status{display:inline-flex;align-items:center;border-radius:99px;padding:3px 9px;background:var(--ac-bg)}
 #upanel .panel-head{margin-bottom:8px}
 #upanel .hint{margin:8px 0 0;font-size:12.5px}
 .outcome-build{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
@@ -578,12 +593,9 @@ header.top{display:flex;gap:12px 18px;align-items:flex-start;justify-content:spa
 body:not(.show-system):not(.show-data) .outcome-build{display:none}
 .facts{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
 .fact{font-size:12.5px;padding:5px 10px;border-radius:99px;background:var(--surf2);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
-.plan{list-style:none;margin:0;padding:0;display:grid;gap:8px}
-.plan button{width:100%;text-align:left;border:1px solid var(--line);border-left:4px solid var(--sc);border-radius:10px;background:var(--surf);padding:8px 12px;min-height:44px;cursor:pointer;display:grid;gap:2px;font:inherit;color:var(--ink2)}
-.plan b{display:flex;gap:6px;align-items:center;color:var(--sc);font:600 12px var(--mono);letter-spacing:.05em;text-transform:uppercase}
+#t-start{display:none}
 #brief{border:1px solid var(--line2);border-left:3px solid var(--ac);border-radius:12px;background:var(--surf2);padding:12px 14px;margin-bottom:12px}
 #understand .asks{margin-top:10px}
-#understand #start-review{margin-top:6px;min-height:44px;font-size:14px}
 .summary-counts{display:flex;gap:12px;flex-wrap:wrap;padding:10px 0;border-block:1px solid var(--line);font:13px var(--mono)}
 .summary-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
 .summary-actions .btn{min-height:44px}
@@ -592,7 +604,6 @@ body:not(.show-system):not(.show-data) .outcome-build{display:none}
 #ov{max-width:900px;margin:0 auto;display:grid;gap:14px}
 #ov-top{display:grid;gap:14px}
 #ov-top #understand,#ov-end{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:16px}
-#ov-top #start-review{display:none}
 .ov-sec{margin:10px 0 8px;display:flex;gap:8px;align-items:center;font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sc)}
 .ov-sec small{color:var(--mut);font-weight:500;letter-spacing:0}
 .card{background:var(--surf);border:1px solid var(--line);border-left:4px solid var(--sc);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:grid;gap:8px}
@@ -604,6 +615,24 @@ body:not(.show-system):not(.show-data) .outcome-build{display:none}
 .card>[data-open]{justify-self:start}
 #footnote{font-size:12.5px;color:var(--mut);margin:14px 0 0}
 body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
+/* #100 — Understand is its own screen: short numbered cards and one action, Start. After Start it
+   folds to one bar at the top that opens it again. */
+body.at-start :is(#progress,#tour,.top-r,#footnote,#start-mini),body:not(.at-start) #start,body[data-mode="overview"] #start-mini{display:none}
+#start{max-width:720px;margin:4px auto 0;display:grid;gap:14px}
+.start-cards{list-style:none;margin:0;padding:0;display:grid;gap:10px}
+.scard{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start;background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.scard .num{font:700 12px var(--mono);color:var(--on-ac);background:var(--ac);border-radius:50%;width:26px;height:26px;display:grid;place-items:center}
+.scard h3{font:600 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ac);display:flex;gap:6px;align-items:center;margin:3px 0 4px}
+.scard p{margin:0;font-size:15px;color:var(--ink)}
+.start-parts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px!important}
+.chip-part{display:inline-flex;gap:5px;align-items:center;font:600 12px var(--sans);color:var(--sc);border:1px solid var(--sc);border-radius:99px;padding:3px 10px}
+.chip-part .ic{width:14px;height:14px}
+.start-more>summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:13px;color:var(--ac)}
+.start-more p,.start-more li{font-size:13.5px;color:var(--ink3)}
+#start-review{min-height:52px;font-size:16px;justify-self:center;padding-inline:40px}
+#start-mini{display:flex;gap:8px;align-items:center;width:100%;min-height:44px;margin-bottom:10px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surf);color:var(--ink2);font:600 13px var(--sans);cursor:pointer;text-align:left}
+#start-mini .more{margin-left:auto;color:var(--ac);font-weight:500}
+@media (max-width:699px){#start-review{justify-self:stretch}}
 #return-block li{margin:6px 0;overflow-wrap:anywhere}
 @media (max-width:899px){
   #tour{grid-template-columns:minmax(0,1fr);grid-template-areas:"ask" "places" "nav"}
@@ -612,7 +641,7 @@ body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
 @media (max-width:699px){.wrap.frame{padding-inline:12px}.pl{display:none}.more-body{left:0;right:auto}#return-review{padding:18px}header.top{padding-block:14px 8px}}
 </style>
 </head><body data-mode="tour">
-<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.5M12 17v.5"/></symbol><symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5L3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.5M4.5 12h.5M4.5 17.5h.5"/></symbol><symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol><symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol><symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></symbol><symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 21V4h11l-2 4 2 4h-11"/></symbol><symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.9 6.4 20l1.3-6.2L3 9.5l6.3-.7z"/></symbol><symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8-7.5 9.5-4.3-1.5-7.5-4.8-7.5-9.5V6z"/></symbol><symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5h4L19.5 8.5l-4-4-11 11z"/></symbol><symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h.5M11.75 12h.5M18 12h.5"/></symbol></svg>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.5M12 17v.5"/></symbol><symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5L3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.5M4.5 12h.5M4.5 17.5h.5"/></symbol><symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol><symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol><symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></symbol><symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 21V4h11l-2 4 2 4h-11"/></symbol><symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.9 6.4 20l1.3-6.2L3 9.5l6.3-.7z"/></symbol><symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8-7.5 9.5-4.3-1.5-7.5-4.8-7.5-9.5V6z"/></symbol><symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5h4L19.5 8.5l-4-4-11 11z"/></symbol><symbol id="i-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 12h12"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6v12M6 12h12"/></symbol><symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></symbol><symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9 4.5-9 4.5-9-4.5z"/><path d="M3 12.5l9 4.5 9-4.5"/></symbol><symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5.5M12 7.5v.5"/></symbol><symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0 1 13 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></symbol><symbol id="i-expand" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 4.5h5v5M9.5 19.5h-5v-5M19.5 4.5l-6 6M4.5 19.5l6-6"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12a7.5 7.5 0 0 1 13-5.1M19.5 12a7.5 7.5 0 0 1-13 5.1"/><path d="M17.5 3.5v3.4h-3.4M6.5 20.5v-3.4h3.4"/></symbol><symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h.5M11.75 12h.5M18 12h.5"/></symbol></svg>
 <a class="skip" href="#ask">Skip to the question</a>
 <div class="wrap frame">
 <header class="top">
@@ -636,14 +665,17 @@ body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
       <label class="style-pick">Mode <select id="theme">
         <option value="">Auto</option><option value="light">Light</option><option value="dark">Dark</option>
       </select></label>
-      <h3>The four places</h3>
-      <div class="row"><button class="btn" type="button" data-only="#slot-proto">Only the prototype</button><button class="btn" type="button" data-only="">Show all four</button></div>
       <h3>Your answers</h3>
       <div class="row"><button class="btn" id="reset" type="button">Clear my answers</button></div>
     </div></details>
   </div>
 </header>
 <p id="save-warning" role="alert" hidden></p>
+<section id="start" aria-labelledby="start-h"><h2 id="start-h" class="skip">Before you start</h2>
+  <ol id="start-cards" class="start-cards"></ol>
+  <button class="btn pri" type="button" id="start-review">Start<svg class="ic" aria-hidden="true" focusable="false"><use href="#i-right"/></svg></button>
+</section>
+<button type="button" id="start-mini"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>About this review<span class="more">Show</span></button>
 <nav id="progress" aria-label="Progress"><div id="segs" class="segs"></div><p id="overview" aria-live="polite"></p></nav>
 
 <div id="tour">
@@ -659,7 +691,6 @@ body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
         <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
       </div>
       <p class="facts"><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>2 questions</span><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Skip any; nothing counts as agreed</span><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>Nothing is sent until you download it</span></p>
-      <button class="btn pri" type="button" id="start-review"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-right"/></svg>Start</button>
     </div></div>
     <aside id="detail" aria-label="Your answer"></aside>
     <div id="t-end"><div id="return-block">
@@ -680,13 +711,15 @@ body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
   </section>
 
   <section id="places" aria-label="The four places">
+    <div class="places-head"><span class="prog-sum"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-layers"/></svg>The same four places on every question</span><span class="row">
+      <button class="btn" type="button" data-only="#slot-proto" aria-pressed="false"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg>Prototype only</button><button class="btn" type="button" data-only="">Show all</button></span></div>
     <section class="slot" id="slot-map" aria-labelledby="slot-map-h"><div class="slot-head min-head"><span class="num">1</span><h2 id="slot-map-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-map"/></svg>Map</h2>
-      <button class="btn min" type="button" data-min="#slot-map" aria-expanded="true" aria-label="Minimise the map">Minimise</button></div>
+      <button class="btn icon min" type="button" data-min="#slot-map" data-name="the map" aria-expanded="true" aria-label="Minimise the map"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-minus"/></svg></button></div>
       <div class="slot-body">    <section id="dpanel" class="panel" aria-label="The diagram">
       <div class="panel-head">
         <button class="btn" id="commentmode" type="button" aria-pressed="false"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-note"/></svg>Comment</button>
         <button class="btn" id="showchanges" type="button" aria-pressed="false" hidden>Show my changes</button>
-        <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
+        <button class="btn icon panel-full" type="button" aria-pressed="false" aria-label="Full screen"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-expand"/></svg></button>
       </div>
       <div class="panel-body">
         <p class="hint">Select anything that looks wrong, incomplete or unclear. Selecting is not answering.</p>
@@ -701,13 +734,13 @@ body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
     </section>
 </div></section>
     <section class="slot" id="slot-proto" aria-labelledby="slot-proto-h"><div class="slot-head min-head"><span class="num">2</span><h2 id="slot-proto-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Prototype</h2>
-      <button class="btn min" type="button" data-min="#slot-proto" aria-expanded="true" aria-label="Minimise the prototype">Minimise</button></div>
+      <button class="btn icon min" type="button" data-min="#slot-proto" data-name="the prototype" aria-expanded="true" aria-label="Minimise the prototype"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-minus"/></svg></button></div>
       <div class="slot-body"><div id="proto-extra"></div></div></section>
     <section class="slot" id="slot-expected" aria-labelledby="slot-expected-h"><div class="slot-head min-head"><span class="num">3</span><h2 id="slot-expected-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>What should happen</h2>
-      <button class="btn min" type="button" data-min="#slot-expected" aria-expanded="true" aria-label="Minimise what should happen">Minimise</button></div>
+      <button class="btn icon min" type="button" data-min="#slot-expected" data-name="what should happen" aria-expanded="true" aria-label="Minimise what should happen"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-minus"/></svg></button></div>
       <div class="slot-body" id="expected"></div></section>
     <section class="slot" id="slot-build" aria-labelledby="slot-build-h"><div class="slot-head min-head"><span class="num">4</span><h2 id="slot-build-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-code"/></svg>How I'd build it</h2>
-      <button class="btn min" type="button" data-min="#slot-build" aria-expanded="true" aria-label="Minimise how I'd build it">Minimise</button></div>
+      <button class="btn icon min" type="button" data-min="#slot-build" data-name="how I'd build it" aria-expanded="true" aria-label="Minimise how I'd build it"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-minus"/></svg></button></div>
       <div class="slot-body" id="build"></div></section>
   </section>
 
@@ -1814,8 +1847,10 @@ function applyMins(){
     const on = mins.includes(sel);
     el.classList.toggle('minimised', on);
     const b = el.querySelector('.min[data-min="' + sel + '"]');
-    if (b) { b.setAttribute('aria-expanded', String(!on)); b.textContent = on ? 'Show' : 'Minimise'; }
+    if (b) { b.setAttribute('aria-expanded', String(!on)); b.setAttribute('aria-label', (on ? 'Show ' : 'Minimise ') + b.dataset.name); b.innerHTML = I(on ? 'plus' : 'minus'); }
   }
+  const only = MINIMISABLE.every(s => mins.includes(s) === (s !== '#slot-proto'));
+  document.querySelectorAll('[data-only="#slot-proto"]').forEach(b => { b.setAttribute('aria-pressed', String(only)); });
   try { localStorage.setItem(LS + ':min', JSON.stringify(mins)); } catch {}
 }
 document.addEventListener('click', e => {
@@ -1863,11 +1898,10 @@ function visible(it){
 // at a time, so every input and id exists once. Where the reviewer is lives in memory only (D003).
 let mode = 'tour', tourAt = 'start', lastIdx = -1;
 try { if (localStorage.getItem(LS + ':mode') === 'overview') mode = 'overview'; } catch {}
-const noteOpen = new Set(), ovOpen = new Set();
+const ovOpen = new Set();
 document.addEventListener('toggle', e => {
   const d = e.target, id = d.dataset && d.dataset.for; if (!id) return;
-  const set = d.classList.contains('more-answer') ? noteOpen : d.classList.contains('ov-places') ? ovOpen : null;
-  if (set) set[d.open ? 'add' : 'delete'](id);
+  if (d.classList.contains('ov-places')) ovOpen[d.open ? 'add' : 'delete'](id);
 }, true);
 // The progress bar's parts: the review's sections, a flow's journeys, or one part for everything.
 let segsMemo = null;
@@ -1896,17 +1930,20 @@ function curIdx(){ const i = ORDER().indexOf(selected); if (i >= 0) lastIdx = i;
 
 function drawProgress(){
   const cur = mode === 'tour' && tourAt === 'item' ? segOf(selected) : null;
-  $('#segs').innerHTML = segs().map((s, i) => {
+  const edge = (key, label, icon, done, now) => '<button type="button" class="pseg" data-seg="' + key + '" style="--sc:var(--neut);--w:1.5"' + (now ? ' aria-current="step"' : '')
+    + ' aria-label="' + label + (done ? ': done' : '') + '"><span class="track"><i style="width:' + (done ? 100 : 0) + '%"></i></span><span class="pl" aria-hidden="true">' + I(icon) + label + '</span></button>';
+  $('#segs').innerHTML = edge('start', 'Understand', 'info', tourAt !== 'start', false) + segs().map((s, i) => {
     const done = s.ids.filter(id => store.verdicts[id]).length;
     return '<button type="button" class="pseg" data-seg="' + i + '" style="--sc:' + s.color + ';--w:' + s.ids.length + '"' + (s === cur ? ' aria-current="step"' : '')
       + ' aria-label="' + esc(s.label) + ': ' + done + ' of ' + s.ids.length + ' answered"><span class="track"><i style="width:' + Math.round(100 * done / s.ids.length) + '%"></i></span>'
       + '<span class="pl" aria-hidden="true">' + I(s.icon) + esc(s.label) + ' <small>' + done + '/' + s.ids.length + '</small></span></button>';
-  }).join('');
+  }).join('') + edge('end', 'Return', 'send', false, mode === 'tour' && tourAt === 'end');
+  const n = REVIEW.items.length, answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
+  $('#overview').textContent = (cur ? cur.label + ' · ' : '') + answered + ' of ' + n + ' answered' + (n - answered ? ' · ' + (n - answered) + ' open' : '');
 }
 
 function render(){
-  const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
-  $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
+  document.body.classList.toggle('at-start', mode === 'tour' && tourAt === 'start');
   drawProgress();
   if (mode === 'overview') renderOverview(); else renderTour();
   renderAdded();
@@ -1948,7 +1985,7 @@ function renderTour(){
     : s ? I(s.icon) + esc(s.label) + ' · ' + (s.ids.indexOf(it.id) + 1) + ' of ' + s.ids.length : '';
   $('#detail').innerHTML = it ? answerHtml(it, secOf(it)) : FLOW ? '<p class="hint">Tap a highlighted part of the screen, or press Next.</p>' : '';
   $('#t-summary').innerHTML = tourAt === 'end' ? finishSummary() : '';
-  const p = it ? placesFor(it) : tourAt === 'start' ? startPlaces() : {};
+  const p = it ? placesFor(it) : {};
   const empty = (icon, text) => '<p class="empty-slot">' + I(icon) + text + '</p>';
   $('#proto-extra').innerHTML = p.proto || (FLOW ? '' : empty('phone', 'Nothing to show on a screen for this question.'));
   $('#expected').innerHTML = p.expected || empty('list', 'Nothing more to show here.');
@@ -1962,11 +1999,6 @@ function renderTour(){
     : it && !store.verdicts[it.id] ? 'Skip for now' : 'Next') + I('right');
 }
 
-// Understand: what is coming, one row per part, each a jump.
-function startPlaces(){
-  return { expected: '<p class="qprompt">' + I('list') + 'What I will ask</p><ul class="plan">' + segs().map((s, i) => '<li><button type="button" data-seg="' + i
-    + '" style="--sc:' + s.color + '"><b>' + I(s.icon) + esc(s.label) + '</b><span>' + s.ids.length + (s.ids.length === 1 ? ' question' : ' questions') + '</span></button></li>').join('') + '</ul>' };
-}
 
 // D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
 const ASKS = [['example', 'Show me an example'], ['explain', 'Explain this']];
@@ -2010,8 +2042,8 @@ function layerSwitches(it){
 function outcomeCols(it){
   const o = last && last.step === it ? last.outcome : null;
   return (pending === it ? '<p class="hint">What happens? Pick one to see it.</p>' : '')
-    + `<div class="outcome-cols">${it.step.outcomes.map((x, i) => `<div class="outcome" data-picked="${x === o}">
-      <b>${esc(x.label || 'Result')}</b><p><span class="k">Effect</span>${esc(x.effect)}</p>
+    + `<div class="expected outcome-cols">${it.step.outcomes.map((x, i) => `<div class="outcome exp ${x.because ? 'fail' : 'ok'}" data-picked="${x === o}">
+      <span class="ei">${I(x.because ? 'x' : 'check')}</span><b>${esc(x.label || 'Result')}</b><p>${esc(x.effect)}</p>
       ${x.because ? `<p><span class="k">Why</span>${esc(x.because)}</p>` : ''}${x.canNow ? `<p><span class="k">You can now</span>${esc(x.canNow)}</p>` : ''}
       <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>
       <button type="button" class="btn" data-outcome="${i}" data-for="${esc(it.id)}">${x === o ? 'Showing this' : 'Show this'}</button></div>`).join('')}</div>`;
@@ -2045,7 +2077,9 @@ function answerHtml(it, sec){
   const chosen = choosing && store.choices[sec.id] === it.id;
   const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
   const opts = optsFor(it), picked = opts.find(o => o.value === cur);
-  const noteShown = cur !== 'unset' || store.notes[it.id] || (store.pictures || []).some(p => p.on === it.id) || noteOpen.has(it.id);
+  // The note and pictures come after an answer (or when there already is one): what should be different, or anything to add.
+  const noteShown = cur !== 'unset' || store.notes[it.id] || (store.pictures || []).some(p => p.on === it.id);
+  const wants = picked && picked.tone !== 'positive';
   return `<fieldset class="item${chosen ? ' chosen' : ''}${it.step ? ' open' : ''}" data-v="${cur}" style="--tone:var(--${TONE[(picked || {}).tone] || 'line2'})">
     <legend>${esc(it.title)}</legend>
     ${it.step ? `<p class="w-line"><span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
@@ -2067,22 +2101,21 @@ function answerHtml(it, sec){
     </div>
     ${(picked || {}).hint ? `<p class="hint">${esc(picked.hint)}</p>` : ''}
     ${asksRow(it.id)}
-    <details class="more-answer" data-for="${esc(it.id)}"${noteShown ? ' open' : ''}><summary>${I('note')}${cur === 'unset' ? 'Add a note or a picture' : 'Say why, in your own words'}</summary>
-    <label class="skip" for="n-${esc(it.id)}">Note for ${esc(it.title)}</label>
+    ${noteShown ? `<div class="explain"><label class="qprompt" for="n-${esc(it.id)}">${I('note')}${wants ? 'What should be different?' : 'Anything to add? (optional)'}</label>
     <textarea id="n-${esc(it.id)}" data-note="${esc(it.id)}"
-      placeholder="What did you see? Your own words are the part that gets acted on.">${esc(store.notes[it.id]||'')}</textarea>
-    ${picsHtml(it.id)}</details>
+      placeholder="${wants ? 'Say what you expected instead. Your words are what gets acted on.' : 'A note, if you have one.'}">${esc(store.notes[it.id]||'')}</textarea>
+    ${picsHtml(it.id)}</div>` : ''}
   </fieldset>`;
 }
 // The three places after the map, for one question. The Overview shows a flow step's screen still;
 // the tour has the live screen in its own place.
 function placesFor(it, overview){
   const flds = (REVIEW.fields||[]).filter(f => (it.fields||{})[f.key]).map(f =>
-    `<div class="fld"><span class="k" style="--fk:var(--${TONE[f.tone]||'mut'})">${esc(f.label)}</span><span class="val">${esc(it.fields[f.key])}</span></div>`).join('');
+    `<div class="fld exp ${f.tone === 'negative' ? 'fail' : f.tone === 'positive' ? 'ok' : 'info'}"><span class="ei">${I(f.tone === 'negative' ? 'x' : f.tone === 'positive' ? 'check' : 'info')}</span><b class="k">${esc(f.label)}</b><p class="val">${esc(it.fields[f.key])}</p></div>`).join('');
   return {
     proto: (overview && it.step && FLOW ? stillScreen(it.step.from) : '') + (it.approval ? approvalHtml(it.approval) : ''),
-    expected: (it.step ? outcomeCols(it) : '') + (flds ? `<div class="flds">${flds}</div>` : '') + examplesHtml(it.examples),
-    build: (it.step ? buildHtml(it) : '') + (it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''),
+    expected: (it.step ? outcomeCols(it) : '') + (flds ? `<div class="expected flds">${flds}</div>` : '') + examplesHtml(it.examples),
+    build: (it.step ? buildHtml(it) : '') + (it.ref ? `<p class="ref">${I('code')} ${esc(it.ref)}</p>` : ''),
   };
 }
 function cardHtml(it){
@@ -2275,7 +2308,7 @@ function renderSelection(){
     : selection?.screenId ? 'Choose a related behavior below. This screen has no separate verdict.' : selection ? 'Selecting something does not record an answer.' : '',
     it && !visible(it) ? 'Selected item is outside the current filters.' : ''].filter(Boolean).join(' · ');
   $('#related-items').innerHTML = !edge && !selected ? (selection?.relatedItemIds || []).map(id => '<button class="btn" type="button" data-open="' + esc(id) + '">' + esc(REVIEW.items.find(i => i.id === id)?.title) + '</button>').join('') : '';
-  $('#selection-actions').innerHTML = edge ? '' : (selection?.commentTarget ? '<button class="btn" id="comment-selected" type="button">' + I('note') + 'Comment on the map</button>' : '')
+  $('#selection-actions').innerHTML = edge ? '' : (selection?.commentTarget ? '<button class="btn" id="comment-selected" type="button">' + I('pin') + 'Mark it on the map</button>' : '')
     + (selection?.layerKey ? '<button class="btn" id="inspect-response" type="button">Go to response</button>' : '');
   if (mode === 'tour' && !edge && selection?.target.kind === 'added') {
     const a = store.added.find(x => x.id === selection.target.id);
@@ -2480,13 +2513,42 @@ function goStep(dir){
     if (FLOW && j < 0) at = FLOW.start;
     if (FLOW) drawAll(); else { render(); if ($('#dpanel')) drawStageChart(); }
   }
-  $('#selection-title').focus();
+  // Each step starts at the top: the question, then its places.
+  scrollTo(0, 0);
+  $('#selection-title').focus({ preventScroll: true });
 }
 $('#back').addEventListener('click', () => goStep(-1));
 $('#next').addEventListener('click', () => goStep(1));
 $('#start-review').addEventListener('click', () => { tourAt = 'start'; goStep(1); });
+$('#start-mini').addEventListener('click', () => { tourAt = 'item'; selected = ORDER()[0]; goStep(-1); $('#start-review').focus(); });
+// #100 — Understand in short cards: one sentence each, the rest one tap away, never dropped.
+const plain = (t) => String(t || '').replace(/\*\*|`/g, '').trim();
+function firstSentence(t){ const s = plain(t), m = s.match(/^.+?[.!?](?=\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
+function drawStart(){
+  const b = REVIEW.brief || {}, parts = segs(), n = REVIEW.items.length;
+  const card = (icon, title, text, moreHtml = '', extra = '') => {
+    const [one, rest] = firstSentence(text), more = (rest ? '<p>' + esc(rest) + '</p>' : '') + moreHtml;
+    return [icon, title, '<p>' + esc(one) + '</p>' + extra + (more ? '<details class="start-more"><summary>More</summary>' + more + '</details>' : '')];
+  };
+  const about = b.question || b.explains || REVIEW.intro || REVIEW.subtitle || REVIEW.title;
+  const aboutMore = [b.question && b.explains, about !== REVIEW.intro && REVIEW.intro].filter(Boolean).map(t => '<p>' + esc(plain(t)) + '</p>').join('');
+  const cards = [
+    card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
+    b.recommendation && card('star', 'My recommendation', b.recommendation),
+    ['list', "What I'll ask", '<p>' + n + (n === 1 ? ' question' : ' questions') + (parts.length > 1 ? ' in ' + parts.length + ' parts.' : '.') + '</p><p class="start-parts">'
+      + parts.map(s => '<span class="chip-part" style="--sc:' + s.color + '">' + I(s.icon) + esc(s.label) + '</span>').join('') + '</p>'],
+    (b.examples || []).length && card('check', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', examplesHtml(b.examples)),
+    (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul>' : ''),
+    card('help', 'How to answer', REVIEW.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
+    card('send', 'What happens next', REVIEW.afterwards || 'Nothing is sent until you download your answers.', REVIEW.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
+  ].filter(Boolean);
+  $('#start-cards').innerHTML = cards.map(([icon, title, html], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3>' + I(icon) + esc(title) + '</h3>' + html + '</div></li>').join('');
+}
+drawStart();
 document.addEventListener('click', e => {
   const seg = e.target.closest('[data-seg]');
+  if (seg && seg.dataset.seg === 'start') { tourAt = 'item'; selected = ORDER()[0]; goStep(-1); return $('#start-review').focus(); }
+  if (seg && seg.dataset.seg === 'end') { tourAt = 'item'; selected = ORDER().at(-1); return goStep(1); }
   if (seg) { const s = segs()[+seg.dataset.seg]; return openItem(s.ids.find(id => !store.verdicts[id]) || s.ids[0]); }
   const open = e.target.closest('[data-open]');
   if (open) openItem(open.dataset.open);
@@ -2534,7 +2596,7 @@ function focusResponse(layerKey){
 const setFull = (panel, on) => {
   panel.classList.toggle('full', on);
   const b = panel.querySelector('.panel-full');
-  b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Exit full screen' : 'Full screen';
+  b.setAttribute('aria-pressed', String(on)); b.setAttribute('aria-label', on ? 'Exit full screen' : 'Full screen'); b.innerHTML = I(on ? 'x' : 'expand');
   if (panel.id === 'dpanel') drawStageChart();
 };
 // #60 — the reviewer comments on a box or an arrow. Each comment keeps what it is on, in words.

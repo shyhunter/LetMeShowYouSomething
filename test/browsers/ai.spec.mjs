@@ -20,6 +20,7 @@ function rendered(review) {
 }
 test('AI: captions, stops, keyboard comments and allowed proposals survive both exports', async ({ page }) => {
   await page.goto(pathToFileURL(join(root, 'examples/ai-tool-loop.html')).href);
+  await page.locator('#start-review').click();
   const chart = page.locator('.dg-agent');
   for (const text of ['Model call', 'Tool call', 'Retrieval', 'Guardrail', 'Human handoff', 'Why', 'Next', 'Estimated tokens', 'Total: 1400']) await expect(chart).toContainText(text);
   await chart.locator('[data-node="model"]').focus(); await page.keyboard.press('Enter');
@@ -45,6 +46,7 @@ test('AI: captions, stops, keyboard comments and allowed proposals survive both 
   if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const html = page.waitForEvent('download'); await page.locator('#exporth').click(); const hp = join(dir, 'answered.html'); await (await html).saveAs(hp);
   await page.goto(pathToFileURL(hp).href); await expect(page.locator('textarea[data-comment="comment-1"]')).toHaveValue('Clarify the context.');
+  await page.locator('#start-review').click();
   await expect(page.locator('.dg-agent')).toContainText('Total: 1400');
 });
 test('AI: hostile labels, stops and token labels remain text in the page and HTML export', async ({ page }) => {
@@ -54,10 +56,12 @@ test('AI: hostile labels, stops and token labels remain text in the page and HTM
   for (const n of d.nodes.filter(n => n.stop)) n.stop = { reason: attack, next: attack };
   d.tokenUsage.parts[0].label = attack;
   const { dir, hp } = rendered(review); await page.goto(pathToFileURL(hp).href);
+  await page.locator('#start-review').click();
   await expect(page.locator('.dg-agent img, .dg-agent script')).toHaveCount(0); expect(await page.evaluate(() => window.aiAttack)).toBeUndefined();
   if (!(await page.locator('#return-review').isVisible())) await page.locator('#finish').click();
   const download = page.waitForEvent('download'); await page.locator('#exporth').click(); const out = join(dir, 'answered.html'); await (await download).saveAs(out);
   await page.goto(pathToFileURL(out).href); await expect(page.locator('.dg-agent img, .dg-agent script')).toHaveCount(0); expect(await page.evaluate(() => window.aiAttack)).toBeUndefined();
+  await page.locator('#start-review').click();
 });
 test('AI: wide unbroken text stays in its boxes; zero reported tokens have finite bars', async ({ page }) => {
   const review = JSON.parse(readFileSync(reviewPath, 'utf8')); review.id = 'ai-wide-browser'; const d = review.diagrams[0];
@@ -65,6 +69,7 @@ test('AI: wide unbroken text stays in its boxes; zero reported tokens have finit
   for (const n of d.nodes.filter(n => n.stop)) n.stop = { reason: '界'.repeat(150), next: 'x'.repeat(300) };
   d.tokenUsage.basis = 'reported'; d.tokenUsage.total = 0; d.tokenUsage.parts.forEach(p => { p.tokens = 0; p.label = '界'.repeat(40); });
   await page.goto(pathToFileURL(rendered(review).hp).href);
+  await page.locator('#start-review').click();
   await expect(page.locator('.dg-token-chart')).toContainText('Reported tokens'); await expect(page.locator('.dg-token-chart')).toContainText('Total: 0');
   const faults = await page.evaluate(() => {
     const bad = [];

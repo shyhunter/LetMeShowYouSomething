@@ -10,6 +10,8 @@ const reveal = (selector) => `(() => {
   for (let el = control.parentElement; el; el = el.parentElement) if (el.tagName === 'DETAILS') ancestors.unshift(el);
   for (const details of ancestors) if (!details.open) details.querySelector(':scope > summary').click();
 })()`;
+// #105 — every page opens on Understand; the checks begin after Start.
+const start = `document.querySelector('#start-review').offsetParent && document.querySelector('#start-review').click()`;
 const returnReview = `if (!document.querySelector('#return-review').open) document.querySelector('#finish').click();`;
 
 const CHECKOUT = join(REPO, 'examples/review.example.json');
@@ -18,7 +20,7 @@ const DATABASE = join(REPO, 'examples/database-booking.review.json');
 const AI = join(REPO, 'examples/ai-tool-loop.review.json');
 
 await withChrome('ai-page', async ({ dir, say, ev, load, key, type, exported, shot }) => {
-  await load(render(AI, dir));
+  { await load(render(AI, dir)); await ev(start); }
   say(await ev(`['Model call','Tool call','Retrieval','Guardrail','Human handoff','Why','Next','Estimated tokens','Total: 1400'].every(t => document.querySelector('.dg-agent').textContent.includes(t))`), 'AI kinds, explained stops and estimated tokens are visible');
   await ev(`document.querySelector('#commentmode').click(); document.querySelector('[data-node="model"]').focus()`);
   await key('Enter', 'Enter', 13); await type('Explain this invented model call.');
@@ -35,16 +37,16 @@ await withChrome('ai-hostile', async ({ dir, say, ev, load, exported }) => {
   for (const n of d.nodes.filter(n => n.stop)) n.stop = { reason: attack, next: attack };
   d.tokenUsage.parts[0].label = attack;
   const rp = join(dir, 'ai-hostile.json'); writeFileSync(rp, JSON.stringify(review));
-  await load(render(rp, dir));
+  { await load(render(rp, dir)); await ev(start); }
   const safe = `!window.__aiAttack && !document.querySelector('.dg-agent img, .dg-agent script')`;
   say(await ev(safe), 'AI hostile text is inert');
   await ev(`${returnReview} document.querySelector('#exporth').click()`); const file = await exported('.feedback.html');
-  if (file) await load(file);
+  if (file) { await load(file); await ev(start); }
   say(file && await ev(safe), 'AI hostile text stays inert after HTML export');
 });
 
 await withChrome('database-page', async ({ dir, say, ev, load, key, type, exported, shot }) => {
-  await load(render(DATABASE, dir));
+  { await load(render(DATABASE, dir)); await ev(start); }
   say(await ev(`document.querySelectorAll('.dg-k-table').length`) === 2, 'database draws two tables');
   say(await ev(`['Key','Many','One','Example data','text identifier'].every(t => document.querySelector('.dg-database').textContent.includes(t))`), 'columns, key, cardinalities and example labels are visible');
   await ev(`document.querySelector('.dg-k-table[data-node="bookings"]').focus()`);
@@ -71,7 +73,7 @@ const rows = `(document.querySelector('#mode-overview').click(), document.queryS
 
 await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key, type, exported }) => {
   const page = render(CHECKOUT, dir);
-  await load(page);
+  { await load(page); await ev(start); }
   say(await ev(`${rows}.length`) === 4, 'lists 4 items');
   await ev(`document.querySelector('#mode-tour').click(); document.querySelector('#next').click()`);
   say(await ev(`document.querySelectorAll('#detail fieldset.item').length`) === 1, 'and Next opens the first one in the tour');
@@ -91,7 +93,7 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
   say(await ev(`${stored()}.verdicts['saved-card']`) === 'partial', 'keyboard: Space then ArrowRight selects "partial"');
   say(await ev('document.activeElement.name + "=" + document.activeElement.value') === 'v-saved-card=partial', 'keyboard focus stays in the group');
   await ev(overview); await ev(`document.querySelector('#at').focus()`); await type('Currency flips mid-flow'); await ev(`document.querySelector('#addbtn').click()`);
-  await load(page); await ev(open('declined-card'));
+  { await load(page); await ev(start); } await ev(open('declined-card'));
   say(await ev(`document.querySelector('textarea[data-note="declined-card"]').value`) === 'Customer sees error 51.' && await ev("document.querySelectorAll('.addedrow').length") === 1, 'autosave keeps note and added item across reload');
   await ev(overview); await ev(reveal('[data-f="gaps"]'));
   await ev(`document.querySelector('[data-f="gaps"]').click()`);
@@ -108,7 +110,7 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
   const exportPage = htmlFile ? readFileSync(htmlFile, 'utf8') : '';
   say(exportPage.startsWith('<!doctype html>') && (exportPage.match(/^const SEED = \{/gm) || []).length === 1, 'HTML export is the whole page, the answers seeded once inside its script');
   await ev(`localStorage.clear()`);
-  if (htmlFile) await load(htmlFile);
+  if (htmlFile) { await load(htmlFile); await ev(start); }
   say(await ev(`${rows}.length`) === 4, 'the exported page shows every item, not a summary');
   await ev(open('declined-card'));
   say(await ev(`document.querySelector('textarea[data-note="declined-card"]').value`) === 'Customer sees error 51.' && /Currency flips mid-flow/.test(await ev(`document.querySelector('#added').textContent`)), 'and opens with the note and the added item in place');
@@ -117,7 +119,7 @@ await withChrome('checkout-page', async ({ dir, say, ev, load, media, shot, key,
 
 await withChrome('decision-page', async ({ dir, say, ev, load, key, exported }) => {
   const page = render(DECISION, dir);
-  await load(page);
+  { await load(page); await ev(start); }
   await ev(overview);
   say(await ev(`document.querySelectorAll('.rec').length`) === 1, 'exactly one Recommended label');
   let aff = 0;
@@ -155,21 +157,22 @@ await withChrome('decision-hostile', async ({ dir, say, ev, load }) => {
   for (const it of evil.items) Object.assign(it, { title: bad, summary: bad, body: bad, ref: bad });
   evil.items[1].affects[0].why = bad; evil.items[1].affects[0].decision.title = bad;
   const evilPath = join(dir, 'evil.json'); writeFileSync(evilPath, JSON.stringify(evil));
-  await load(render(evilPath, join(dir)));
+  { await load(render(evilPath, join(dir))); await ev(start); }
   say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')), 'hostile review: no img elements, no script ran');
 });
 
 // ── an answer that tries to break out of the exported page's script (D076) ──
 await withChrome('export-hostile', async ({ dir, say, ev, load, exported }) => {
-  await load(render(CHECKOUT, dir)); await ev(open('declined-card'));
+  { await load(render(CHECKOUT, dir)); await ev(start); } await ev(open('declined-card'));
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
+  await ev(`document.querySelector('input[data-item="declined-card"][value="fails"]').click()`);
   await ev(`(()=>{const t=document.querySelector('textarea[data-note="declined-card"]');t.value=${JSON.stringify(bad)};t.dispatchEvent(new Event('input',{bubbles:true}))})()`);
   await ev(`${returnReview} document.querySelector('#exporth').click()`);
   const file = await exported('.feedback.html');
   const text = file ? readFileSync(file, 'utf8') : '';
   say(!text.includes('</script><script>window.__pwned'), 'the answer is escaped inside the exported script');
   await ev(`localStorage.clear()`);
-  if (file) { await load(file); await ev(open('declined-card')); }
+  if (file) { { await load(file); await ev(start); } await ev(open('declined-card')); }
   say(!(await ev('window.__pwned === 1')) && await ev(`document.querySelectorAll('img').length`) === 0, 'opening the export runs nothing from the answer');
   say(await ev(`document.querySelector('textarea[data-note="declined-card"]').value`) === bad, 'and shows the answer exactly as written');
 });

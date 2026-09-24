@@ -20,7 +20,6 @@ const render = (reviewPath, dir) => {
 
 // #100 — the page opens on Understand. A question opens with Next, or from the Overview, as a reviewer would.
 const openStep = async (page, id) => { await page.locator('#mode-overview').click(); await page.locator(`#items [data-open="${id}"]`).click(); };
-const openNote = (page) => page.locator('#detail details.more-answer:not([open]) > summary').click();
 
 // Every page must run clean and offline: no script error, nothing fetched beyond the file itself.
 test.beforeEach(async ({ page }, info) => {
@@ -71,7 +70,7 @@ test('a list review: Understand first, Next opens the first question, the four p
   await page.goto(url('examples/checkout-uat.html'));
   await expect(page.locator('#selection-title')).toHaveText('Before you start');
   await expect(page.locator('#stepno')).toHaveText('Step 1 of 6');
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await expect(page.locator('#detail legend')).toHaveText('A guest can buy without creating an account');
   await expect(page.locator('#t-where')).toContainText('1 of 2');
   expect(await page.locator('#places > .slot').evaluateAll((l) => l.map((s) => s.id))).toEqual(['slot-map', 'slot-proto', 'slot-expected', 'slot-build']);
@@ -87,6 +86,7 @@ test('a list review: Understand first, Next opens the first question, the four p
 
 test('a list review draws its chart, and a box opens its item (#47)', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#start-review').click();
   await expect(page.locator('#dpanel svg.dg')).toBeVisible();
   await expect(page.locator('.mmd')).toHaveCount(0);                  // never Mermaid source text
   // By keyboard: Firefox cannot scroll a box inside the sideways-scrolling chart into view for a pointer click.
@@ -98,7 +98,7 @@ test('a list review draws its chart, and a box opens its item (#47)', async ({ p
 
 test('checkout: answer, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await page.locator('label:has(input[name="v-guest-checkout"][value="works"])').click();
   await openStep(page, 'declined-card');
   await page.locator('label:has(input[name="v-declined-card"][value="fails"])').click();
@@ -115,11 +115,12 @@ test('checkout: answer, export, and the file passes the checker', async ({ page 
 
 test('flow: tap through, judge a step, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#start-review').click();
   await page.locator('#screen [data-target="book"]').click();
   await page.locator('#expected [data-outcome="0"]').click();
   await expect(page.locator('#screen-title')).toHaveText('Booked');
   await page.locator('#detail .open label:has(input[data-item="book"][value="agree"])').click();
-  await expect(page.locator('#overview')).toContainText('1 answered');
+  await expect(page.locator('#overview')).toContainText('1 of 11 answered');
   await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
   const file = join(mkdtempSync(join(tmpdir(), 'pw-')), 'feedback.json');
@@ -132,6 +133,7 @@ test('flow: tap through, judge a step, export, and the file passes the checker',
 // One tap, every layer answers (D098): what runs and what changes, shown with the step, judged on their own.
 test('flow: the system and data layers show with the step, and an entry can be judged', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#start-review').click();
   await page.locator('#screen [data-target="book"]').click();
   const build = page.locator('#build');                                  // the fourth place: how I'd build it
   await expect(build.locator('.layer').first()).toBeHidden();            // the review opens on UI + flow
@@ -166,16 +168,16 @@ test('two different reviews with the same id do not share answers', async ({ pag
   writeFileSync(join(dir, 'other.json'), JSON.stringify(other));
   const otherPage = render(join(dir, 'other.json'), dir);
   await page.goto(url('examples/checkout-uat.html'));
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await page.locator('label:has(input[name="v-guest-checkout"][value="fails"])').click();
   await page.locator('textarea[data-note="guest-checkout"]').fill('Given on the example page');
   await page.goto('file://' + otherPage);
+  await page.locator('#start-review').click();
   await expect(page.locator('h1')).toHaveText('Another checkout test, same id');
-  await page.locator('#next').click();
   expect(await page.locator('input[name="v-guest-checkout"][value="fails"]').isChecked(), 'answer crossed over').toBe(false);
-  await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('');
+  await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveCount(0);   // no answer, so no note either
   await page.goto(url('examples/checkout-uat.html'));                  // and the example keeps its own answer
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await expect(page.locator('textarea[data-note="guest-checkout"]')).toHaveValue('Given on the example page');
 });
 
@@ -188,7 +190,7 @@ test('item examples show who, what, what people see, and the source or "unverifi
   const dir = mkdtempSync(join(tmpdir(), 'pw-'));
   writeFileSync(join(dir, 'ex.json'), JSON.stringify(r));
   await page.goto('file://' + render(join(dir, 'ex.json'), dir));
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   const item = page.locator('#expected');                               // the third place: what should happen
   await expect(item.locator('.brief-h3')).toHaveText('Where this has been done before');
   await expect(item).toContainText('What people see: A "Continue as guest" choice next to "Sign in".');
@@ -206,6 +208,7 @@ test('a hostile review runs no script and shows no injected markup', async ({ pa
   const dir = mkdtempSync(join(tmpdir(), 'pw-'));
   writeFileSync(join(dir, 'evil.json'), JSON.stringify(evil));
   await page.goto('file://' + render(join(dir, 'evil.json'), dir));
+  await page.locator('#start-review').click();
   await expect(page.locator('h1')).toHaveText(bad);
   expect(await page.locator('img').count()).toBe(0);
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
@@ -214,8 +217,9 @@ test('a hostile review runs no script and shows no injected markup', async ({ pa
 test('a hostile answer cannot break out of the exported page', async ({ page }) => {
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#start-review').click();
   await openStep(page, 'declined-card');
-  await openNote(page);                                                 // a note before any answer: one tap
+  await page.locator('#detail input[data-item="declined-card"][value="fails"]').check();   // the note comes after an answer
   await page.locator('textarea[data-note="declined-card"]').fill(bad);
   await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#exporth').click()]);
@@ -223,6 +227,7 @@ test('a hostile answer cannot break out of the exported page', async ({ page }) 
   await download.saveAs(file);
   await page.evaluate(() => localStorage.clear());
   await page.goto('file://' + file);
+  await page.locator('#start-review').click();
   await openStep(page, 'declined-card');
   await expect(page.locator('textarea[data-note="declined-card"]')).toHaveValue(bad);
   expect(await page.locator('img').count()).toBe(0);
@@ -240,6 +245,7 @@ test('an approval: the exact action, approve or decline, and the export passes t
     approval: { action: 'Drop the database checkout_v1_staging', scope: 'One staging database', risk: 'high', preview: 'DROP DATABASE checkout_v1_staging;', expiresAt: iso(864e5) } });
   const reviewPath = join(dir, 'review.json'); writeFileSync(reviewPath, JSON.stringify(r));
   await page.goto('file://' + render(reviewPath, dir));
+  await page.locator('#start-review').click();
   await openStep(page, 'drop-db');
   const box = page.locator('#proto-extra .appr');                       // the second place: the exact action
   await expect(box).toContainText('Drop the database checkout_v1_staging');
@@ -259,6 +265,7 @@ test('an approval: the exact action, approve or decline, and the export passes t
 for (const name of ['checkout-uat', 'flow-booking']) {
   test(`${name}: every place can be minimised and shown again`, async ({ page }) => {
     await page.goto(url(`examples/${name}.html`));
+    await page.locator('#start-review').click();
     const sels = await page.locator('.min[data-min]').evaluateAll((l) => l.map((b) => b.dataset.min));
     expect(sels).toEqual(['#slot-map', '#slot-proto', '#slot-expected', '#slot-build']);
     for (const sel of sels) {
@@ -268,10 +275,11 @@ for (const name of ['checkout-uat', 'flow-booking']) {
       await expect(page.locator(`${sel} > .min-head`)).toBeVisible();   // never hidden without a title bar
     }
     await page.reload();
+    await page.locator('#start-review').click();
     await expect(page.locator('.minimised')).toHaveCount(sels.length);
     for (const sel of sels) await page.locator(`.min[data-min="${sel}"]`).click();
     await expect(page.locator('.minimised')).toHaveCount(0);
-    await page.locator('#more > summary').click();                       // someone who only wants the prototype
+    // someone who only wants the prototype
     await page.locator('[data-only="#slot-proto"]').click();
     await expect(page.locator('.minimised')).toHaveCount(3);
     await expect(page.locator('#slot-proto')).not.toHaveClass(/minimised/);
@@ -283,6 +291,7 @@ for (const name of ['checkout-uat', 'flow-booking']) {
 // #60 — the reviewer comments on a box and an arrow of the agent's diagram; the comments travel in the export.
 test('comments on the diagram: pick a box by keyboard and an arrow, export, and the file passes the checker', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#start-review').click();
   await page.locator('#commentmode').click();
   await expect(page.locator('#commentmode')).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#flowbeside [data-node="pay"]').focus();
@@ -307,14 +316,14 @@ test('a picture on a note: attached, re-saved, kept across a reload, and the exp
   const dir = mkdtempSync(join(tmpdir(), 'pw-pic-'));
   const png = join(ROOT, 'site/social-preview.png');                // a real 1280 × 640 PNG from the repo
   await page.goto(url('examples/checkout-uat.html'));
-  await page.locator('#next').click();
-  await openNote(page);
+  await page.locator('#start-review').click();
+  await page.locator('#detail input[data-item]').first().check();
   const [chooser] = await Promise.all([page.waitForEvent('filechooser'), page.locator('#detail [data-picadd]').click()]);
   await chooser.setFiles(png);
   await expect(page.locator('#detail .pic img')).toHaveCount(1);
   await expect(page.locator('#detail .pic-msg')).toContainText('without hidden details');
   await page.reload();
-  await page.locator('#next').click();
+  await page.locator('#start-review').click();
   await expect(page.locator('#detail .pic img')).toHaveCount(1);
   await page.locator('#finish').click();
   const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#export').click()]);
@@ -329,6 +338,7 @@ test('a picture on a note: attached, re-saved, kept across a reload, and the exp
 // #60 part 3 — the reviewer changes the agent's diagram; the page shows it and the file carries it.
 test('a proposed change: rename a box, see it drawn, export it, and the checker accepts it', async ({ page }) => {
   await page.goto(url('examples/checkout-uat.html'));
+  await page.locator('#start-review').click();
   await page.locator('#commentmode').click();
   await page.locator('#flowbeside [data-node="pay"]').focus();
   await page.keyboard.press('Enter');
@@ -353,6 +363,7 @@ test('a proposed change: rename a box, see it drawn, export it, and the checker 
 // #32 — a system diagram is drawn with its own boxes, and the flow's sub-processes stay out of it.
 test('the system diagram tab: lanes, a store, an outside system, and no sub-process column', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#start-review').click();
   await page.locator('#dgtabs [data-tab="booking-system"]').click();
   await expect(page.locator('#flowbeside .dg-lane')).toHaveCount(3);
   await expect(page.locator('#flowbeside .dg-node')).toHaveCount(9);
@@ -367,6 +378,7 @@ test('the system diagram tab: lanes, a store, an outside system, and no sub-proc
 // #32 — a sequence diagram on the page, and a comment that lands on the right message.
 test('the sequence tab: participants with lifelines, and a comment on the fifth message', async ({ page }) => {
   await page.goto(url('examples/flow-booking.html'));
+  await page.locator('#start-review').click();
   await page.locator('#dgtabs [data-tab="booking-calls"]').click();
   await expect(page.locator('#flowbeside .dg-life')).toHaveCount(5);
   await expect(page.locator('#flowbeside .dg-edge')).toHaveCount(9);
@@ -401,12 +413,13 @@ for (const [kind, shape] of Object.entries(KINDS)) {
     writeFileSync(join(dir, 'r.json'), JSON.stringify(r));
     await page.goto('file://' + render(join(dir, 'r.json'), dir));
     const n = r.items.length + 2;
+    await expect(page.locator('#start-cards > li').first()).toBeVisible();   // Understand: its own screen
     for (let i = 1; i <= n; i++) {
       await expect(page.locator('#stepno')).toHaveText(`Step ${i} of ${n}`);
       expect(await page.locator('#places > .slot').evaluateAll((l) => l.map((s) => s.id))).toEqual(['slot-map', 'slot-proto', 'slot-expected', 'slot-build']);
       for (const id of ['#slot-map', '#slot-proto', '#slot-expected', '#slot-build'])
         expect((await page.locator(`${id} .slot-body`).innerText()).trim().length, `${id} on step ${i} is not blank`).toBeGreaterThan(0);
-      if (i < n) await page.locator('#next').click();
+      if (i < n) await page.locator(i === 1 ? '#start-review' : '#next').click();
     }
     await expect(page.locator('#selection-title')).toHaveText('Finish and send back');
     await page.locator('#mode-overview').click();
