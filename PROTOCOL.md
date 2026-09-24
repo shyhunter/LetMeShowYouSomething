@@ -558,8 +558,15 @@ node bin/check.mjs review   examples/flow-booking.review.json --root .   # a flo
 ```
 
 **The next round drops nothing** (`followup`, #52). A follow-up review must carry everything the
-reviewer left open: every gap, every item they added, every request. An earlier item is carried by an
-item with the same id, or by one whose `affects` quotes it. An `example` request is answered by that
+reviewer left open: every gap, every item they added, every request, and every answer that settles
+nothing — a verdict whose tone is `caution` or `neutral`, such as "Partially works", "Couldn't test it"
+or "Revisit" (#88, `open answers carried`; the tones come from the agent's own review). An earlier
+item is carried by an item with the same id, or by one whose `affects` quotes it.
+
+**Putting something off** (#88) needs no status of its own. The reviewer leaves the item unanswered
+and says why in its note: it stays `unset`, a gap, with their reason, and is carried like any gap. A
+review's own vocabulary can offer the same thing ("Revisit", "Couldn't test it"), and those answers
+are carried too. Neither is ever agreement or permission. An `example` request is answered by that
 item's `examples`, and an `explain` request by a `summary` or `body` that says it differently. The next
 review needs its own id. There is no status field: the files already hold the state, and a second copy
 could disagree with them.

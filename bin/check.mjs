@@ -848,6 +848,14 @@ function checkFollowup(next, review, f, rep) {
   const dropped = (f?.gaps ?? []).filter((id) => !addedIds.has(id) && !carriers(id).length);
   rep.check('gaps carried', dropped.length === 0,
     `${dropped.map((id) => `"${title(id)}"`).join(', ')} ${dropped.length === 1 ? 'is a gap' : 'are gaps'} the next review drops. ${how}, or the reviewer never sees their open point answered`);
+  // #88 — a caution or neutral answer ("Partially works", "Couldn't test it", "Revisit") settles nothing,
+  // and it is not a gap: carry it the same way, or it drops out unanswered. Tones come from the agent's own
+  // review, never from the returned file. Gaps themselves stay as they are.
+  const option = Object.fromEntries((review?.verdictSet?.options ?? []).map((o) => [o.value, o]));
+  const openDropped = (f?.responses ?? []).filter((x) => ['caution', 'neutral'].includes(option[x.verdict]?.tone) && !carriers(x.itemId).length)
+    .map((x) => `"${x.title}" was answered "${option[x.verdict].label ?? x.verdict}"`);
+  rep.check('open answers carried', openDropped.length === 0,
+    `${openDropped.join(', ')}, and the next review drops ${openDropped.length === 1 ? 'it' : 'them'}. That answer settles nothing. ${how}, or it is never looked at again`);
   const addedDropped = (f?.addedItems ?? []).filter((x) => !carriers(x.id).length).map((x) => `"${x.title}"`);
   rep.check('added items carried', addedDropped.length === 0,
     `the reviewer added ${addedDropped.join(', ')}, and the next review drops ${addedDropped.length === 1 ? 'it' : 'them'}. ${how}, or what they raised unasked is lost`);

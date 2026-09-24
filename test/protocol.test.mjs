@@ -1277,6 +1277,31 @@ test('answer.mjs: confirmed chat answers become a checked feedback file; what wa
   assert.equal(c.status, 0, c.stdout);
 });
 
+// #88 — an answer that settles nothing (a caution or neutral verdict: "Partially works", "Couldn't
+// test it", "Revisit") is carried like a gap; a settled one may be left out.
+test('followup: caution and neutral answers are carried; settled ones may be dropped', () => {
+  const review = readJson('examples/review.example.json');
+  const run = (dropId, editFb, carry) => {
+    const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
+    next.items = next.items.filter((i) => i.id !== dropId);
+    for (const n of next.diagrams[0].nodes) if (n.step === dropId) delete n.step;
+    if (carry) next.items.push(carry);
+    const fb = readJson('examples/feedback.example.json');
+    if (editFb) editFb(fb);
+    const [pn, pf] = ['next', 'fb'].map((k) => join(tmp, `${k}-${Math.random().toString(36).slice(2)}.json`));
+    writeFileSync(pn, JSON.stringify(next)); writeFileSync(pf, JSON.stringify(fb));
+    return check('followup', pn, at('examples/review.example.json'), pf).stdout;
+  };
+  // saved-card is "Partially works" (caution) in the example feedback.
+  assert.match(run('saved-card'), /✗ open answers carried: "A returning customer can pay with a saved card" was answered "Partially works"/);
+  const blocked = (fb) => { fb.responses.find((r) => r.itemId === 'guest-checkout').verdict = 'blocked'; };
+  assert.match(run('guest-checkout', blocked), /✗ open answers carried: "A guest can buy without creating an account" was answered "Couldn't test it"/);
+  const quoting = { id: 'guest-again', title: 'Retest guest checkout once the sandbox is up',
+    affects: [{ effect: 'extends', why: 'You could not test it.', decision: { review: review.id, itemId: 'guest-checkout', title: 'A guest can buy without creating an account', verdict: 'blocked' } }] };
+  assert.doesNotMatch(run('guest-checkout', blocked, quoting), /✗ open answers carried/);
+  assert.doesNotMatch(run('guest-checkout'), /✗ open answers carried/, 'a settled "Works" may be left out');
+});
+
 // #60 — comments on a box or an arrow: echoed in words, checked against the review, answered next round.
 test('comments on a diagram: labelled, resolved against the review, and answered in the follow-up', () => {
   const review = readJson('examples/review.example.json');
