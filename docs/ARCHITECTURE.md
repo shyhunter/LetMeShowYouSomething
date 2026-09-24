@@ -57,13 +57,14 @@ Shipped, and documented in PROTOCOL.md: reviews and feedback v1 · flows, screen
 (flowchart, system, sequence, database, AI) · comments, pictures and proposed changes on a diagram ·
 choices, requests, approvals · answers given in chat · the answered page read back as data (#78) ·
 unique answer ids (#77) · answers that settle nothing carried forward (#88) · what became of each
-proposal, checked against the diagrams (#87) · conformance fixtures (#89).
+proposal, checked against the diagrams (#87) · conformance fixtures (#89) · the review page as a
+guided tour with an Overview, four places in a fixed order (#100).
 
 Proposed or in progress, **not** shipped, whatever an issue says:
 
 | Issue | What |
 |---|---|
-| [#74](https://github.com/shyhunter/LetMeShowYouSomething/issues/74) | a connected, diagram-first review page |
+| [#74](https://github.com/shyhunter/LetMeShowYouSomething/issues/74) | the rest of the tour: app-like prototypes and a layer to expand them (#101), one phone screen without scrolling (#102), a Markdown download (#103) |
 | [#94](https://github.com/shyhunter/LetMeShowYouSomething/issues/94) | the page shows what became of each proposal (the check exists; the display does not) |
 | [#82](https://github.com/shyhunter/LetMeShowYouSomething/issues/82) | one page that keeps every round of a review |
 | [#83](https://github.com/shyhunter/LetMeShowYouSomething/issues/83) | saving back to the same file, where the browser allows |

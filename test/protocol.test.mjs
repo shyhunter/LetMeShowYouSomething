@@ -756,7 +756,7 @@ test('flow page inlines the drawing and feedback code verbatim, and fetches noth
   for (const lib of ['lib/draw-components.mjs', 'lib/build-feedback.mjs', 'lib/layout.mjs', 'lib/draw-diagram.mjs'])
     assert.ok(html.includes(readFileSync(at(lib), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '')), `${lib} is not inlined verbatim`);
   offline(html, 'the flow page');
-  assert.match(html, /id="player"/);
+  assert.match(html, /id="upanel"/);
 });
 
 // D051 — in a doubts section (kind: challenge), agree means the concern is real: that is the gap.

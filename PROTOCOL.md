@@ -622,56 +622,56 @@ node bin/render.mjs examples/review.example.json out.html
 ```
 
 One self-contained page that fetches nothing — a URL appears only as a source the reviewer may
-choose to click — light, dark and a few styles to pick (D080), sections that can be pinned (D079) and minimised to their title bar (#61), verdicts as real radio groups
+choose to click — light, dark and a few styles to pick (D080), verdicts as real radio groups
 inside real fieldsets so keyboard support is not bolted on. Answers autosave to `localStorage`;
-**Finish review** opens a summary; **Download JSON for the agent** writes a file that passes `bin/check.mjs`.
+**Finish** opens a summary; **Download JSON for the agent** writes a file that passes `bin/check.mjs`.
 
 It inlines `lib/build-feedback.mjs` **verbatim**, so the page and the test suite run one
 implementation of the export shape — it cannot drift from what the checker expects without both
 failing at once.
 
-**A review with a `flow` gets a player**, with the list of steps inside it:
+**Every review is a guided tour** (#100), whatever it asks: a flow, a list, a choice, doubts, an
+approval, an explanation, or a diagram. **Understand** comes first: the brief (what the agent needs
+decided, what it explains, its recommendation, precedents each with its source or marked unverified,
+the risks), how to answer, what happens next, and a list of the parts to come. Then **one question at
+a time**, then **Return**: the summary, both downloads, and **Anything else?**, open to anything,
+related or not (D072). **Back** and **Next** are always visible with "Step N of M"; an unanswered
+question can be skipped and stays open. A **progress bar** is split into coloured parts: the review's
+sections, a flow's journeys, or one part. Each part fills as it is answered, and a tap jumps there.
 
-- the **brief** before the full-width **How this works** diagram;
-- the **screen**, drawn from its components by `lib/draw-components.mjs` (also inlined verbatim).
-  Only elements a step points at are buttons; everything else is a still wireframe;
-- a **named selection** connecting **What the user sees** and **What should happen**. On a wide
-  screen these share a row; on a phone they stack. The behavior list opens the selected detail:
-  goal, outcomes, verdict, note, and "Show me an example" / "Explain this" checkboxes. Search stays
-  visible; advanced filters and remembered width preferences live in named tool disclosures;
-- **Add your own feedback**, below the behavior workspace, open to anything, related or not (D072), with
-  what you added listed below it.
+**Every question has the same layout.** On the left: the part and position ("Book a slot · 2 of 3"),
+the question, why it is asked, and the answer as big tiles, each with a symbol, in the review's own
+words and tones (approve or decline for an approval). **Show me an example** and **Explain this** are
+checkboxes beside them, the questions that travel back as `requests`. The note and pictures open with
+one tap, and on their own once answered. On the right, **four places, always in this order**:
 
-**Everything appears once** (D064). There is one list of steps, not four: each card carries its
-journey, its status, its goal and every outcome, and the filters above it — search, verdict, gaps
-only, journey, status, "only where something goes wrong" — are the only way the list narrows.
-Every diagram is a tab in the diagram panel, never a second gallery further down. Selecting a step
-in the chart marks it in the list, and the other way round. A screen shared by multiple behaviors
-offers their names rather than silently choosing one. An unlinked node or arrow has a precise
-comment target, not an unrelated item verdict. Selection itself records no answer.
+1. **Map**: the diagram, with the question's boxes marked "you are here" and answered steps marked.
+   Every chart is a tab (the focus tab first); a flow has **a chip per sub-process** (a column that
+   switches off, D066), which marks its boxes, what leads into them lightly, and dims the rest.
+   Comments and proposed changes are made here.
+2. **Prototype**: a flow's screen, drawn from its components by `lib/draw-components.mjs` (also
+   inlined verbatim). Only elements a step points at are buttons; everything else is a still
+   wireframe. At a press, **every screen at once**, connected like a prototype (D067, D081). An
+   approval shows its exact action, scope, risk, preview and end here.
+3. **What should happen**: a step's outcomes side by side, each with "Show this" to play it on the
+   screen; an item's fields; precedents.
+4. **How I'd build it**: what runs and what changes under each outcome, each with its status,
+   reference and its own verdict (D098); an item's file reference.
 
-**Nothing is hidden silently.** A narrowing filter says "Showing N of M" and offers "Show all".
-The selected detail stays open with an explanation when it falls outside the filters. Diagram
-tabs retain selection and explain when it is not represented there.
+A place with nothing for this question keeps its spot and says so. Each place can be minimised to its
+title bar, or all but the prototype; the map and the screen open **full screen** and close with Esc
+(D073). Selecting a box, an arrow or a screen names what is selected: a screen shared by several
+behaviors offers their names rather than silently choosing one, and an unlinked node or arrow has a
+precise comment target, not an unrelated item verdict. Selection itself records no answer.
 
-**The diagram is the primary inspection surface.** Above it, **tabs** show the user flow and every
-written chart. The focus tab opens first. Under them, **a chip per
-sub-process**: press one to mark its boxes, what leads into them lightly, the rest dimmed but still
-there; press it again to clear.
+**Overview** is the one switch away from the tour: the same review on one page, every question
+answerable in place, grouped in the same coloured parts, each with its places a tap away. Its search
+and filters (verdict, gaps only, journey, status, "only where something goes wrong") never hide
+silently: a narrowing filter says "Showing N of M" and offers "Show all". **More** holds everything
+else: style and mode, the four places, and clearing your answers. Where you are, which view, and what
+is minimised stay in the reviewer's own browser and never leave it.
 
-Either panel opens **full screen** from its named tools and closes with Esc (D073). Display,
-pinning and minimise controls remain available; the walk-through as a whole collapses. Saved arrangement stays in the reviewer's own browser
-and never leaves it.
-
-Before inspection, a review with a `brief` shows **what the agent needs decided**: the
-question first, then what it is explaining, its recommendation, precedents (each with its source, or
-marked unverified), and the risks. Inside the diagram panel, **sub-processes are a column that switches off** (D066), grouped
-into what is in the product, what is planned and what is only suggested, each saying how much of it
-is judged. The screen panel shows one screen or, at a press, **every screen at once** (D067). What the
-brief points at is ringed in the chart, and the screen panel says "look here". Every item offers **Show me an example** and **Explain this** as checkboxes — the questions that
-travel back as `requests`.
-
-**Finish review** summarizes actual answers, unanswered items, choices, gaps, requests, comments,
+**Finish** summarizes actual answers, unanswered items, choices, gaps, requests, comments,
 pictures and proposals using the same feedback builder. A partial review is allowed; finishing
 does not answer, send, grant permission or implement a proposal. Positive answers do not conceal
 outstanding requests. Ambiguous legacy target ids are not turned into guessed navigation links.

@@ -17,6 +17,8 @@ function pageFor(example, mutate = () => {}) {
   if (run.status !== 0) throw new Error(run.stderr);
   return { url: 'file://' + output, review, dir };
 }
+// #100 — the page opens on Understand. A question opens with Next, or from the Overview, as a reviewer would.
+const openStep = async (page, id) => { await page.locator('#mode-overview').click(); await page.locator(`#items [data-open="${id}"]`).click(); };
 const answers = page => page.evaluate(() => JSON.stringify(buildFeedback(REVIEW, store, '2026-09-23T12:00:00Z')));
 test.beforeEach(async ({ page }) => {
   page.errors = [];
@@ -25,16 +27,17 @@ test.beforeEach(async ({ page }) => {
 });
 test.afterEach(async ({ page }) => expect(page.errors).toEqual([]));
 
-test('workspace: brief precedes diagram and tools are secondary without being removed', async ({ page }) => {
+test('tour: Understand shows the brief beside the map; More holds the look; the Overview holds the filters', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await expect(page.getByRole('button', { name: 'Start review', exact: true })).toBeVisible({ timeout: 2000 });
-  const positions = await page.evaluate(() => ['#brief', '#dpanel', '#workspace'].map(s => document.querySelector(s).getBoundingClientRect().top));
-  expect(positions[0]).toBeLessThan(positions[1]);
-  expect(positions[1]).toBeLessThan(positions[2]);
-  await expect(page.locator('#display-tools')).not.toHaveAttribute('open');
-  await page.locator('#display-tools > summary').click();
+  await expect(page.locator('#t-start #brief')).toBeVisible({ timeout: 2000 });
+  await expect(page.locator('#slot-map #dpanel')).toBeVisible();
+  await expect(page.locator('#more')).not.toHaveAttribute('open');
+  await page.locator('#more > summary').click();
   await expect(page.locator('#style')).toBeVisible();
   await expect(page.locator('#theme')).toBeVisible();
+  await page.locator('#mode-overview').click();
+  await expect(page.locator('#ov-top #brief')).toBeVisible();
+  await expect(page.locator('#ov-top #dpanel')).toBeVisible();
   await expect(page.locator('#filters-tools')).not.toHaveAttribute('open');
   await page.locator('#filters-tools > summary').click();
   await expect(page.locator('#f-journey')).toBeVisible();
@@ -59,9 +62,10 @@ test('workspace: finishing a partial review changes no answers and retains both 
 
 test('workspace: a positive answer does not hide an outstanding request', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#next').click();
   await page.locator('#detail input[data-item][value="works"]').check();
   await page.locator('#detail input[data-ask="explain"]').check();
-  await expect(page.locator('#steplist [data-step="guest-checkout"]')).toContainText('request');
+  await expect(page.locator('#detail input[data-ask="explain"]')).toBeChecked();
   await expect(page.locator('#finish')).toBeVisible({ timeout: 2000 });
   await page.locator('#finish').click();
   await expect(page.locator('#finish-summary')).toContainText('1 request');
@@ -75,7 +79,6 @@ test('workspace: selecting a shared screen never silently selects the first beha
   const { url, review } = pageFor('flow-booking.review.json');
   await page.goto(url);
   await expect(page.locator('#selection-title')).toBeVisible({ timeout: 2000 });
-  await page.locator('#screen-tools > summary').click();
   await page.locator('[data-screens="all"]').click();
   await page.locator('.mini[data-screen="slot-list"]').click();
   const ids = review.items.filter(i => i.step?.from === 'slot-list').map(i => i.id);
@@ -89,7 +92,7 @@ test('workspace: selecting a shared screen never silently selects the first beha
 
 test('workspace: unlinked diagram objects expose comment context, not stale verdicts', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await page.locator('[data-open="book"]').click();
+  await openStep(page, 'book');
   await page.locator('[data-tab="booking-behind"]').click();
   await expect(page.locator('#selection-title')).toBeVisible({ timeout: 2000 });
   await page.locator('#flowbeside [data-node="free"]').focus();
@@ -106,23 +109,26 @@ test('workspace: unlinked diagram objects expose comment context, not stale verd
 test('workspace: navigation leaves feedback unchanged and typing preserves the editor', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
   const before = await answers(page);
-  await page.locator('[data-open="book"]').click();
-  await page.locator('#detail [data-outcome="0"]').click();
+  await openStep(page, 'book');
+  await page.locator('#expected [data-outcome="0"]').click();
   expect(await answers(page)).toBe(before);
+  await page.locator('#detail details.more-answer > summary').click();
   const editor = page.locator('#detail textarea[data-note="book"]');
   await editor.fill('First');
   await editor.evaluate(el => { el.dataset.identityProbe = 'same'; el.setSelectionRange(2, 2); });
   await editor.press('x');
   await expect(editor).toHaveAttribute('data-identity-probe', 'same');
   await expect(editor).toHaveValue('Fixrst');
-  await page.locator('[data-open="confirm"]').click();
-  await page.locator('[data-open="book"]').click();
+  await openStep(page, 'confirm');
+  await openStep(page, 'book');
   await expect(editor).toHaveValue('Fixrst');
 });
 
 test('workspace: storage failures remain visible after finishing and exporting', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
   await page.evaluate(() => { Storage.prototype.setItem = () => { throw new DOMException('full', 'QuotaExceededError'); }; });
+  await page.locator('#next').click();
+  await page.locator('#detail details.more-answer > summary').click();
   await page.locator('#detail textarea[data-note]').fill('Keep this unsaved answer.');
   await expect(page.locator('#save-warning')).toBeVisible({ timeout: 2000 });
   await page.locator('#finish').click();
@@ -135,8 +141,10 @@ test('workspace: storage failures remain visible after finishing and exporting',
 
 test('workspace: filters and unrelated diagram tabs keep the named selection', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await page.locator('[data-open="book"]').click();
+  await openStep(page, 'book');
+  await page.locator('#mode-overview').click();
   await page.locator('#q').fill('no matching behavior');
+  await page.locator('#mode-tour').click();
   await expect(page.locator('#selection-meta')).toContainText('outside the current filters');
   await expect(page.locator('#detail input[data-item="book"]')).not.toHaveCount(0);
   await page.locator('[data-tab="booking-behind"]').click();
@@ -196,9 +204,9 @@ test('workspace: layer context keeps its exact answer key and note editor', asyn
   const entry = item.step.outcomes.flatMap(o => o.system || [])[0];
   const key = item.id + '/' + entry.id;
   await page.goto(url);
-  await page.locator('[data-open="' + item.id + '"]').click();
-  await page.locator('#detail [data-layer="system"]').check();
-  const judge = page.locator('#detail details.judge').filter({ has: page.locator('[data-lv="' + key + '"]') });
+  await openStep(page, item.id);
+  await page.locator('#build [data-layer="system"]').check();
+  const judge = page.locator('#build details.judge').filter({ has: page.locator('[data-lv="' + key + '"]') });
   await judge.locator('summary').click();
   await expect(page.locator('#selection-title')).toContainText(entry.name);
   await expect(page.locator('#selection-meta')).toContainText('Layer response');
@@ -211,30 +219,46 @@ test('workspace: layer context keeps its exact answer key and note editor', asyn
 
 test('workspace: added feedback has a named inspection target and safe removal focus', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#mode-overview').click();
   await page.locator('#at').fill('Additional concern');
   await page.locator('#addbtn').click();
   await page.locator('[data-select-added]').click();
   await expect(page.locator('#selection-title')).toContainText('Additional concern');
   await expect(page.locator('#detail input[data-item]')).toHaveCount(0);
+  await page.locator('#mode-overview').click();
   await page.locator('[data-del]').click();
   await expect(page.locator('#at')).toBeFocused();
   await expect(page.locator('#selection-title')).not.toContainText('Additional concern');
 });
 
-test('workspace: Start reveals a collapsed walkthrough without erasing the saved preference', async ({ page }) => {
-  await page.goto(pageFor('flow-booking.review.json').url);
-  await page.locator('.sec-toggle').click();
-  await expect(page.locator('#dpanel')).not.toBeVisible();
+test('tour: Start, Next and Back walk Understand, every question and Return; Return downloads the answers', async ({ page }) => {
+  const { url, dir } = pageFor('review.example.json');
+  await page.goto(url);
+  await expect(page.locator('#stepno')).toHaveText('Step 1 of 6');
+  await expect(page.locator('#back')).toBeDisabled();
   await page.locator('#start-review').click();
-  await expect(page.locator('#dpanel')).toBeVisible();
-  await expect(page.locator('#dpanel')).toBeFocused();
-  await page.reload();
-  await expect(page.locator('#dpanel')).not.toBeVisible();
+  await expect(page.locator('#selection-title')).toBeFocused();
+  await expect(page.locator('#stepno')).toHaveText('Step 2 of 6');
+  await expect(page.locator('#next')).toContainText('Skip for now');   // skipping is allowed, and says so
+  await page.locator('#detail input[data-item]').first().check();
+  await expect(page.locator('#next')).toContainText('Next');
+  await expect(page.locator('.pseg').first().locator('.track i')).toHaveAttribute('style', 'width:50%');
+  await page.locator('.pseg').nth(1).click();                         // a section of the progress bar jumps there
+  await expect(page.locator('#stepno')).toHaveText('Step 4 of 6');
+  for (let i = 0; i < 2; i++) await page.locator('#next').click();
+  await expect(page.locator('#selection-title')).toHaveText('Finish and send back');
+  await expect(page.locator('#next')).toBeDisabled();
+  await expect(page.locator('#t-summary')).toContainText('1 / 4 answered');
+  const [download] = await Promise.all([page.waitForEvent('download'), page.locator('#return-block [data-export="json"]').click()]);
+  const file = join(dir, 'feedback.json'); await download.saveAs(file);
+  const run = spawnSync(process.execPath, [join(ROOT, 'bin/check.mjs'), 'pair', join(dir, 'review.json'), file], { encoding: 'utf8' });
+  expect(run.status, run.stdout).toBe(0);
+  await page.locator('#back').click();
+  await expect(page.locator('#stepno')).toHaveText('Step 5 of 6');
 });
 
 test('workspace: screen overview connections respond to keyboard focus', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await page.locator('#screen-tools > summary').click();
   await page.locator('[data-screens="all"]').click();
   await page.mouse.move(0, 0);
   await expect(page.locator('#allscreens .links')).not.toHaveClass(/focus/);
@@ -245,11 +269,10 @@ test('workspace: screen overview connections respond to keyboard focus', async (
 
 test('workspace: unanswered choices remain partial even when every option has a verdict', async ({ page }) => {
   await page.goto(pageFor('decision-review.example.json').url);
-  const ids = await page.locator('#steplist [data-open]').evaluateAll(els => els.map(el => el.dataset.open));
-  for (const id of ids) {
-    await page.locator('#steplist [data-open="' + id + '"]').click();
-    await page.locator('#detail input[data-item]').first().check();
-  }
+  await page.locator('#mode-overview').click();                     // the Overview: every question answerable on one page
+  const ids = await page.locator('#items [data-card]').evaluateAll(els => els.map(el => el.dataset.card));
+  expect(ids).toHaveLength(6);
+  for (const id of ids) await page.locator('#items [data-card="' + id + '"] input[data-item]').first().check();
   await page.locator('#finish').click();
   await expect(page.locator('#finish-summary')).toContainText('Partial review');
   await expect(page.locator('#finish-summary')).toContainText('No option chosen');
@@ -259,14 +282,15 @@ test('workspace: mixed flows retain non-step approvals and diagram-free lists st
   await page.goto(pageFor('flow-booking.review.json', r => {
     r.items.push({ id: 'approve-demo', title: 'Approve this synthetic action', approval: { action: 'Preview only', scope: 'Synthetic review', risk: 'low', expiresAt: '2099-01-01T00:00:00Z' } });
   }).url);
-  await page.locator('#steplist [data-open="approve-demo"]').click();
+  await openStep(page, 'approve-demo');
   await expect(page.locator('#selection-title')).toContainText('Approve this synthetic action');
   await expect(page.locator('#detail input[data-item="approve-demo"]')).toHaveCount(2);
   await expect(page.locator('#screen')).toContainText('No screen is linked');
   await page.goto(pageFor('review.example.json', r => { delete r.diagrams; }).url);
   await expect(page.locator('#dpanel')).toHaveCount(0);
+  await expect(page.locator('#slot-map')).toContainText('no map');
   await page.locator('#start-review').click();
-  await expect(page.locator('#workspace')).toBeFocused();
+  await expect(page.locator('#selection-title')).toBeFocused();
   await page.locator('#finish').click();
   await expect(page.locator('#return-review')).toBeVisible();
 });
@@ -276,17 +300,19 @@ test('workspace: custom approval-like vocabulary is counted separately from perm
     r.verdictSet.options[0] = { value: 'approve', label: 'Looks right', tone: 'positive' };
     r.items.push({ id: 'permission-demo', sectionId: r.sections[0].id, title: 'Synthetic permission', approval: { action: 'Preview only', scope: 'Synthetic review', risk: 'low', expiresAt: '2099-01-01T00:00:00Z' } });
   }).url);
+  await page.locator('#next').click();
   await page.locator('#detail input[data-item][value="approve"]').check();
-  await page.locator('#steplist [data-open="permission-demo"]').click();
+  await openStep(page, 'permission-demo');
   await page.locator('#detail input[value="approve"]').check();
   await page.locator('#finish').click();
-  await expect(page.locator('.summary-counts')).toContainText('1 Looks right');
-  await expect(page.locator('.summary-counts')).toContainText('1 Approve');
-  await expect(page.locator('.summary-counts')).not.toContainText('2 Approve');
+  await expect(page.locator('#return-review .summary-counts')).toContainText('1 Looks right');
+  await expect(page.locator('#return-review .summary-counts')).toContainText('1 Approve');
+  await expect(page.locator('#return-review .summary-counts')).not.toContainText('2 Approve');
 });
 
 test('workspace: active filters remain explicit when all items match', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#mode-overview').click();
   await page.locator('#filters-tools > summary').click();
   await page.locator('[data-f="unset"]').click();
   await page.locator('#filters-tools > summary').click();
@@ -296,11 +322,12 @@ test('workspace: active filters remain explicit when all items match', async ({ 
 
 test('workspace: reset cancellation preserves answers and confirmed reset clears removed selection', async ({ page }) => {
   await page.goto(pageFor('review.example.json').url);
+  await page.locator('#mode-overview').click();
   await page.locator('#at').fill('A concern to reset');
   await page.locator('#addbtn').click();
   await page.locator('[data-select-added]').click();
   const before = await answers(page);
-  await page.locator('#review-tools > summary').click();
+  await page.locator('#more > summary').click();
   page.once('dialog', d => d.dismiss());
   await page.locator('#reset').click();
   expect(await answers(page)).toBe(before);
@@ -318,7 +345,7 @@ test('workspace: confirmed reset removes comment and proposed-change previews', 
   await page.locator('#comments [data-prop="rename"]').click();
   await page.locator('#showchanges').click();
   await expect(page.locator('#flowbeside [data-node="pay"]')).toHaveAttribute('aria-label', 'New payment label');
-  await page.locator('#review-tools > summary').click();
+  await page.locator('#more > summary').click();
   page.once('dialog', d => d.accept()); await page.locator('#reset').click();
   await expect(page.locator('#comments textarea')).toHaveCount(0);
   await expect(page.locator('#showchanges')).toBeHidden();
@@ -327,14 +354,14 @@ test('workspace: confirmed reset removes comment and proposed-change previews', 
 
 test('workspace: Go to response reopens a selected layer and focuses its answer', async ({ page }) => {
   await page.goto(pageFor('flow-booking.review.json').url);
-  await page.locator('#steplist [data-open="book"]').click();
-  await page.locator('#detail [data-layer="system"]').check();
-  const judge = page.locator('#detail details.judge').filter({ has: page.locator('[data-lv="book/capacity-guard"]') });
+  await openStep(page, 'book');
+  await page.locator('#build [data-layer="system"]').check();
+  const judge = page.locator('#build details.judge').filter({ has: page.locator('[data-lv="book/capacity-guard"]') });
   await judge.locator('summary').click();
   await page.locator('#detail [data-ask="explain"]').check();
-  await page.locator('#detail [data-layer="system"]').uncheck();
+  await page.locator('#build [data-layer="system"]').uncheck();
   await page.locator('#inspect-response').click();
-  await expect(page.locator('#detail [data-layer="system"]')).toBeChecked();
+  await expect(page.locator('#build [data-layer="system"]')).toBeChecked();
   await expect(judge).toHaveAttribute('open');
   await expect(judge.locator('input').first()).toBeFocused();
 });
@@ -344,8 +371,7 @@ test('workspace: proposal outcome objects do not break item rendering', async ({
     review.items[0].answers = [{ review: 'earlier-round', id: 'proposal-1', outcome: 'not-drawn', why: 'Still open' }];
   });
   await page.goto(url);
-  await expect(page.locator('#steplist [data-open="guest-checkout"]')).toBeVisible();
-  await page.locator('#steplist [data-open="guest-checkout"]').click();
+  await openStep(page, 'guest-checkout');
   await expect(page.locator('#detail input[data-item="guest-checkout"]')).toHaveCount(4);
   await expect(page.locator('#selection-title')).toContainText(review.items[0].title);
   await expect(page.locator('#detail')).not.toContainText('[object Object]');

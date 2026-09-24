@@ -28,16 +28,19 @@ test('#78: an exported page, opened and exported again, reads back as the same f
   const note = `</script><script>document.title="ran"</script> & a pasted line${String.fromCharCode(0x2028)}separator`;
   await page.goto(pathToFileURL(hp).href);
   await expect(page.locator('#footnote')).toContainText('nothing is sent');
+  await page.locator('#mode-overview').click();                       // #100 — every question on one page
   await page.locator('input[name="v-guest-checkout"][value="fails"]').check({ force: true });
   await page.locator('#n-guest-checkout').fill(note);
   await page.locator('#at').fill('Something they noticed'); await page.locator('#addbtn').click();
   const first = await save(page, '#exporth', join(dir, 'answered.html'));
   const json = JSON.parse(readFileSync(await save(page, '#export', join(dir, 'feedback.json')), 'utf8'));
   await page.goto(pathToFileURL(first).href);
+  await page.locator('#mode-overview').click();
   await expect(page.locator('#n-guest-checkout')).toHaveValue(note);
   await expect(page).not.toHaveTitle('ran');
   const second = await save(page, '#exporth', join(dir, 'answered-again.html'));
   await page.goto(pathToFileURL(second).href);
+  await page.locator('#mode-overview').click();
   await expect(page.locator('#n-guest-checkout')).toHaveValue(note);
   for (const [name, html] of [['first', first], ['second', second]]) {
     const out = join(dir, `${name}.feedback.json`);

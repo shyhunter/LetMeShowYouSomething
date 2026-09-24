@@ -56,7 +56,7 @@
 :root[data-style="mac84"] *{border-radius:0!important}
 :root[data-style="mac84"] body{background:repeating-conic-gradient(var(--ink) 0 25%,var(--bg) 0 50%) 0 0/2px 2px}
 :root[data-style="mac84"] .wrap{background:var(--bg)}
-:root[data-style="mac84"] :is(.panel,.sec-box,#brief,#feedback,fieldset.item,.btn){box-shadow:2px 2px 0 var(--ink)}
+:root[data-style="mac84"] :is(.panel,.slot,#ask,.card,#brief,fieldset.item,.btn){box-shadow:2px 2px 0 var(--ink)}
 :root[data-style="mac84"] :is(.panel-head,.sec-head){background:repeating-linear-gradient(var(--ink) 0 1px,var(--bg) 1px 3px);padding:2px 4px}
 :root[data-style="mac84"] :is(.panel-title,.sec-toggle){flex:none;background:var(--bg);padding:0 8px}
 :root[data-style="mac84"] .panel-head::after{content:"";flex:1}
@@ -78,7 +78,7 @@
   --neon:#FF2E88;}
 :root[data-style="cyber"] body{background-image:repeating-linear-gradient(0deg,var(--ac-bg) 0 1px,transparent 1px 3px)}
 :root[data-style="cyber"] :is(h1,h2){color:var(--ac);text-shadow:0 0 10px var(--ac-line);text-transform:uppercase;letter-spacing:.06em}
-:root[data-style="cyber"] :is(.panel,.sec-box,#brief,#feedback){border-color:var(--neon);box-shadow:0 0 14px color-mix(in srgb,var(--neon) 30%,transparent)}
+:root[data-style="cyber"] :is(.panel,.slot,#ask,.card,#brief){border-color:var(--neon);box-shadow:0 0 14px color-mix(in srgb,var(--neon) 30%,transparent)}
 :root[data-style="cyber"] .btn.pri{box-shadow:0 0 14px var(--ac-line)}
 :root[data-style="newsletter"]{--mono:'Courier New',Courier,monospace; --sans:Georgia,'Times New Roman',serif;}
 :root[data-style="newsletter"]{--bg:#F3EAD3; --surf:#FAF4E4; --surf2:#EDE2C6; --inset:#EDE2C6;
@@ -97,7 +97,7 @@
 :root[data-style="newsletter"] header{border-bottom:5px double var(--ink)}
 :root[data-style="newsletter"] h1{font-size:clamp(28px,5vw,46px);text-transform:uppercase;letter-spacing:.04em}
 :root[data-style="newsletter"] h2{font-style:italic}
-:root[data-style="newsletter"] :is(.panel,.sec-box,#brief,#feedback){border-color:var(--ink3)}
+:root[data-style="newsletter"] :is(.panel,.slot,#ask,.card,#brief){border-color:var(--ink3)}
 :root[data-style="shyhunter"]{--sans:Archivo,-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif; --mono:'JetBrains Mono',ui-monospace,Menlo,monospace;}
 :root[data-style="shyhunter"]{--bg:#FFFDF9; --surf:#FFFDF9; --surf2:#EEE7D8; --inset:#F0E4C3;
   --line:#544C43; --line2:#544C43; --line3:#141210;
@@ -115,7 +115,7 @@
   color-scheme:dark; --ac:#F4C423; --ac-bg:rgba(244,196,35,.16); --ac-line:#F4C423; --on-ac:#141210;
   --ok:#63B584; --bad:#E08272;}
 :root[data-style="shyhunter"] :is(h1,h2,h3){font-family:'Bricolage Grotesque',Archivo,system-ui,sans-serif;font-weight:800;letter-spacing:-.015em}
-:root[data-style="shyhunter"] :is(.panel,.sec-box,#brief,#feedback,fieldset.item){border:1.5px solid var(--line);box-shadow:4px 4px 0 var(--line);border-radius:22px 8px 26px 10px/10px 26px 8px 22px}
+:root[data-style="shyhunter"] :is(.panel,.slot,#ask,.card,#brief,fieldset.item){border:1.5px solid var(--line);box-shadow:4px 4px 0 var(--line);border-radius:22px 8px 26px 10px/10px 26px 8px 22px}
 :root[data-style="shyhunter"] .btn{border-radius:12px 5px 14px 6px/6px 14px 5px 12px;box-shadow:2px 2px 0 var(--line)}
 :root[data-style="shyhunter"] .btn.pri{background:#F4C423;border-color:#544C43;color:#141210}
 :root[data-style="shyhunter"] :is(input,select,textarea){border-radius:6px 13px 5px 12px/12px 5px 14px 6px}
@@ -133,13 +133,6 @@ header{padding-block:30px 18px;border-bottom:1px solid var(--line);margin-bottom
 /* Safari ignores min-height on a native select: drawn by the page, it keeps the 44px target (D091). */
 .style-pick select{-webkit-appearance:none;appearance:none;height:44px;color:var(--ink);border:1px solid var(--line2);border-radius:7px;padding:4px 30px 4px 10px;font:inherit;
   background:linear-gradient(45deg,transparent 50%,var(--mut) 50%) right 16px center/5px 5px no-repeat,linear-gradient(135deg,var(--mut) 50%,transparent 50%) right 11px center/5px 5px no-repeat,var(--surf)}
-/* D079 — pin a section: it stays at the top while the rest scrolls under it. Pinned sections stack
-   in page order and share 80% of the window between them. */
-.pin{min-height:44px;font-size:12.5px}
-.pin[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
-.pinned{position:sticky;top:var(--pin-top,0);z-index:6;max-height:calc(80vh / var(--pins,1));overflow:auto;background:var(--bg);box-shadow:0 6px 12px -8px rgba(0,0,0,.35)}
-.frame #stage{display:contents}
-.frame #upanel:not(.full){margin-top:16px}
 .htop{display:flex;gap:14px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
 h1{font-size:clamp(22px,3.4vw,30px);letter-spacing:-.015em;line-height:1.2}
 .sub{color:var(--ink3);font-size:14px;margin-top:4px}
@@ -151,7 +144,7 @@ h1{font-size:clamp(22px,3.4vw,30px);letter-spacing:-.015em;line-height:1.2}
 .btn.pri{background:var(--ac);border-color:var(--ac);color:var(--on-ac)}
 .btn.pri:hover{opacity:.92;color:var(--on-ac)}
 
-.bar{position:sticky;top:var(--pins-h,0);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);
+.bar{background:var(--bg);border-bottom:1px solid var(--line);
   padding-block:11px;margin-bottom:20px;display:flex;gap:9px;align-items:center;flex-wrap:wrap}
 .bar input[type=search]{flex:1 1 180px;min-width:0;background:var(--inset);border:1px solid var(--line2);
   border-radius:7px;padding:8px 11px;font:13px var(--mono);color:var(--ink)}
@@ -202,9 +195,6 @@ textarea::placeholder{color:var(--sub)}
 .addedrow .t{flex:1;font-size:13.5px;color:var(--ink)}
 .addedrow .b{font-size:12.5px;color:var(--mut);margin-top:2px}
 
-.done{position:sticky;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding-block:14px;
-  display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:26px}
-.done .note{font-size:12.5px;color:var(--mut)}
 /* D095 — the page is signed, quietly, below everything the reviewer came for. */
 .made{display:flex;align-items:center;gap:7px;margin:18px 0 0;font-size:12.5px;color:var(--mut)}
 .made svg{width:16px;height:16px;flex:none;color:var(--ac)}
@@ -288,45 +278,6 @@ body:has(.panel.full){overflow:hidden}
 #chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 6px}
 #chips .chip{min-height:44px}
 .dg-empty{padding:16px 4px;color:var(--mut);font-size:13.5px}
-/* D074 — what to decide, full width; then your feedback: filters, the steps on the left and the
-   open step on the right, the row shared in three steps; then your own feedback, full width. */
-.brief-head{display:flex;gap:8px;align-items:center;justify-content:space-between}
-#brief{margin-top:14px;border:1px solid var(--line2);border-left:3px solid var(--ac);border-radius:12px;background:var(--surf);padding:14px 16px}
-/* D069 — the step list is the feedback panel: one row per step, the chosen one open. */
-#feedback{margin-top:14px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:0}
-.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
-.split[data-size="list"]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
-.split[data-size="detail"]{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
-.split>.sizes{grid-column:1/-1;display:flex;justify-content:flex-end;gap:6px}
-.sizes button{min-width:44px;min-height:44px;font-size:15px}
-.sizes button[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg);color:var(--ink)}
-#detailbox{position:sticky;top:calc(var(--pins-h,0px) + 12px);min-width:0}
-#detail{min-width:0}
-/* #61 — any section folds to its title bar; nothing is hidden without a bar that says what is there. */
-.sec-bar{display:flex;align-items:center;justify-content:space-between;gap:8px}
-.sec-bar :is(h2,h3){margin:0}
-.head-btns{display:flex;gap:6px}
-.btn.min{min-height:32px;font-size:12.5px}
-.minimised>:not(.min-head){display:none!important}
-.minimised{padding-bottom:8px}
-.split[data-min~="#steplist"]{grid-template-columns:minmax(0,14rem) minmax(0,1fr)}
-.split[data-min~="#detailbox"]{grid-template-columns:minmax(0,1fr) minmax(0,14rem)}
-.split[data-min~="#steplist"][data-min~="#detailbox"]{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-@media (max-width:1099px){.split,.split[data-size]{grid-template-columns:minmax(0,1fr)}.split>.sizes{display:none}}
-#feedback>h2{font-size:15px;margin-bottom:2px}
-#feedback .bar{position:static;margin-bottom:10px;padding-block:8px}
-#feedback .sec{margin-bottom:0}
-#feedback fieldset.item{padding:10px 14px;margin-bottom:8px;background:var(--bg)}
-#feedback fieldset.item.row{cursor:pointer}
-#feedback fieldset.item.open{padding:14px 16px}
-.row-sum{margin:2px 0 4px;font-size:13px;color:var(--ink3);max-width:74ch}
-.row-meta{margin:0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12.5px;color:var(--mut)}
-.row-v{margin-left:auto;font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--tone,var(--warn))}
-.row-open{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left;min-height:32px}
-#feedback .add{margin:10px 0}
-.sec-box:only-child .sec-actions{display:none}
-#feedback fieldset.item.row{padding:2px 14px 8px;margin-bottom:6px}
-#feedback .prog{display:none}
 /* Sub-processes: a column beside the chart, switched on or off (sketch, 2026-09-18). */
 .dg-body{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;margin-top:8px}
 .dg-body.sub-off{grid-template-columns:auto minmax(0,1fr)}
@@ -391,18 +342,9 @@ body:has(.panel.full){overflow:hidden}
 .dg-part-on .dg-shape{stroke:var(--ac);stroke-width:2.5}
 .dg-part-label{display:flex;gap:6px;align-items:center;font-size:13px;min-height:44px;margin-bottom:6px}
 .dg-part-label select{min-height:36px;font:13px var(--sans)}
-.sec-box{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:14px;background:var(--bg)}
-.sec-head{display:flex;align-items:center;gap:8px}
-.sec-toggle{flex:1;text-align:left;background:none;border:0;color:var(--ink);font:600 14px var(--sans);min-height:44px;cursor:pointer}
-.sec-actions{display:flex;gap:6px}
-.sec-up,.sec-down{min-width:44px;min-height:44px;border:1px solid var(--line2);border-radius:9px;background:var(--surf);color:var(--ink2);cursor:pointer;font-size:14px}
-.sec-body .steps-h:first-child{display:none}
 .screen{background:var(--surf);border:1px solid var(--line2);border-radius:22px;padding:16px;display:flex;flex-direction:column;gap:10px;min-height:300px}
 .screen-title{font:600 11px var(--mono);letter-spacing:.1em;text-transform:uppercase;color:var(--sub)}
 .hint{color:var(--mut);font-size:13px}
-.player-bar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:12px}
-.player-bar .note{font-size:12.5px;color:var(--mut)}
-.steps-h{font-size:15px;margin:24px 0 0}
 .end{font-size:12.5px;color:var(--mut);margin:0}
 /* part 3a views */
 [hidden]{display:none!important}
@@ -556,68 +498,137 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
 /* #74 — one connected review, with tooling secondary to the human task. */
 .wrap.frame{max-width:1600px;margin-inline:auto}
 .review-kicker{font:600 11px var(--mono);letter-spacing:.13em;text-transform:uppercase;color:var(--mut);margin:0 0 12px}
-.review-start{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin-top:20px}
-.review-start .btn{font-size:14px;padding:11px 20px}
-.panel-tools>summary{cursor:pointer;min-height:44px;display:list-item;padding:10px 12px;font-size:12.5px;color:var(--ink2)}
-.panel-tools[open]{flex-basis:100%;border:1px solid var(--line2);border-radius:8px;background:var(--surf2)}
-.tool-content{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px}
-.tool-content .sizes{display:flex;gap:6px}
-#brief{margin:0 0 24px}
-#workspace{display:grid;gap:18px;grid-template-columns:minmax(0,1fr);margin-top:22px;align-items:start}
-#workspace>.selection-head{grid-column:1/-1;border-bottom:1px solid var(--line);padding-bottom:12px}
-#selection-title{font-size:20px;overflow-wrap:anywhere}
-#selection-meta,#diagram-selection{font-size:13px;color:var(--mut);margin:6px 0}
-#related-items{display:flex;gap:8px;flex-wrap:wrap}
-#workspace #upanel,#workspace #feedback{margin-top:0;min-width:0}
-#workspace #detailbox{position:static}
-/* A pinned screen joins the page's vertical pin stack. The grid must not stop its sticky
-   position at the workspace's bottom before the other pinned panels reach theirs. */
-#workspace:has(>#upanel.pinned){display:contents}
-#workspace .split{grid-template-columns:minmax(0,1fr)}
-#workspace .split>.sizes{grid-column:1/-1}
-#workspace #detail{scroll-margin-top:80px}
-#workspace #steplist{max-height:300px;overflow:auto}
-#workspace:has(#upanel) #steplist{max-height:210px}
-#workspace:has(#upanel) #feedback{padding:16px}
-.selection-actions{display:flex;gap:8px;flex-wrap:wrap;margin-block:8px}
-.response-heading{font:600 13px var(--sans);margin:18px 0 8px;color:var(--ink)}
-.response-extra{margin-top:12px}
-.response-extra>summary{cursor:pointer;min-height:44px;padding:10px 0;color:var(--ink3);font-size:13px}
-.done{z-index:7;gap:14px;padding:12px 8px;margin-top:24px;box-shadow:0 -8px 20px var(--bg)}
-#review-progress{flex:1;font:13px var(--mono);color:var(--ink2)}
 #save-warning{border:1px solid var(--bad);border-left-width:4px;padding:12px;color:var(--ink);background:var(--surf);overflow-wrap:anywhere}
 #return-review{width:min(680px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;border:1px solid var(--line2);border-radius:16px;background:var(--surf);color:var(--ink2);padding:24px}
 #return-review::backdrop{background:rgba(0,0,0,.5)}
 #return-review h2{font-size:24px}
-#return-review .summary-counts{display:flex;gap:12px;flex-wrap:wrap;padding:14px 0;border-block:1px solid var(--line);font:13px var(--mono)}
 #return-review li{margin:6px 0;overflow-wrap:anywhere}
-#return-review .summary-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
 #return-review .btn{min-height:44px}
 :focus-visible{scroll-margin-block:100px}
 .dg-selected .dg-shape{stroke:var(--ac);stroke-width:3}
 .dg-edge.dg-selected path:not(.dg-hit){stroke:var(--ac);stroke-width:3}
-@media(min-width:1100px){
-  #workspace:has(#upanel){grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr)}
-  #workspace:not(:has(#upanel)) .split{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
-  #workspace:not(:has(#upanel)) .split[data-size="list"]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}
-  #workspace:not(:has(#upanel)) .split[data-size="detail"]{grid-template-columns:minmax(0,1fr) minmax(0,2fr)}
-  #workspace:has(#upanel):has(.split[data-size="list"]){grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
-  #workspace:has(#upanel):has(.split[data-size="detail"]){grid-template-columns:minmax(0,.7fr) minmax(0,1.3fr)}
+.dg-answered .dg-shape{stroke:var(--ok);stroke-width:2.5}
+/* #100 — the guided tour: the question and your answer on the left, the four places on the right,
+   Back and Next always in reach. Sections take one colour each, in the progress bar and on the question. */
+:root{--s1:#5B3E8C;--s2:#1D6A96;--s3:#2F6B45;--s4:#8E6110;--s5:#A03A2E;--s6:#4F5A6B}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--s1:#A98BD6;--s2:#6FB3DC;--s3:#63B584;--s4:#D9A441;--s5:#E08272;--s6:#9AA3B2}}
+:root[data-theme="dark"]{--s1:#A98BD6;--s2:#6FB3DC;--s3:#63B584;--s4:#D9A441;--s5:#E08272;--s6:#9AA3B2}
+.ic{width:18px;height:18px;flex:none;vertical-align:-3px}
+header.top{display:flex;gap:12px 18px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;padding-block:22px 14px;margin-bottom:14px}
+.top-r{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mode{display:flex;gap:2px;background:var(--surf2);border:1px solid var(--line);border-radius:10px;padding:3px}
+.mode button{border:0;background:none;border-radius:8px;min-height:38px;padding:4px 12px;font:600 13px var(--sans);color:var(--ink3);cursor:pointer;display:inline-flex;gap:6px;align-items:center}
+.mode button[aria-pressed="true"]{background:var(--surf);color:var(--ac);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+.btn{display:inline-flex;gap:6px;align-items:center;justify-content:center}
+#more{position:relative}
+#more>summary{list-style:none;cursor:pointer}
+#more>summary::-webkit-details-marker{display:none}
+.more-body{position:absolute;right:0;top:calc(100% + 6px);z-index:30;width:min(320px,calc(100vw - 32px));display:grid;gap:10px;padding:14px;border:1px solid var(--line2);border-radius:12px;background:var(--surf);box-shadow:0 18px 40px -20px rgba(0,0,0,.45)}
+.more-body h3{font:600 11px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--mut)}
+.more-body .row{display:flex;gap:6px;flex-wrap:wrap}
+#progress{display:grid;gap:6px;margin-bottom:14px}
+.segs{display:flex;gap:4px;align-items:flex-end}
+.pseg{flex:var(--w) 1 0;min-width:44px;border:0;background:none;padding:2px 0;cursor:pointer;text-align:left;display:grid;gap:4px;color:var(--sc)}
+.pseg .track{height:8px;border-radius:99px;background:color-mix(in srgb,var(--sc) 18%,var(--line));overflow:hidden;position:relative}
+.pseg .track i{position:absolute;inset:0 auto 0 0;background:var(--sc);border-radius:99px}
+.pseg[aria-current="step"] .track{outline:2px solid var(--sc);outline-offset:2px}
+.pl{font:600 11px/1.3 var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:4px;align-items:center}
+.pl .ic{width:14px;height:14px}
+.pl small{color:var(--mut);font-weight:500}
+#overview{margin:0;font:12.5px var(--mono);color:var(--mut)}
+#tour{display:grid;gap:16px;grid-template-columns:minmax(300px,410px) minmax(0,1fr);grid-template-areas:"ask places" "nav nav";align-items:start}
+#ask{grid-area:ask;position:sticky;top:10px;max-height:calc(100dvh - 96px);overflow:auto;display:grid;gap:10px;align-content:start;
+  background:var(--surf);border:1px solid var(--line);border-top:5px solid var(--sc,var(--ac));border-radius:14px;padding:16px}
+#places{grid-area:places;display:grid;gap:12px;min-width:0}
+#tnav{grid-area:nav;position:sticky;bottom:0;z-index:8;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 0;background:var(--bg);border-top:1px solid var(--line)}
+#tnav .btn{min-height:44px;min-width:44px;padding-inline:16px;font-size:14px}
+#stepno{font:13px var(--mono);color:var(--mut)}
+.sec-name{margin:0;font:600 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--sc,var(--ac));display:flex;gap:6px;align-items:center}
+#selection-title{font-size:clamp(19px,2.2vw,24px);letter-spacing:-.015em;line-height:1.25;overflow-wrap:anywhere}
+#selection-meta{font-size:13px;color:var(--mut);margin:0}
+#selection-meta:empty,#related-items:empty,#selection-actions:empty{display:none}
+#related-items,.selection-actions{display:flex;gap:8px;flex-wrap:wrap}
+#diagram-selection{font-size:13px;color:var(--mut);margin:6px 0}
+#detail fieldset.item{border:0;padding:0;margin:0;background:none}
+#detail legend{position:absolute;left:-9999px}
+.qprompt{margin:12px 0 8px;font:700 14px var(--sans);color:var(--ink);display:flex;gap:8px;align-items:center}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(122px,1fr));gap:8px}
+.tiles label{position:relative;border:1.5px solid var(--line2);border-radius:14px;padding:8px 12px;min-height:54px;display:flex;gap:10px;align-items:center;font-weight:600;font-size:14px;color:var(--ink2);background:var(--surf);cursor:pointer}
+.tiles input{position:absolute;inset:0;width:100%;height:100%;opacity:0;margin:0;cursor:pointer}
+.tiles .dot{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--tcb);color:var(--tc);flex:none}
+.tiles label:has(input:checked){border-color:var(--tc);background:var(--tcb);color:var(--tc);box-shadow:0 0 0 2px var(--tcb)}
+.tiles label:has(input:checked) .dot{background:var(--tc);color:var(--surf)}
+.tiles label:has(input:focus-visible){outline:2px solid var(--ac);outline-offset:2px}
+.more-answer{margin-top:10px}
+.more-answer>summary{cursor:pointer;min-height:44px;display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ac)}
+.more-answer[open]>summary{margin-bottom:6px}
+.slot{background:var(--surf);border:1px solid var(--line);border-radius:14px;min-width:0}
+.slot-head{display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-bottom:1px solid var(--line)}
+.slot.minimised .slot-head{border-bottom:0}
+.slot-head .num{font:700 11px var(--mono);color:var(--on-ac);background:var(--ac);border-radius:50%;width:22px;height:22px;display:grid;place-items:center;flex:none}
+.slot-head h2{flex:1;min-width:0;font:600 12px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--ink2);display:flex;gap:6px;align-items:center}
+.slot-body{padding:12px;min-width:0}
+.slot .panel{border:0;padding:0;background:none}
+.empty-slot{margin:0;font-size:13.5px;color:var(--mut);display:flex;gap:8px;align-items:center}
+.btn.min{min-height:34px}
+#upanel .panel-head{margin-bottom:8px}
+#upanel .hint{margin:8px 0 0;font-size:12.5px}
+.outcome-build{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin-top:8px}
+.outcome-build>b{font-size:13px;color:var(--ink)}
+body:not(.show-system):not(.show-data) .outcome-build{display:none}
+.facts{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0}
+.fact{font-size:12.5px;padding:5px 10px;border-radius:99px;background:var(--surf2);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
+.plan{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.plan button{width:100%;text-align:left;border:1px solid var(--line);border-left:4px solid var(--sc);border-radius:10px;background:var(--surf);padding:8px 12px;min-height:44px;cursor:pointer;display:grid;gap:2px;font:inherit;color:var(--ink2)}
+.plan b{display:flex;gap:6px;align-items:center;color:var(--sc);font:600 12px var(--mono);letter-spacing:.05em;text-transform:uppercase}
+#brief{border:1px solid var(--line2);border-left:3px solid var(--ac);border-radius:12px;background:var(--surf2);padding:12px 14px;margin-bottom:12px}
+#understand .asks{margin-top:10px}
+#understand #start-review{margin-top:6px;min-height:44px;font-size:14px}
+.summary-counts{display:flex;gap:12px;flex-wrap:wrap;padding:10px 0;border-block:1px solid var(--line);font:13px var(--mono)}
+.summary-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.summary-actions .btn{min-height:44px}
+#return-block .add{margin-top:16px}
+/* Overview: the same review on one page, every question answerable in place. */
+#ov{max-width:900px;margin:0 auto;display:grid;gap:14px}
+#ov-top{display:grid;gap:14px}
+#ov-top #understand,#ov-end{background:var(--surf);border:1px solid var(--line);border-radius:14px;padding:16px}
+#ov-top #start-review{display:none}
+.ov-sec{margin:10px 0 8px;display:flex;gap:8px;align-items:center;font:600 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--sc)}
+.ov-sec small{color:var(--mut);font-weight:500;letter-spacing:0}
+.card{background:var(--surf);border:1px solid var(--line);border-left:4px solid var(--sc);border-radius:12px;padding:12px 16px;margin-bottom:10px;display:grid;gap:8px}
+.card fieldset.item{border:0;padding:0;margin:0;background:none}
+.card legend{padding:0;font-size:16px}
+.card .ov-places>summary{cursor:pointer;min-height:44px;display:flex;gap:6px;align-items:center;font-size:13px;color:var(--ac)}
+.ov-grid{display:grid;gap:10px}
+.ov-grid h3{font:600 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);display:flex;gap:6px;align-items:center}
+.card>[data-open]{justify-self:start}
+#footnote{font-size:12.5px;color:var(--mut);margin:14px 0 0}
+body[data-mode="tour"] #ov,body[data-mode="overview"] #tour{display:none}
+#return-block li{margin:6px 0;overflow-wrap:anywhere}
+@media (max-width:899px){
+  #tour{grid-template-columns:minmax(0,1fr);grid-template-areas:"ask" "places" "nav"}
+  #ask{position:static;max-height:none}
 }
-@media(max-width:699px){.wrap.frame{padding-inline:12px}.done{position:static}.done .panel-tools{flex-basis:100%}#return-review{padding:18px}.panel-title{white-space:normal}.tool-content{padding:6px}.review-start{gap:8px}#workspace #steplist{max-height:240px}}
+@media (max-width:699px){.wrap.frame{padding-inline:12px}.pl{display:none}.more-body{left:0;right:auto}#return-review{padding:18px}header.top{padding-block:14px 8px}}
 </style>
-</head><body>
-<a class="skip" href="#items">Skip to the items</a>
+</head><body data-mode="tour">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol><symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/></symbol><symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.4 2.4c-.7.3-1 .8-1 1.5v.5M12 17v.5"/></symbol><symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5L3.5 6.5v13l5.5-2 6 2 5.5-2v-13l-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></symbol><symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/></symbol><symbol id="i-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.5M4.5 12h.5M4.5 17.5h.5"/></symbol><symbol id="i-code" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 7L3.5 12l5 5M15.5 7l5 5-5 5"/></symbol><symbol id="i-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5.5L8 12l6.5 6.5"/></symbol><symbol id="i-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 5.5L16 12l-6.5 6.5"/></symbol><symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 21V4h11l-2 4 2 4h-11"/></symbol><symbol id="i-send" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3L10.5 13.5M21 3l-6.5 18-4-7.5-7.5-4z"/></symbol><symbol id="i-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.7 5.8 6.3.7-4.7 4.3 1.3 6.2L12 16.9 6.4 20l1.3-6.2L3 9.5l6.3-.7z"/></symbol><symbol id="i-shield" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7.5 3v5.5c0 4.7-3.2 8-7.5 9.5-4.3-1.5-7.5-4.8-7.5-9.5V6z"/></symbol><symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 19.5h4L19.5 8.5l-4-4-11 11z"/></symbol><symbol id="i-dots" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 12h.5M11.75 12h.5M18 12h.5"/></symbol></svg>
+<a class="skip" href="#ask">Skip to the question</a>
 <div class="wrap frame">
-<header>
-  <p class="review-kicker">Understand · Inspect · Decide · Explain · Return</p>
-  <div class="htop min-head">
-    <div>
-      <h1>The tables behind a booking</h1>
-      <p class="sub">An invented booking app — example data only</p>
+<header class="top">
+  <div>
+    <p class="review-kicker">A review for you</p>
+    <h1>The tables behind a booking</h1>
+    <p class="sub">An invented booking app — example data only</p>
+  </div>
+  <div class="top-r">
+    <div class="mode" role="group" aria-label="How to go through the review">
+      <button type="button" id="mode-tour" data-mode="tour" aria-pressed="true"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>Tour</button>
+      <button type="button" id="mode-overview" data-mode="overview" aria-pressed="false"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>Overview</button>
     </div>
-    <div class="htools">
-      <details class="panel-tools" id="display-tools"><summary>Display &amp; header tools</summary><div class="tool-content">
+    <button class="btn pri" id="finish" type="button"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>Finish</button>
+    <details id="more"><summary class="btn" aria-label="More options"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-dots"/></svg>More</summary><div class="more-body">
+      <h3>Look</h3>
       <label class="style-pick">Style <select id="style">
         <option value="">Default</option><option value="mac84">Macintosh 1984</option><option value="cyber">Cyberpunk</option>
         <option value="newsletter">Newsletter</option><option value="shyhunter">ShyHunter</option>
@@ -625,30 +636,57 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
       <label class="style-pick">Mode <select id="theme">
         <option value="">Auto</option><option value="light">Light</option><option value="dark">Dark</option>
       </select></label>
-      <button class="btn pin" type="button" aria-pressed="false">Pin</button>
-      <button class="btn min" type="button" data-min="header" aria-expanded="true" aria-label="Minimise the header">Minimise</button>
-      </div></details>
-    </div>
+      <h3>The four places</h3>
+      <div class="row"><button class="btn" type="button" data-only="#slot-proto">Only the prototype</button><button class="btn" type="button" data-only="">Show all four</button></div>
+      <h3>Your answers</h3>
+      <div class="row"><button class="btn" id="reset" type="button">Clear my answers</button></div>
+    </div></details>
   </div>
-  <div class="intro" id="intro"></div>
-  <div class="asks">
-    <p><b>How to answer</b>Which part of these tables or their relationships is unclear?</p>
-    <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
-  </div>
-  <div class="review-start"><button class="btn pri" type="button" id="start-review">Start review</button><span>2 items to review · Your answers stay in this browser until you download a copy.</span></div>
 </header>
+<p id="save-warning" role="alert" hidden></p>
+<nav id="progress" aria-label="Progress"><div id="segs" class="segs"></div><p id="overview" aria-live="polite"></p></nav>
 
-<div id="stage" class="stage">
-    <section id="dpanel" class="panel" aria-label="The diagram">
-      <div class="panel-head min-head">
-        <span class="panel-title">How this works</span>
-        <button class="btn" id="commentmode" type="button" aria-pressed="false">Comment</button>
+<div id="tour">
+  <section id="ask" aria-labelledby="selection-title">
+    <p id="t-where" class="sec-name"></p>
+    <h2 id="selection-title" tabindex="-1"></h2>
+    <p id="selection-meta"></p><div id="related-items"></div><div id="selection-actions" class="selection-actions"></div>
+    <div id="t-start"><div id="understand">
+
+      <div class="intro" id="intro"></div>
+      <div class="asks">
+        <p><b>How to answer</b>Which part of these tables or their relationships is unclear?</p>
+        <p><b>What happens next</b>The agent will explain unclear parts and prepare a revised review. This review never connects to a database.</p>
+      </div>
+      <p class="facts"><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>2 questions</span><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-check"/></svg>Skip any; nothing counts as agreed</span><span class="fact"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>Nothing is sent until you download it</span></p>
+      <button class="btn pri" type="button" id="start-review"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-right"/></svg>Start</button>
+    </div></div>
+    <aside id="detail" aria-label="Your answer"></aside>
+    <div id="t-end"><div id="return-block">
+      <div id="t-summary"></div>
+      <div class="summary-actions"><button class="btn pri" type="button" data-export="json"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>Download for the agent (JSON)</button><button class="btn" type="button" data-export="html">Download this page with your answers</button></div>
+      <p class="download-status" role="status"></p>
+      <section class="add" aria-labelledby="addh">
+        <h3 id="addh" class="brief-h3">Anything else?</h3>
+        <p class="d">Anything you want to say: an item nobody asked about, an idea, or something unrelated. It goes back with your answers.</p>
+        <label class="skip" for="at">Title</label>
+        <input type="text" id="at" placeholder="What is it about?">
+        <label class="skip" for="ab">Detail</label>
+        <textarea id="ab" placeholder="Your feedback (optional)"></textarea>
+        <div style="display:flex;gap:8px;margin-top:9px"><button class="btn" id="addbtn" type="button">Add it</button></div>
+        <div id="added" style="margin-top:12px"></div>
+      </section>
+    </div></div>
+  </section>
+
+  <section id="places" aria-label="The four places">
+    <section class="slot" id="slot-map" aria-labelledby="slot-map-h"><div class="slot-head min-head"><span class="num">1</span><h2 id="slot-map-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-map"/></svg>Map</h2>
+      <button class="btn min" type="button" data-min="#slot-map" aria-expanded="true" aria-label="Minimise the map">Minimise</button></div>
+      <div class="slot-body">    <section id="dpanel" class="panel" aria-label="The diagram">
+      <div class="panel-head">
+        <button class="btn" id="commentmode" type="button" aria-pressed="false"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-note"/></svg>Comment</button>
         <button class="btn" id="showchanges" type="button" aria-pressed="false" hidden>Show my changes</button>
-        <details class="panel-tools" id="diagram-tools"><summary>Diagram tools</summary><div class="tool-content">
-        <button class="btn pin" type="button" aria-pressed="false">Pin</button>
         <button class="btn panel-full" type="button" aria-pressed="false">Full screen</button>
-        <button class="btn min" type="button" data-min="#dpanel" aria-expanded="true" aria-label="Minimise the diagram">Minimise</button>
-        </div></details>
       </div>
       <div class="panel-body">
         <p class="hint">Select anything that looks wrong, incomplete or unclear. Selecting is not answering.</p>
@@ -661,64 +699,48 @@ body:not(.show-system) .layer-system,body:not(.show-data) .layer-data{display:no
         <div id="comments"></div>
       </div>
     </section>
+</div></section>
+    <section class="slot" id="slot-proto" aria-labelledby="slot-proto-h"><div class="slot-head min-head"><span class="num">2</span><h2 id="slot-proto-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Prototype</h2>
+      <button class="btn min" type="button" data-min="#slot-proto" aria-expanded="true" aria-label="Minimise the prototype">Minimise</button></div>
+      <div class="slot-body"><div id="proto-extra"></div></div></section>
+    <section class="slot" id="slot-expected" aria-labelledby="slot-expected-h"><div class="slot-head min-head"><span class="num">3</span><h2 id="slot-expected-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>What should happen</h2>
+      <button class="btn min" type="button" data-min="#slot-expected" aria-expanded="true" aria-label="Minimise what should happen">Minimise</button></div>
+      <div class="slot-body" id="expected"></div></section>
+    <section class="slot" id="slot-build" aria-labelledby="slot-build-h"><div class="slot-head min-head"><span class="num">4</span><h2 id="slot-build-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-code"/></svg>How I'd build it</h2>
+      <button class="btn min" type="button" data-min="#slot-build" aria-expanded="true" aria-label="Minimise how I'd build it">Minimise</button></div>
+      <div class="slot-body" id="build"></div></section>
+  </section>
+
+  <nav id="tnav" aria-label="Steps">
+    <button class="btn" id="back" type="button"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-left"/></svg>Back</button>
+    <span id="stepno" aria-live="polite"></span>
+    <button class="btn pri" id="next" type="button">Next<svg class="ic" aria-hidden="true" focusable="false"><use href="#i-right"/></svg></button>
+  </nav>
 </div>
 
-    <section id="feedback" aria-labelledby="fb-h">
-      <div class="min-head sec-bar"><h2 id="fb-h">What should happen</h2><button class="btn min" type="button" data-min="#feedback" aria-expanded="true" aria-label="Minimise your feedback">Minimise</button></div>
-      <p id="overview" class="hint" aria-live="polite"></p>
-      <div id="split" class="split" data-size="even">
-        <details class="panel-tools sizes"><summary>Layout tools</summary><div class="tool-content" role="group" aria-label="How the row is shared">
-          <button class="btn" type="button" data-size="list" aria-pressed="false" aria-label="Give the list more room">◧</button>
-          <button class="btn" type="button" data-size="even" aria-pressed="true" aria-label="Share the row evenly">◫</button>
-          <button class="btn" type="button" data-size="detail" aria-pressed="false" aria-label="Give the open item more room">◨</button>
-        </div></details>
-        <div id="steplist"><div class="min-head sec-bar"><h3>Items</h3><button class="btn min" type="button" data-min="#steplist" aria-expanded="true" aria-label="Minimise the list">Minimise</button></div></div>
-        <div id="detailbox"><div class="min-head sec-bar"><h3>Inspect &amp; respond</h3><button class="btn min" type="button" data-min="#detailbox" aria-expanded="true" aria-label="Minimise the open item">Minimise</button></div>
-        <aside id="detail" aria-label="The item you opened"></aside></div>
-      </div>
-    </section>
+<section id="ov" aria-label="Overview">
+  <div id="ov-top"></div>
+  <div class="bar" role="search">
+    <label class="skip" for="q">Search questions</label>
+    <input type="search" id="q" placeholder="Search…" autocomplete="off">
+    <details class="panel-tools" id="filters-tools"><summary>Filters</summary><div class="tool-content">
+    <div id="filters" role="group" aria-label="Filter questions"></div>
 
-
-<div class="bar" role="search">
-  <label class="skip" for="q">Search items</label>
-  <input type="search" id="q" placeholder="Search…" autocomplete="off">
-  <details class="panel-tools" id="filters-tools"><summary>Filters</summary><div class="tool-content">
-  <div id="filters" role="group" aria-label="Filter items"></div>
-
-  </div></details>
-  <output class="prog" id="prog" aria-live="polite"></output>
-  <p id="filterinfo" class="filterinfo" aria-live="polite"></p>
-</div>
-
-
-<section class="add" aria-labelledby="addh">
-  <div class="min-head sec-bar"><h2 id="addh">Add your own feedback</h2><button class="btn min" type="button" data-min=".add" aria-expanded="true" aria-label="Minimise add your own">Minimise</button></div>
-  <p class="d">Anything you want to say: an item nobody asked about, an idea, or something unrelated. It goes back with your answers.</p>
-  <label class="skip" for="at">Title</label>
-  <input type="text" id="at" placeholder="What is it about?">
-  <label class="skip" for="ab">Detail</label>
-  <textarea id="ab" placeholder="Your feedback (optional)"></textarea>
-  <div style="display:flex;gap:8px;margin-top:9px"><button class="btn" id="addbtn" type="button">Add it</button></div>
-  <div id="added" style="margin-top:12px"></div>
+    </div></details>
+    <output class="prog" id="prog" aria-live="polite"></output>
+    <p id="filterinfo" class="filterinfo" aria-live="polite"></p>
+  </div>
+  <main id="items"></main>
+  <section id="ov-end" aria-labelledby="ov-end-h"><h2 id="ov-end-h"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>Finish and send back</h2></section>
 </section>
 
-<main id="items"></main>
-
-<div class="done">
-  <output id="review-progress" aria-live="polite"></output>
-  <button class="btn pri" id="finish" type="button">Finish review</button>
-  <details class="panel-tools" id="review-tools"><summary>Review tools</summary><div class="tool-content">
-  <button class="btn" id="reset" type="button">Clear my answers</button>
-  </div></details>
-  <span class="note" id="footnote">Answers save in this browser as you go. Downloading saves a file; nothing is sent from this page.</span>
-</div>
-<p id="save-warning" role="alert" hidden></p>
+<p class="note" id="footnote">Answers save in this browser as you go. Downloading saves a file; nothing is sent from this page.</p>
 <dialog id="return-review" aria-labelledby="return-heading">
   <h2 id="return-heading" tabindex="-1">Review summary</h2>
   <div id="finish-summary"></div>
   <p>Downloading does not send your feedback. Return the downloaded file through your chosen channel.</p>
-  <p class="note">Return either downloaded file to the agent. JSON can be checked directly; the answered HTML can be read as data and checked with bin/answer.mjs.</p>
-  <div class="summary-actions"><button class="btn pri" id="export" type="button">Download JSON for the agent</button><button class="btn" id="exporth" type="button">Download answered HTML</button><button class="btn" id="continue-review" type="button">Continue reviewing</button></div>
+  <p class="note">Either file carries the same answers: the JSON for the agent, or this page with your answers in it.</p>
+  <div class="summary-actions"><button class="btn pri" id="export" type="button" data-export="json">Download JSON for the agent</button><button class="btn" id="exporth" type="button" data-export="html">Download answered HTML</button><button class="btn" id="continue-review" type="button">Continue reviewing</button></div>
   <p id="download-status" role="status"></p>
 </dialog>
 <p class="made"><svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M52.67 42.02 A22 22 0 1 1 46.14 17.65"/><path d="M37.18 18.22 L46.91 18.29 L45.15 8.72"/><path d="M21.5 35.50 L28.5 42.50 L42.5 28.00"/></g></svg>Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
@@ -1689,6 +1711,8 @@ const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); retu
   catch { const f = document.getElementById('save-warning'); if (f) { f.hidden = false; f.textContent = 'This browser cannot keep all your answers (pictures take room). Your current answers are still here. Finish review and download a copy before leaving.'; } return false; } };
 
 const $ = (s) => document.querySelector(s);
+const I = (name) => '<svg class="ic" aria-hidden="true" focusable="false"><use href="#i-' + name + '"/></svg>';
+const TONE_ICON = { positive: 'check', caution: 'alert', negative: 'x', neutral: 'help' };
 // #77 — every id an answer can have or is still pointed at by (a removed comment's proposals keep its
 // id), so a new one never reuses a carried item's or inherits another's; a removed answer takes its
 // pictures with it.
@@ -1779,10 +1803,9 @@ for (const [key, attr] of [['style', 'data-style'], ['theme', 'data-theme']]) {
   pick.addEventListener('change', () => { set(pick.value); try { localStorage.setItem(LS + ':' + key, pick.value); } catch {} });
 }
 
-// D079 — pins: the header, the diagram, the screen and the brief can each stay on screen.
-// Which ones are pinned is remembered in this browser only.
-// #61 — every section can be minimised to its title bar and shown again; remembered in this browser only.
-const MINIMISABLE = ['header', '#dpanel', '#upanel', '#brief', '#feedback', '#steplist', '#detailbox', '.add'];
+// #61, #100 — each of the four places can be minimised to its title bar and shown again, one at a
+// time or "only the prototype"; remembered in this browser only.
+const MINIMISABLE = ['#slot-map', '#slot-proto', '#slot-expected', '#slot-build'];
 let mins = [];
 try { mins = JSON.parse(localStorage.getItem(LS + ':min') || '[]').filter(s => MINIMISABLE.includes(s)); } catch {}
 function applyMins(){
@@ -1793,46 +1816,17 @@ function applyMins(){
     const b = el.querySelector('.min[data-min="' + sel + '"]');
     if (b) { b.setAttribute('aria-expanded', String(!on)); b.textContent = on ? 'Show' : 'Minimise'; }
   }
-  if ($('#split')) $('#split').dataset.min = mins.filter(s => s === '#steplist' || s === '#detailbox').join(' ');
+  try { localStorage.setItem(LS + ':min', JSON.stringify(mins)); } catch {}
 }
 document.addEventListener('click', e => {
+  const only = e.target.closest('[data-only]');
+  if (only) { mins = MINIMISABLE.filter(s => only.dataset.only && s !== only.dataset.only); return applyMins(); }
   const b = e.target.closest('.min[data-min]'); if (!b) return;
   const sel = b.dataset.min;
   mins = mins.includes(sel) ? mins.filter(s => s !== sel) : mins.concat(sel);
-  try { localStorage.setItem(LS + ':min', JSON.stringify(mins)); } catch {}
   applyMins();
-  if (typeof stackPins === 'function') stackPins();
 });
 applyMins();
-const PINNABLE = ['header', '#dpanel', '#upanel', '#brief'];
-let pins = [];
-try { pins = JSON.parse(localStorage.getItem(LS + ':pins') || '[]'); } catch {}
-function stackPins(){
-  let top = 0; const on = [...document.querySelectorAll('.pinned')];
-  document.documentElement.style.setProperty('--pins', String(on.length || 1));
-  for (const el of on) { el.style.setProperty('--pin-top', top + 'px'); top += el.offsetHeight; }
-  document.documentElement.style.setProperty('--pins-h', top + 'px');
-}
-function applyPins(){
-  for (const sel of PINNABLE) {
-    const el = $(sel); if (!el) continue;
-    const on = pins.includes(sel);
-    el.classList.toggle('pinned', on);
-    const b = el.querySelector('.pin'); if (b) { b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'Unpin' : 'Pin'; }
-  }
-  stackPins();
-}
-document.addEventListener('click', e => {
-  const b = e.target.closest('.pin'); if (!b) return;
-  const sel = PINNABLE.find(s => b.closest(s) === $(s)); if (!sel) return;
-  pins = pins.includes(sel) ? pins.filter(x => x !== sel) : pins.concat(sel);
-  try { localStorage.setItem(LS + ':pins', JSON.stringify(pins)); } catch {}
-  applyPins();
-});
-const pinSizes = new ResizeObserver(stackPins);
-for (const sel of PINNABLE) if ($(sel)) pinSizes.observe($(sel));
-addEventListener('resize', stackPins);
-applyPins();
 
 // filters — "gaps only" is first-class, per the protocol's gap-first invariant
 $('#filters').innerHTML = [['all','All'],['gaps','⚠ Gaps only'],['unset','Unanswered']]
@@ -1864,25 +1858,77 @@ function visible(it){
   return (it.title + ' ' + (it.body||'') + ' ' + Object.values(it.fields||{}).join(' ')).toLowerCase().includes(q);
 }
 
+// #100 — one render for both views. The tour shows the open question on the left and its four places
+// on the right; the Overview shows every question on one page. Only one view holds the answer controls
+// at a time, so every input and id exists once. Where the reviewer is lives in memory only (D003).
+let mode = 'tour', tourAt = 'start', lastIdx = -1;
+try { if (localStorage.getItem(LS + ':mode') === 'overview') mode = 'overview'; } catch {}
+const noteOpen = new Set(), ovOpen = new Set();
+document.addEventListener('toggle', e => {
+  const d = e.target, id = d.dataset && d.dataset.for; if (!id) return;
+  const set = d.classList.contains('more-answer') ? noteOpen : d.classList.contains('ov-places') ? ovOpen : null;
+  if (set) set[d.open ? 'add' : 'delete'](id);
+}, true);
+// The progress bar's parts: the review's sections, a flow's journeys, or one part for everything.
+let segsMemo = null;
+function segs(){
+  if (segsMemo) return segsMemo;
+  const list = [];
+  const iconFor = (sec, ids) => sec && sec.mode === 'choose-one' ? 'star' : sec && sec.kind === 'challenge' ? 'alert'
+    : ids.every(id => REVIEW.items.find(i => i.id === id).approval) ? 'shield' : 'help';
+  if ((REVIEW.sections || []).length) for (const sec of REVIEW.sections) {
+    const ids = REVIEW.items.filter(i => i.sectionId === sec.id).map(i => i.id);
+    if (ids.length) list.push({ label: sec.label || sec.id, sec, ids, icon: iconFor(sec, ids) });
+  } else if (FLOW) for (const j of JOURNEYS) {
+    const ids = STEPS.filter(s => journeyOf(s) === j.id).map(s => s.id);
+    if (ids.length) list.push({ label: j.title || j.id, ids, icon: 'phone' });
+  }
+  const rest = REVIEW.items.filter(i => !list.some(s => s.ids.includes(i.id))).map(i => i.id);
+  if (rest.length) list.push({ label: list.length ? 'Other questions' : 'Questions', ids: rest, icon: iconFor(null, rest) });
+  list.forEach((s, i) => { s.color = 'var(--s' + (i % 6 + 1) + ')'; });
+  return segsMemo = list;
+}
+const ORDER = () => segs().flatMap(s => s.ids);
+const segOf = (id) => segs().find(s => s.ids.includes(id));
+const secOf = (it) => (REVIEW.sections || []).find(s => s.id === it.sectionId);
+const itemById = (id) => REVIEW.items.find(i => i.id === id);
+function curIdx(){ const i = ORDER().indexOf(selected); if (i >= 0) lastIdx = i; return lastIdx; }
+
+function drawProgress(){
+  const cur = mode === 'tour' && tourAt === 'item' ? segOf(selected) : null;
+  $('#segs').innerHTML = segs().map((s, i) => {
+    const done = s.ids.filter(id => store.verdicts[id]).length;
+    return '<button type="button" class="pseg" data-seg="' + i + '" style="--sc:' + s.color + ';--w:' + s.ids.length + '"' + (s === cur ? ' aria-current="step"' : '')
+      + ' aria-label="' + esc(s.label) + ': ' + done + ' of ' + s.ids.length + ' answered"><span class="track"><i style="width:' + Math.round(100 * done / s.ids.length) + '%"></i></span>'
+      + '<span class="pl" aria-hidden="true">' + I(s.icon) + esc(s.label) + ' <small>' + done + '/' + s.ids.length + '</small></span></button>';
+  }).join('');
+}
+
 function render(){
-  const secs = REVIEW.sections && REVIEW.sections.length ? REVIEW.sections : [{ id:'__all', label:'' }];
+  const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
+  $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
+  drawProgress();
+  if (mode === 'overview') renderOverview(); else renderTour();
+  renderAdded();
+  renderSelection();
+}
+
+function renderOverview(){
+  for (const id of ['#detail', '#expected', '#build', '#proto-extra']) $(id).innerHTML = '';
   let html = '', shown = 0;
-  for (const sec of secs){
-    const items = REVIEW.items.filter(i => (sec.id==='__all' ? true : i.sectionId===sec.id) && visible(i));
+  for (const s of segs()) {
+    const items = s.ids.map(itemById).filter(visible), sec = s.sec;
     if (!items.length) continue;
     shown += items.length;
-    html += '<section class="sec" aria-labelledby="h-'+sec.id+'">';
-    if (sec.label) html += `<h2 id="h-${sec.id}">${esc(sec.label)}</h2>`;
-    if (sec.description) html += `<p class="d">${esc(sec.description)}</p>`;
-    if (sec.mode === 'choose-one') html += '<p class="pick">Choose one</p>';
-    if (sec.diagram && sec.diagram.kind === 'mermaid')
-      html += `<div class="mmd"><pre>${esc(sec.diagram.source)}</pre></div>`;
-    html += items.map(it => itemHtml(it, sec)).join('');
-    html += '</section>';
+    html += '<section class="sec" style="--sc:' + s.color + '" aria-label="' + esc(s.label) + '"><h2 class="ov-sec">' + I(s.icon) + esc(s.label)
+      + ' <small>' + s.ids.filter(id => store.verdicts[id]).length + '/' + s.ids.length + ' answered</small></h2>'
+      + (sec && sec.description ? '<p class="d">' + esc(sec.description) + '</p>' : '') + (sec && sec.mode === 'choose-one' ? '<p class="pick">Choose one</p>' : '')
+      + (sec && sec.diagram && sec.diagram.kind === 'mermaid' ? '<div class="mmd"><pre>' + esc(sec.diagram.source) + '</pre></div>' : '')
+      + items.map(cardHtml).join('') + '</section>';
   }
   $('#items').innerHTML = html || '<p class="empty">Nothing matches that filter.</p>';
   const answered = REVIEW.items.filter(i => store.verdicts[i.id]).length;
-  $('#prog').textContent = answered + '/' + REVIEW.items.length + ' answered' + (shown!==REVIEW.items.length ? ' · '+shown+' shown' : '');
+  $('#prog').textContent = answered + '/' + REVIEW.items.length + ' answered' + (shown !== REVIEW.items.length ? ' · ' + shown + ' shown' : '');
   // D046 — a filter never hides silently
   const activeFilters = [];
   if (filter !== 'all') activeFilters.push($('#filters [data-f="' + CSS.escape(filter) + '"]')?.textContent || filter);
@@ -1890,14 +1936,36 @@ function render(){
   for (const id of ['#f-journey', '#f-status']) if ($(id)?.value) activeFilters.push($(id).selectedOptions[0].textContent);
   if ($('#f-problems')?.checked) activeFilters.push('Only where something goes wrong');
   $('#filterinfo').innerHTML = shown !== REVIEW.items.length || activeFilters.length ? 'Showing ' + shown + ' of ' + REVIEW.items.length + ' · <button type="button" class="btn" id="showall">Show all</button>' + (activeFilters.length ? ' · ' + esc(activeFilters.join(' · ')) : '') : '';
-  renderAdded();
-  $('#overview').textContent = answered + ' answered · ' + (REVIEW.items.length - answered) + ' open';
-  $('#review-progress').textContent = answered + ' / ' + REVIEW.items.length + ' answered';
-  const open = REVIEW.items.find(s => s.id === selected);
-  $('#detail').innerHTML = open ? itemHtml(open, (REVIEW.sections || []).find(s => s.id === open.sectionId), true)
-    : REVIEW.flow ? '<p class="hint">Tap a highlighted element on the screen, or pick a step on the left. Its goal, outcomes and your answer open here.</p>'
-    : '<p class="hint">Pick an item to inspect it and give your answer.</p>';
-  renderSelection();
+  $('#t-summary').innerHTML = finishSummary();
+}
+
+function renderTour(){
+  $('#items').innerHTML = '';
+  const it = tourAt === 'item' ? itemById(selected) : null, s = it ? segOf(it.id) : null;
+  $('#t-start').hidden = tourAt !== 'start'; $('#t-end').hidden = tourAt !== 'end'; $('#detail').hidden = tourAt !== 'item';
+  $('#ask').style.setProperty('--sc', s ? s.color : 'var(--ac)');
+  $('#t-where').innerHTML = tourAt === 'start' ? I('flag') + 'Understand' : tourAt === 'end' ? I('send') + 'Return'
+    : s ? I(s.icon) + esc(s.label) + ' · ' + (s.ids.indexOf(it.id) + 1) + ' of ' + s.ids.length : '';
+  $('#detail').innerHTML = it ? answerHtml(it, secOf(it)) : FLOW ? '<p class="hint">Tap a highlighted part of the screen, or press Next.</p>' : '';
+  $('#t-summary').innerHTML = tourAt === 'end' ? finishSummary() : '';
+  const p = it ? placesFor(it) : tourAt === 'start' ? startPlaces() : {};
+  const empty = (icon, text) => '<p class="empty-slot">' + I(icon) + text + '</p>';
+  $('#proto-extra').innerHTML = p.proto || (FLOW ? '' : empty('phone', 'Nothing to show on a screen for this question.'));
+  $('#expected').innerHTML = p.expected || empty('list', 'Nothing more to show here.');
+  $('#build').innerHTML = p.build || empty('code', 'Nothing about how it is built for this question.');
+  const order = ORDER(), n = order.length + 2, i = curIdx();
+  const pos = tourAt === 'start' ? 1 : tourAt === 'end' ? n : i + 2;
+  $('#stepno').textContent = 'Step ' + pos + ' of ' + n;
+  $('#back').disabled = tourAt === 'start';
+  $('#next').disabled = tourAt === 'end';
+  $('#next').innerHTML = (tourAt === 'start' ? 'Start' : tourAt === 'end' ? 'Done' : i >= order.length - 1 ? 'Finish'
+    : it && !store.verdicts[it.id] ? 'Skip for now' : 'Next') + I('right');
+}
+
+// Understand: what is coming, one row per part, each a jump.
+function startPlaces(){
+  return { expected: '<p class="qprompt">' + I('list') + 'What I will ask</p><ul class="plan">' + segs().map((s, i) => '<li><button type="button" data-seg="' + i
+    + '" style="--sc:' + s.color + '"><b>' + I(s.icon) + esc(s.label) + '</b><span>' + s.ids.length + (s.ids.length === 1 ? ' question' : ' questions') + '</span></button></li>').join('') + '</ul>' };
 }
 
 // D060 — the reviewer can ask back: an example, or an explanation. Both travel in the feedback.
@@ -1905,21 +1973,6 @@ const ASKS = [['example', 'Show me an example'], ['explain', 'Explain this']];
 const asksRow = (id) => `<div class="asks-row">${ASKS.map(([kind, label]) => `<label class="ask"><input type="checkbox"
   data-ask="${esc(kind)}" data-for="${esc(id)}"${(store.requests[id] || {})[kind] ? ' checked' : ''}> ${label}</label>`).join('')}</div>`;
 
-// D069 — a step you have not opened is one line: where it sits, and whether it is answered or still open.
-function stepRow(it, cur, sec){
-  const o = optsFor(it).find(x => x.value === cur);
-  const chosen = sec && sec.mode === 'choose-one' && store.choices[sec.id] === it.id;
-  const rec = sec && sec.mode === 'choose-one' && sec.recommended && sec.recommended.itemId === it.id;
-  return `<fieldset class="item row" data-v="${cur}" data-step="${esc(it.id)}" aria-current="${selected === it.id}" style="--tone:var(--${TONE[(o || {}).tone] || 'line2'})">
-    <legend><button type="button" class="row-open" data-open="${esc(it.id)}">${esc(it.title)}</button></legend>
-    ${!it.step && (it.summary || it.body) ? `<p class="row-sum">${esc(String(it.summary || it.body).slice(0, 140))}${String(it.summary || it.body).length > 140 ? '…' : ''}</p>` : ''}
-    <p class="row-meta">${it.step ? `<span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
-      <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span>` : (chosen ? '<span class="w-status">Chosen</span>' : '') + (rec ? '<span class="w-journey">Recommended</span>' : '') + (it.approval ? '<span class="w-status">Approval</span>' : '')}${store.notes[it.id] ? '<span>· note</span>' : ''}
-      ${store.requests[it.id]?.example || store.requests[it.id]?.explain ? '<span>· request outstanding</span>' : ''}
-      <span class="row-v">${o ? esc(o.label) : 'Open'}</span></p>
-  </fieldset>`;
-}
-// The open step shows every outcome side by side; "Show this" plays it on the screen.
 // D098 — one tap, every layer answers: under each outcome, what runs (system) and what changes (data),
 // each entry with its status and checked reference, and a verdict of its own (D006). Which layers are
 // open first is the review's choice (D005); the reviewer switches them, in memory only (D003).
@@ -1953,15 +2006,25 @@ function layerSwitches(it){
     `<label><input type="checkbox" data-layer="${k}"${layers().has(k) ? ' checked' : ''}> ${t}</label>`).join('')}</div>` : '';
 }
 
+// What should happen: every outcome side by side; "Show this" plays it on the screen.
 function outcomeCols(it){
   const o = last && last.step === it ? last.outcome : null;
   return (pending === it ? '<p class="hint">What happens? Pick one to see it.</p>' : '')
-    + layerSwitches(it)
     + `<div class="outcome-cols">${it.step.outcomes.map((x, i) => `<div class="outcome" data-picked="${x === o}">
       <b>${esc(x.label || 'Result')}</b><p><span class="k">Effect</span>${esc(x.effect)}</p>
       ${x.because ? `<p><span class="k">Why</span>${esc(x.because)}</p>` : ''}${x.canNow ? `<p><span class="k">You can now</span>${esc(x.canNow)}</p>` : ''}
-      <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>${layerHtml(it.id, x)}
+      <p class="basis">Leads to: ${esc(screenTitle(x.to))}</p>
       <button type="button" class="btn" data-outcome="${i}" data-for="${esc(it.id)}">${x === o ? 'Showing this' : 'Show this'}</button></div>`).join('')}</div>`;
+}
+// How I'd build it: under each outcome, what runs and what changes (D098), each judged on its own.
+function buildHtml(it){
+  const outs = it.step.outcomes.filter(x => (x.system || []).length || (x.data || []).length);
+  return outs.length ? layerSwitches(it) + outs.map(x => `<div class="outcome-build"><b>${esc(x.label || 'Result')}</b>${layerHtml(it.id, x)}</div>`).join('') : '';
+}
+// A screen drawn still, for the Overview: the one a step starts from.
+function stillScreen(id){
+  const s = FLOW.screens.find(x => x.id === id);
+  return s ? `<div class="screen"><p class="screen-title">${esc(s.title)}</p>${(s.blocks || []).map(b => drawBlock(b, { targets: new Set(), still: true })).join('')}</div>` : '';
 }
 
 // #42 — real precedents on an item, as in the brief: who, what they did, what people see, and the source
@@ -1974,50 +2037,61 @@ function examplesHtml(list){
       : '<span class="unverified">unverified · I could not find a source</span>'}</li>`).join('')}</ul>`;
 }
 
-function itemHtml(it, sec, full){
+// #100 — the question and your answer: why it is asked, then big answer tiles in the review's own words
+// and tones. The note and pictures sit behind one tap until you have answered.
+function answerHtml(it, sec){
   const cur = store.verdicts[it.id] || 'unset';
-  if (!full) return stepRow(it, cur, sec);
   const choosing = sec && sec.mode === 'choose-one';
   const chosen = choosing && store.choices[sec.id] === it.id;
   const rec = choosing && sec.recommended && sec.recommended.itemId === it.id;
-  const opts = optsFor(it);
-  const tone = TONE[(opts.find(o=>o.value===cur)||{}).tone] || '';
-  const flds = (REVIEW.fields||[]).filter(f => (it.fields||{})[f.key]).map(f =>
-    `<div class="fld"><span class="k" style="--fk:var(--${TONE[f.tone]||'mut'})">${esc(f.label)}</span><span class="val">${esc(it.fields[f.key])}</span></div>`).join('');
-  const stepAttrs = it.step && !full ? ` data-step="${esc(it.id)}" aria-current="${selected === it.id}"` : '';
-  return `<fieldset class="item${chosen ? ' chosen' : ''}${it.step ? ' open' : ''}" data-v="${cur}"${stepAttrs} style="--tone:var(--${tone||'line2'})">
+  const opts = optsFor(it), picked = opts.find(o => o.value === cur);
+  const noteShown = cur !== 'unset' || store.notes[it.id] || (store.pictures || []).some(p => p.on === it.id) || noteOpen.has(it.id);
+  return `<fieldset class="item${chosen ? ' chosen' : ''}${it.step ? ' open' : ''}" data-v="${cur}" style="--tone:var(--${TONE[(picked || {}).tone] || 'line2'})">
     <legend>${esc(it.title)}</legend>
-    ${choosing ? `<div class="choose"><label><input type="radio" name="c-${esc(sec.id)}" value="${esc(it.id)}"
-      data-choice="${esc(sec.id)}" ${chosen ? 'checked' : ''}> Choose this</label>
-      ${rec ? `<span class="rec">Recommended</span><span class="recwhy">${esc(sec.recommended.why)}</span>` : ''}</div>` : ''}
     ${it.step ? `<p class="w-line"><span class="w-journey">${esc((JOURNEYS.find(j => j.id === journeyOf(it)) || {}).title || '')}</span>
       <span class="w-status">${STATUS_LABEL[statusOf(it.step)]}</span></p>` : ''}
     ${it.step && it.step.goal ? `<p class="body">Goal: ${esc(it.step.goal)}</p>` : ''}
-    ${it.step ? outcomeCols(it) : ''}
     ${it.summary ? `<p class="body">${esc(it.summary)}</p>` : ''}
     ${it.body ? (it.summary
       ? `<details class="more"><summary>More detail</summary><p class="body">${esc(it.body)}</p></details>`
       : `<p class="body">${esc(it.body)}</p>`) : ''}
     ${(it.affects || []).map(a => `<p class="aff"><span class="k">Previously decided · ${esc(a.effect)}</span>
       "${esc(a.decision.title)}" was answered ${esc(a.decision.verdict)}. ${esc(a.why)}</p>`).join('')}
-    ${flds ? `<div class="flds">${flds}</div>` : ''}
-    ${examplesHtml(it.examples)}
-    ${it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''}
-    ${it.approval ? approvalHtml(it.approval) : ''}
-    <h3 class="response-heading">Your response · ${esc(it.title)}</h3>
-    <div class="verdicts" role="radiogroup" aria-label="${it.approval ? 'Approve or decline' : 'Verdict for'}: ${esc(it.title)}">
-      ${opts.map(o=>`<label class="v-${TONE[o.tone]}">
-        <input type="radio" name="v-${esc(it.id)}" value="${esc(o.value)}" ${cur===o.value?'checked':''}
-          data-item="${esc(it.id)}">\
-        <span>${esc(o.label)}</span></label>`).join('')}
+    ${choosing ? `<div class="choose"><label><input type="radio" name="c-${esc(sec.id)}" value="${esc(it.id)}"
+      data-choice="${esc(sec.id)}" ${chosen ? 'checked' : ''}> Choose this</label>
+      ${rec ? `<span class="rec">Recommended</span><span class="recwhy">${esc(sec.recommended.why)}</span>` : ''}</div>` : ''}
+    <p class="qprompt">${I(it.approval ? 'shield' : 'help')}${it.approval ? 'Do you approve this?' : 'Your answer'}</p>
+    <div class="verdicts tiles" role="radiogroup" aria-label="${it.approval ? 'Approve or decline' : 'Verdict for'}: ${esc(it.title)}">
+      ${opts.map(o => `<label class="v-${TONE[o.tone] || 'neut'}"><input type="radio" name="v-${esc(it.id)}" value="${esc(o.value)}"${cur === o.value ? ' checked' : ''}
+        data-item="${esc(it.id)}"><span class="dot">${I(TONE_ICON[o.tone] || 'help')}</span><span>${esc(o.label)}</span></label>`).join('')}
     </div>
-    ${(opts.find(o=>o.value===cur)||{}).hint ? `<p class="hint">${esc(opts.find(o=>o.value===cur).hint)}</p>` : ''}
+    ${(picked || {}).hint ? `<p class="hint">${esc(picked.hint)}</p>` : ''}
+    ${asksRow(it.id)}
+    <details class="more-answer" data-for="${esc(it.id)}"${noteShown ? ' open' : ''}><summary>${I('note')}${cur === 'unset' ? 'Add a note or a picture' : 'Say why, in your own words'}</summary>
     <label class="skip" for="n-${esc(it.id)}">Note for ${esc(it.title)}</label>
     <textarea id="n-${esc(it.id)}" data-note="${esc(it.id)}"
       placeholder="What did you see? Your own words are the part that gets acted on.">${esc(store.notes[it.id]||'')}</textarea>
-    ${picsHtml(it.id)}
-    ${asksRow(it.id)}
+    ${picsHtml(it.id)}</details>
   </fieldset>`;
+}
+// The three places after the map, for one question. The Overview shows a flow step's screen still;
+// the tour has the live screen in its own place.
+function placesFor(it, overview){
+  const flds = (REVIEW.fields||[]).filter(f => (it.fields||{})[f.key]).map(f =>
+    `<div class="fld"><span class="k" style="--fk:var(--${TONE[f.tone]||'mut'})">${esc(f.label)}</span><span class="val">${esc(it.fields[f.key])}</span></div>`).join('');
+  return {
+    proto: (overview && it.step && FLOW ? stillScreen(it.step.from) : '') + (it.approval ? approvalHtml(it.approval) : ''),
+    expected: (it.step ? outcomeCols(it) : '') + (flds ? `<div class="flds">${flds}</div>` : '') + examplesHtml(it.examples),
+    build: (it.step ? buildHtml(it) : '') + (it.ref ? `<p class="ref">${esc(it.ref)}</p>` : ''),
+  };
+}
+function cardHtml(it){
+  const p = placesFor(it, true);
+  const parts = [['phone', 'Prototype', p.proto], ['list', 'What should happen', p.expected], ['code', "How I'd build it", p.build]].filter(x => x[2]);
+  return `<article class="card" data-card="${esc(it.id)}" style="--sc:${segOf(it.id).color}">${answerHtml(it, secOf(it))}
+    ${parts.length ? `<details class="ov-places" data-for="${esc(it.id)}"${ovOpen.has(it.id) ? ' open' : ''}><summary>${parts.map(x => I(x[0])).join('')}Show ${parts.map(x => x[1].toLowerCase()).join(' · ')}</summary>
+      <div class="ov-grid">${parts.map(([ic, h, b]) => `<div><h3>${I(ic)}${h}</h3>${b}</div>`).join('')}</div></details>` : ''}
+    <button class="btn" type="button" data-open="${esc(it.id)}">${I('right')}Open in the tour</button></article>`;
 }
 
 function renderAdded(){
@@ -2079,8 +2153,6 @@ document.addEventListener('click', e => {
     $('#filters').querySelectorAll('[data-f]').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.f === 'all')));
     return render();
   }
-  const card = e.target.closest('fieldset.item.row[data-step]');
-  if (card && !e.target.closest('input,textarea,label,button')) return openItem(card.dataset.step);
   const d = e.target.closest('[data-del]');
   if (d){
     const removed = store.added.splice(+d.dataset.del,1)[0];
@@ -2097,25 +2169,29 @@ if (addBtn) addBtn.addEventListener('click', () => {
   save(); $('#at').value=''; $('#ab').value=''; render(); $('#at').focus();
 });
 
-$('#export').addEventListener('click', () => {
-  const out = buildFeedback(REVIEW, store);
-  saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
-  $('#footnote').textContent = `Downloaded ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Nothing was sent: return the file yourself.`;
-  $('#download-status').textContent = 'Downloaded JSON. Return this file to the agent; nothing was sent automatically.';
+// Two downloads, from the summary dialog or the Return step: the JSON, or this page with the answers.
+const downloaded = (t) => document.querySelectorAll('#download-status, .download-status').forEach(x => { x.textContent = t; });
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-export]'); if (!b) return;
+  if (b.dataset.export === 'json') {
+    const out = buildFeedback(REVIEW, store);
+    saveAs(JSON.stringify(out,null,2), 'application/json', REVIEW.id + '.feedback.json');
+    $('#footnote').textContent = `Downloaded ${out.summary.answered}/${out.summary.total} answered · ${out.summary.added} added · ${out.gaps.length} gaps. Nothing was sent: return the file yourself.`;
+    downloaded('Downloaded JSON. Return this file to the agent; nothing was sent automatically.');
+  } else {
+    const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+    saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
+    $('#footnote').textContent = 'Exported the whole page with your answers. Nothing was sent: send this file back yourself; the agent can read it or the .json.';
+    downloaded('Downloaded answered HTML. Return this file to the agent for checked import; nothing was sent automatically.');
+  }
 });
 const saveAs = (text, type, name) => {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([text], {type}));
   a.download = name; a.click(); URL.revokeObjectURL(a.href);
 };
-// D076 — the HTML export is this whole page with the answers in it: every chart, screen and step, for
-// someone who will never open a .json file. "<" is escaped so no answer can close the script tag.
-$('#exporth').addEventListener('click', () => {
-  const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
-  saveAs(PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'), 'text/html', REVIEW.id + '.feedback.html');
-  $('#footnote').textContent = 'Exported the whole page with your answers. Nothing was sent: send this file back yourself; the agent can read it or the .json.';
-  $('#download-status').textContent = 'Downloaded answered HTML. Return this file to the agent for checked import; nothing was sent automatically.';
-});
+// D076 — the HTML export (above) is this whole page with the answers in it: every chart, screen and
+// step, for someone who will never open a .json file. "<" is escaped so no answer can close the script tag.
 // Finish is a view of the existing contract, not a new definition of answered or approved.
 function finishSummary(){
   const out = buildFeedback(REVIEW, store);
@@ -2136,7 +2212,7 @@ function finishSummary(){
   const gaps = out.gaps.map(id => '<li>' + link(id) + '</li>').join('');
   const requests = (out.requests || []).map(r => '<li>' + link(r.itemId, (r.kind === 'example' ? 'Show an example: ' : 'Explain: ') + r.title) + '</li>').join('');
   const partial = out.summary.unset || (out.choices || []).some(c => !c.itemId);
-  $('#finish-summary').innerHTML = '<p>' + (partial ? 'Partial review — unanswered items and choices are kept, never treated as agreement.' : 'All items have an answer. Answers are not permission to act.') + '</p>'
+  return '<p>' + (partial ? 'Partial review — unanswered items and choices are kept, never treated as agreement.' : 'All items have an answer. Answers are not permission to act.') + '</p>'
     + '<div class="summary-counts"><span>' + out.summary.answered + ' / ' + out.summary.total + ' answered</span><span>' + out.summary.unset + ' unanswered</span>' + counts + '</div>'
     + '<p>' + out.gaps.length + ' gaps · ' + (out.requests || []).length + ' requests · ' + out.summary.added + ' added items · ' + (out.comments || []).length + ' comments · ' + (out.pictures || []).length + ' pictures · ' + (out.proposals || []).length + ' proposed changes</p>'
     + (choices ? '<h3>Choices</h3><ul>' + choices + '</ul><p>Unrated alternatives in a chosen section stay unanswered, but are not gaps.</p>' : '')
@@ -2145,19 +2221,19 @@ function finishSummary(){
     + ((out.proposals || []).length ? '<p>Proposed changes are suggestions, not confirmation that anything has been implemented.</p>' : '');
 }
 let summaryDestination = false;
-$('#finish').addEventListener('click', () => { summaryDestination = false; finishSummary(); $('#download-status').textContent = ''; $('#return-review').showModal(); $('#return-heading').focus(); });
+$('#finish').addEventListener('click', () => { summaryDestination = false; $('#finish-summary').innerHTML = finishSummary(); $('#download-status').textContent = ''; $('#return-review').showModal(); $('#return-heading').focus(); });
 $('#continue-review').addEventListener('click', () => $('#return-review').close());
 $('#return-review').addEventListener('close', () => { if (!summaryDestination) $('#finish').focus({ preventScroll: true }); });
-$('#finish-summary').addEventListener('click', e => {
+document.addEventListener('click', e => {
   const b = e.target.closest('[data-summary-target]'); if (!b) return;
   summaryDestination = true;
-  $('#return-review').close();
+  if ($('#return-review').open) $('#return-review').close();
   if (b.dataset.summaryKind === 'item') openItem(b.dataset.summaryTarget);
   else if (b.dataset.summaryKind === 'layer') {
     const [itemId, entryId] = b.dataset.summaryTarget.split('/');
     openItem(itemId);
     focusResponse(itemId + '/' + entryId);
-  } else { selectTarget({ kind: 'added', id: b.dataset.summaryTarget }); revealRegion($('#detail')); $('#selection-title').focus(); }
+  } else { setMode('tour'); selectTarget({ kind: 'added', id: b.dataset.summaryTarget }); $('#selection-title').focus(); }
 });
 $('#reset').addEventListener('click', () => {
   if (!confirm('Clear every answer you have given on this machine?')) return;
@@ -2172,14 +2248,14 @@ $('#reset').addEventListener('click', () => {
 const FLOW = REVIEW.flow || null;
 let at = FLOW ? FLOW.start : null, pending = null, last = null;
 const selectionReview = { ...REVIEW, diagrams: (FLOW ? [flowAsDiagram(REVIEW)] : []).concat(REVIEW.diagrams || []) };
-let selection = !FLOW && REVIEW.items.length ? resolveReviewSelection(selectionReview, { kind: 'item', itemId: REVIEW.items[0].id }) : null;
-let selected = selection?.itemId || null; // derived compatibility value for drawing; never saved
+let selection = null;
+let selected = null; // derived compatibility value for drawing; never saved
 function selectTarget(target, keepDetail = false){
   const added = target.kind === 'added' && store.added.filter(a => a.id === target.id);
   const next = added ? (added.length === 1 ? { target: { kind: 'added', id: target.id }, label: added[0].title, itemId: null, screenId: null, relatedItemIds: [] } : null)
     : resolveReviewSelection(selectionReview, target);
   if (!next) return false;
-  selection = next; selected = next.itemId;
+  selection = next; selected = next.itemId; tourAt = 'item';
   at = next.screenId;
   const owner = REVIEW.items.find(i => i.id === selected);
   pending = owner?.step && next.outcomeIndex == null ? owner : null;
@@ -2191,28 +2267,25 @@ function selectTarget(target, keepDetail = false){
   return true;
 }
 function renderSelection(){
-  if (!$('#selection-title')) return;
-  const it = REVIEW.items.find(i => i.id === selected);
-  $('#selection-title').textContent = 'Selected: ' + (selection?.label || it?.title || 'choose something to inspect');
-  $('#selection-meta').textContent = (selection?.layerKey ? 'Layer response: ' + selection.label + ' · Within: ' + it.title
-    : it ? 'Your answer applies to: ' + it.title : selection?.target.kind === 'added' ? 'Your added feedback; not a verdict on another item.'
-    : selection?.screenId ? 'Choose a related behavior below. This screen has no separate verdict.' : 'Selecting something does not record an answer.')
-    + (it && !visible(it) ? ' · Selected item is outside the current filters.' : '');
-  $('#related-items').innerHTML = !selected ? (selection?.relatedItemIds || []).map(id => '<button class="btn" type="button" data-open="' + esc(id) + '">' + esc(REVIEW.items.find(i => i.id === id)?.title) + '</button>').join('') : '';
-  $('#selection-actions').innerHTML = (selection?.commentTarget ? '<button class="btn" id="comment-selected" type="button">Comment / propose a change</button>' : '')
-    + (it ? '<button class="btn" id="inspect-response" type="button">Go to response</button>' : '');
-  if (selection?.target.kind === 'added') {
+  const it = REVIEW.items.find(i => i.id === selected), edge = tourAt !== 'item';
+  $('#selection-title').textContent = tourAt === 'start' ? 'Before you start' : tourAt === 'end' ? 'Finish and send back'
+    : selection?.layerKey ? selection.label : it ? it.title : selection?.label || 'Choose something to look at';
+  $('#selection-meta').textContent = edge ? '' : [selection?.layerKey ? 'Layer response: ' + selection.label + ' · Within: ' + it.title
+    : it ? '' : selection?.target.kind === 'added' ? 'Your added feedback; not a verdict on another item.'
+    : selection?.screenId ? 'Choose a related behavior below. This screen has no separate verdict.' : selection ? 'Selecting something does not record an answer.' : '',
+    it && !visible(it) ? 'Selected item is outside the current filters.' : ''].filter(Boolean).join(' · ');
+  $('#related-items').innerHTML = !edge && !selected ? (selection?.relatedItemIds || []).map(id => '<button class="btn" type="button" data-open="' + esc(id) + '">' + esc(REVIEW.items.find(i => i.id === id)?.title) + '</button>').join('') : '';
+  $('#selection-actions').innerHTML = edge ? '' : (selection?.commentTarget ? '<button class="btn" id="comment-selected" type="button">' + I('note') + 'Comment on the map</button>' : '')
+    + (selection?.layerKey ? '<button class="btn" id="inspect-response" type="button">Go to response</button>' : '');
+  if (mode === 'tour' && !edge && selection?.target.kind === 'added') {
     const a = store.added.find(x => x.id === selection.target.id);
     $('#detail').innerHTML = '<h3>' + esc(a?.title) + '</h3><p>' + esc(a?.body) + '</p>' + (a?.note ? '<p>' + esc(a.note) + '</p>' : '');
   }
 }
 function openItem(id){
+  setMode('tour');
   if (!selectTarget({ kind: 'item', itemId: id })) return;
-  revealRegion($('#detail'));
-  $('#detail input[type=radio]')?.focus({ preventScroll: true });
-  // Stacked (under 1100 px) the open item sits below the whole list: bring it into view. Side by side
-  // it is already beside the row, and nothing moves (D079).
-  if (matchMedia('(max-width:1099px)').matches) $('#detail').scrollIntoView({ block: 'start' });
+  $('#detail input[type=radio]')?.focus();
 }
 const partsById = FLOW ? Object.fromEntries((FLOW.parts || []).map(p => [p.id, p])) : {};
 const stepsFrom = (screenId) => REVIEW.items.filter(i => i.step && i.step.from === screenId);
@@ -2293,6 +2366,8 @@ function drawStageChart(){
   else if (selected) represented = [...box.querySelectorAll('[data-step="' + CSS.escape(selected) + '"]')];
   else if (selection?.screenId && chartTab === 'user-flow') represented = [...box.querySelectorAll('[data-node="' + CSS.escape('screen:' + selection.screenId) + '"]')];
   represented.forEach(el => { el.classList.add('dg-selected'); el.setAttribute('aria-current', 'true'); });
+  // #100 — answered questions show on the map, beside where you are.
+  for (const id of Object.keys(store.verdicts)) box.querySelectorAll('[data-step="' + CSS.escape(id) + '"]').forEach(el => el.classList.add('dg-answered'));
   if ($('#diagram-selection')) $('#diagram-selection').textContent = selection ? selection.label + (represented.length ? ' · selected here' : ' · not represented in this diagram') : '';
   if (showChanges) for (const id of shown.added.concat(mine.map(p => p.node).filter(Boolean)))
     box.querySelector('[data-node="' + CSS.escape(id) + '"]')?.classList.add('dg-proposed');
@@ -2380,17 +2455,42 @@ function go(st, o){
   $('#screen-title').focus({ preventScroll: true });
 }
 
-// D074, #44 — every page: filters, then the list | the open item, then your own feedback, full width.
-$('#split').before($('.bar')); $('#steplist').append($('#items'));
-if ($('.add')) $('#feedback').append($('.add'));
-// The brief precedes inspection, and the selected screen and behavior form one workspace.
-if ($('#brief')) $('header').after($('#brief'));
-const workspace = document.createElement('section'); workspace.id = 'workspace'; workspace.setAttribute('aria-labelledby', 'selection-title');
-workspace.innerHTML = '<div class="selection-head"><p class="review-kicker">Inspect together</p><h2 id="selection-title" tabindex="-1">Choose something to inspect</h2><p id="selection-meta"></p><div id="related-items"></div><div id="selection-actions" class="selection-actions"></div></div>';
-$('#feedback').before(workspace);
-if ($('#upanel')) workspace.append($('#upanel'));
-workspace.append($('#feedback'));
-$('#related-items').addEventListener('click', e => { const b = e.target.closest('[data-open]'); if (b) openItem(b.dataset.open); });
+// #100 — Tour or Overview. The parts that belong to both (what the review is about, the map, the
+// Return step) move to whichever view is showing; nothing is drawn twice.
+function setMode(m, force){
+  if (!force && m === mode) return;
+  mode = m; document.body.dataset.mode = m;
+  try { localStorage.setItem(LS + ':mode', m); } catch {}
+  document.querySelectorAll('.mode [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === m)));
+  const ov = m === 'overview';
+  (ov ? $('#ov-top') : $('#t-start')).append($('#understand'));
+  if ($('#dpanel')) (ov ? $('#ov-top') : $('#slot-map .slot-body')).append($('#dpanel'));
+  (ov ? $('#ov-end') : $('#t-end')).append($('#return-block'));
+  render(); if ($('#dpanel')) drawStageChart();
+}
+$('.mode').addEventListener('click', e => { const b = e.target.closest('[data-mode]'); if (b) setMode(b.dataset.mode); });
+// Back and Next: Understand, every question in the order of the progress bar, then Return. Skipping
+// is fine; an unanswered question stays open.
+function goStep(dir){
+  setMode('tour');
+  const order = ORDER(), i = tourAt === 'start' ? -1 : tourAt === 'end' ? order.length : curIdx(), j = i + dir;
+  if (j >= 0 && j < order.length) selectTarget({ kind: 'item', itemId: order[j] });
+  else {
+    tourAt = j < 0 ? 'start' : 'end'; selection = null; selected = null; pending = null; last = null;
+    if (FLOW && j < 0) at = FLOW.start;
+    if (FLOW) drawAll(); else { render(); if ($('#dpanel')) drawStageChart(); }
+  }
+  $('#selection-title').focus();
+}
+$('#back').addEventListener('click', () => goStep(-1));
+$('#next').addEventListener('click', () => goStep(1));
+$('#start-review').addEventListener('click', () => { tourAt = 'start'; goStep(1); });
+document.addEventListener('click', e => {
+  const seg = e.target.closest('[data-seg]');
+  if (seg) { const s = segs()[+seg.dataset.seg]; return openItem(s.ids.find(id => !store.verdicts[id]) || s.ids[0]); }
+  const open = e.target.closest('[data-open]');
+  if (open) openItem(open.dataset.open);
+});
 $('#selection-actions').addEventListener('click', e => {
   if (e.target.closest('#comment-selected') && selection?.commentTarget) {
     chartTab = selection.diagramId; drawTabs(); drawStageChart(); revealRegion($('#dpanel')); addComment(selection.commentTarget);
@@ -2401,7 +2501,7 @@ $('#selection-actions').addEventListener('click', e => {
 });
 document.addEventListener('click', e => {
   const added = e.target.closest('[data-select-added]');
-  if (added) { selectTarget({ kind: 'added', id: added.dataset.selectAdded }); revealRegion($('#detail')); $('#selection-title').focus(); }
+  if (added) { setMode('tour'); selectTarget({ kind: 'added', id: added.dataset.selectAdded }); $('#selection-title').focus(); }
   const judge = e.target.closest('details.judge');
   const key = judge?.querySelector('[data-lv]')?.dataset.lv;
   if (key) { const [itemId, entryId] = key.split('/'); selectTarget({ kind: 'layer', itemId, entryId }, true); }
@@ -2411,23 +2511,14 @@ document.addEventListener('focusin', e => {
   if (key && selection?.layerKey !== key) { const [itemId, entryId] = key.split('/'); selectTarget({ kind: 'layer', itemId, entryId }, true); }
 });
 if ($('#dpanel')) { const status = document.createElement('p'); status.id = 'diagram-selection'; status.setAttribute('aria-live', 'polite'); $('#dgtabs').after(status); }
-$('#start-review').addEventListener('click', () => {
-  for (const id of ['#dpanel', '#feedback', '#steplist', '#detailbox']) mins = mins.filter(x => x !== id);
-  applyMins();
-  const region = $('#dpanel') || $('#workspace');
-  revealRegion(region);
-  region.setAttribute('tabindex', '-1'); region.focus(); region.scrollIntoView({ block: 'start' });
-});
 function revealRegion(region){
-  for (let el = region; el; el = el.parentElement) {
-    if (el.classList.contains('sec-body')) { el.hidden = false; el.parentElement.querySelector('.sec-toggle')?.setAttribute('aria-expanded', 'true'); }
+  for (let el = region; el; el = el.parentElement)
     if (el.classList.contains('minimised')) { mins = mins.filter(sel => $(sel) !== el); applyMins(); }
-  }
 }
 function focusResponse(layerKey){
-  revealRegion($('#detail'));
-  const entry = layerKey && $('#detail input[data-lv="' + CSS.escape(layerKey) + '"]');
+  const entry = layerKey && document.querySelector('input[data-lv="' + CSS.escape(layerKey) + '"]');
   if (entry) {
+    revealRegion(entry);
     const layer = entry.closest('.layer');
     const kind = layer?.classList.contains('layer-system') ? 'system' : layer?.classList.contains('layer-data') ? 'data' : null;
     if (kind) {
@@ -2438,20 +2529,6 @@ function focusResponse(layerKey){
     entry.focus();
   } else $('#detail input[type=radio]')?.focus();
 }
-// The list and the open item share the row in three steps, remembered in this browser only.
-let splitSize = 'even';
-try { splitSize = localStorage.getItem(LS + ':split') || 'even'; } catch {}
-function applySplit(){
-  $('#split').dataset.size = splitSize;
-  $('#split').querySelectorAll('.sizes [data-size]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.size === splitSize)));
-  try { localStorage.setItem(LS + ':split', splitSize); } catch {}
-}
-applySplit();
-$('#split').addEventListener('click', e => {
-  const size = e.target.closest('button[data-size]'), open = e.target.closest('[data-open]');
-  if (size) { splitSize = size.dataset.size; return applySplit(); }
-  if (open) { openItem(open.dataset.open); if (FLOW) document.querySelector('#detail [data-outcome]')?.focus(); }
-});
 
 // D073 — either panel opens full screen, and Esc or the same button brings it back.
 const setFull = (panel, on) => {
@@ -2643,21 +2720,19 @@ if (FLOW) {
     // The outcomes are picked in the feedback panel, so a full-screen screen steps aside for it.
     if ($('#upanel.full')) setFull($('#upanel'), false);
     selectTarget({ kind: 'item', itemId: st.id });
-    const first = document.querySelector('#detail [data-outcome]'); if (first) first.focus();
+    const first = document.querySelector('#expected [data-outcome]'); if (first) first.focus();
   });
   $('#restart').addEventListener('click', () => {
     selectTarget({ kind: 'screen', screenId: FLOW.start });
     $('#announce').textContent = 'Now on: ' + FLOW.screens.find(x => x.id === at).title;
     $('#screen-title').focus();
   });
-  $('#split').addEventListener('click', e => {
-    const b = e.target.closest('[data-outcome]');
-    if (!b) return;
+  // "Show this" plays an outcome on the screen, from the tour or the Overview.
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-outcome]'); if (!b) return;
     const st = STEPS.find(x => x.id === b.dataset.for); if (!st) return;
-    // The screen above changes height with the next screen; the feedback stays put on the window.
-    const y = $('#feedback').getBoundingClientRect().top;
+    setMode('tour');
     go(st, st.step.outcomes[+b.dataset.outcome]);
-    scrollBy(0, $('#feedback').getBoundingClientRect().top - y);
   });
   $('#f-journey').insertAdjacentHTML('beforeend', JOURNEYS.map(j => `<option value="${esc(j.id)}">${esc(j.title)}</option>`).join(''));
   for (const id of ['#f-journey', '#f-status', '#f-problems']) $(id).addEventListener('change', render);
@@ -2714,47 +2789,9 @@ if (FLOW) {
     drawAll();
   });
 
-  // D055 — the reviewer arranges the page: sections collapse and move, remembered in this browser only.
-  const SECTIONS = [['player', 'Walk through it']];
-  const pieces = { player: ['#stage', '#workspace', '.player-bar'] };
-  let arrangement = { order: SECTIONS.map(s => s[0]), collapsed: {} };
-  try { arrangement = Object.assign(arrangement, JSON.parse(localStorage.getItem(LS + ':sections') || '{}')); } catch {}
-  const saveArrangement = () => { try { localStorage.setItem(LS + ':sections', JSON.stringify(arrangement)); } catch {} };
-
-  const holder = document.createElement('div');
-  holder.id = 'sections';
-  $('#player').before(holder);
-  for (const [id, title] of SECTIONS) {
-    const box = document.createElement('section');
-    box.className = 'sec-box'; box.dataset.section = id;
-    box.innerHTML = `<div class="sec-head"><button type="button" class="sec-toggle" aria-expanded="true">${esc(title)}</button>
-      <span class="sec-actions"><button type="button" class="sec-up" aria-label="Move ${esc(title)} up">↑</button>
-      <button type="button" class="sec-down" aria-label="Move ${esc(title)} down">↓</button></span></div><div class="sec-body"></div>`;
-    const body = box.querySelector('.sec-body');
-    for (const sel of pieces[id]) { const el = document.querySelector(sel); if (el) body.append(el); }
-    holder.append(box);
-  }
-  const applyArrangement = () => {
-    for (const id of arrangement.order) { const box = holder.querySelector('[data-section="' + id + '"]'); if (box) holder.append(box); }
-    for (const box of holder.querySelectorAll('[data-section]')) {
-      const off = !!arrangement.collapsed[box.dataset.section];
-      box.querySelector('.sec-toggle').setAttribute('aria-expanded', String(!off));
-      box.querySelector('.sec-body').hidden = off;
-    }
-  };
-  applyArrangement();
-  holder.addEventListener('click', e => {
-    const box = e.target.closest('[data-section]'); if (!box) return;
-    const id = box.dataset.section, order = arrangement.order, at2 = order.indexOf(id);
-    if (e.target.closest('.sec-toggle')) arrangement.collapsed[id] = !arrangement.collapsed[id];
-    else if (e.target.closest('.sec-up') && at2 > 0) order.splice(at2 - 1, 0, order.splice(at2, 1)[0]);
-    else if (e.target.closest('.sec-down') && at2 < order.length - 1) order.splice(at2 + 1, 0, order.splice(at2, 1)[0]);
-    else return;
-    saveArrangement(); applyArrangement();
-  });
   drawAll();
 }
-render();
+setMode(mode, true);
 if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
 </script>
 </body></html>

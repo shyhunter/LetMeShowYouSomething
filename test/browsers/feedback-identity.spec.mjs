@@ -23,6 +23,7 @@ test('#77: a carried added-1 is never reused, and a removed item takes its pictu
   const round2 = { ...base, id: 'identity-browser-2', items: [...base.items, { id: 'added-1', title: 'Earlier concern', sectionId: base.items[0].sectionId }] };
   const { dir, rp, hp } = rendered(round2);
   await page.goto(pathToFileURL(hp).href);
+  await page.locator('#mode-overview').click();                       // #100 — "Anything else?" closes the Overview
   await addItem(page, 'New unrelated concern');
   await addItem(page, 'Removed later');
   expect(await page.evaluate(() => store.added.map((a) => a.id))).toEqual(['added-2', 'added-3']);
