@@ -15,7 +15,7 @@ path = ["README.md", "SKILL.md", "LICENSING.md", "THIRD-PARTY-NOTICES.md", "CONT
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["docs/**"]
+path = ["docs/**", "conformance/README.md", "conformance/RESULTS.md"]
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
