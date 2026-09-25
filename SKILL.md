@@ -33,7 +33,7 @@ Start from the closest example in `<skill>/examples/`: `decision-review.example.
 - Never put secrets, real customer data or someone else's private notes in a review. The file will be forwarded.
 
 ```bash
-node <skill>/bin/check.mjs review docs/<name>.review.json --root .   # fix every ✗; --root proves flow refs
+node <skill>/bin/check.mjs review docs/<name>.review.json --root .   # fix every ✗; --root proves flow refs; --format json for the same as data
 node <skill>/bin/check.mjs history docs/<name>.review.json <earlier>.feedback.json   # if you used affects
 node <skill>/bin/usage.mjs --claude-code --since <when you started on it> --into docs/<name>.review.json   # what making it used
 node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html

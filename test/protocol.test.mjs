@@ -16,6 +16,7 @@ import './conformance.test.mjs';
 import './rounds.test.mjs';
 import './usage.test.mjs';
 import './image-meta.test.mjs';
+import './check-json.test.mjs';
 import './scenarios.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';

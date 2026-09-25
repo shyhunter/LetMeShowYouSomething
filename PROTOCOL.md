@@ -651,6 +651,10 @@ node bin/check.mjs followup <next-review.json> <review.json> <feedback.json>
 node bin/check.mjs review   examples/flow-booking.review.json --root .   # a flow, with every file:line proven
 ```
 
+**As data** (`--format json`, any mode): `{ tool, version, mode, ok, passed, total, checks, problems }`, each
+problem with its `severity`, a stable `code` from the check's name, the `scope` (the round or copy it is
+about) and the `message`, which says what is wrong and what to do. The exit code is the same.
+
 **The schema first** (`matches the schema`). Every review and every answers file is held to
 `schemas/review.v1.schema.json` or `schemas/feedback.v1.schema.json` by the checker itself, with no
 dependency: a field the protocol does not have, a missing one, a value of the wrong kind or out of
