@@ -341,7 +341,7 @@ body.at-start :is(#topbar,#main,#footnote),body:not(.at-start) #start{display:no
 .pseg.now .track{outline:2px solid var(--sc);outline-offset:2px}
 /* Let me explain and Return take the room their names need; the questions share the rest. */
 .pseg[data-jump="start"],.pseg[data-jump="return"]{flex:0 0 auto;min-width:44px}
-.pseg .pl{font:600 10.5px/1.3 var(--mono);letter-spacing:.03em;display:block;overflow-wrap:break-word}
+.pseg .pl{font:600 10.5px/1.3 var(--mono);letter-spacing:.03em;display:block;overflow-wrap:anywhere}
 .pseg .pl .ic{margin-right:4px}
 .pseg .pl small{color:var(--mut);font-weight:500}
 @media (pointer:coarse){.pseg{min-height:44px;min-width:44px;align-content:end}}
