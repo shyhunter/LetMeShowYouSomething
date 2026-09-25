@@ -533,3 +533,24 @@ test('a screenshot: its areas are visible, big enough to tap, and open their ste
   await page.locator('#main button.hot[aria-label="Taps Back"]').click();
   await expect(page.locator('#q-title')).toHaveText('Taps Back');
 });
+
+// #33 — the reviewer shows a screen as it really is: their screenshot replaces it, stays, and goes back in the file.
+test('your own screenshot of a screen: shown in its place, replaced, kept, and sent back', async ({ page }) => {
+  const png = join(ROOT, 'site/social-preview.png');
+  await page.goto(example('flow-booking'));
+  await start(page); await showPlace(page, 'proto');
+  const choose = async () => { const [c] = await Promise.all([page.waitForEvent('filechooser'), page.locator('[data-shotadd="slot-list"]').click()]); await c.setFiles(png); };
+  await choose();
+  await expect(page.locator('#main .app.shot img')).toHaveAttribute('alt', 'Your screenshot of Pick a time');
+  await expect(page.locator('#main .shot-tag')).toHaveText('Your screenshot');
+  await expect(page.locator('.shot-tools .pic-msg')).toContainText('without hidden details');
+  await choose();
+  await page.reload(); await start(page); await showPlace(page, 'proto');
+  await expect(page.locator('[data-shotadd="slot-list"]')).toHaveText('Replace your screenshot');
+  const file = await download(page, 'json', join(tmp(), 'feedback.json'));
+  const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file, '--root', ROOT);
+  expect(r.status, r.stdout).toBe(0);
+  const pics = JSON.parse(readFileSync(file, 'utf8')).pictures;
+  expect(pics).toHaveLength(1);
+  expect(pics[0]).toMatchObject({ on: 'book', screen: 'slot-list' });
+});

@@ -589,11 +589,13 @@ cannot write WebP): hidden details such as a photo's location are gone, and the 
 ```
 
 `on` is the item, added item or comment it belongs to; `onTitle` echoes it. `bin/pictures.mjs
-<feedback.json>` writes them out as files to look at.
+<feedback.json>` writes them out as files to look at. On a flow step the reviewer can also use their own
+screenshot for the screen (#33): that picture carries `screen`, the screen it shows, and replaces the
+one before it. Use it as that screen's `image` in the next round, with its hotspots.
 
 | check | refuses |
 |---|---|
-| `pictures are pictures` | a picture that is not really PNG, JPEG or WebP (judged by its own first bytes, not by its name), one attached to nothing in the file, one over 1 MB, more than 10, or more than 5 MB together |
+| `pictures are pictures` | a picture that is not really PNG, JPEG or WebP (judged by its own first bytes, not by its name), one attached to nothing in the file, a `screen` the review does not have, one over 1 MB, more than 10, or more than 5 MB together |
 
 ## Answers given in chat
 
