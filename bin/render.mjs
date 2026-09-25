@@ -625,6 +625,20 @@ h1,h2,.t-head h2,.brief h2,#start h1{font-weight:800;letter-spacing:-.022em}
 .sb-node.done{background:var(--ok-bg)}
 .sb-node.done small{color:var(--ok)}
 .sb-node.pill{border-radius:99px;padding:4px 16px}
+/* #131 */
+.ba{display:grid;gap:8px;margin-bottom:14px}
+.ba-grid{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.ba-row{display:contents}
+.ba-what{margin:6px 2px 0;font-size:13px;color:var(--ink2)}
+.ba-row .sb-node{display:block;text-align:left}
+.ba-cols{font:600 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.ba-to{font-weight:800}
+.sb-node.ba-gone{text-decoration:line-through;color:var(--mut)}
+.sb-node.ba-changed{background:var(--blue-bg);box-shadow:4px 4px 0 var(--blue)}
+.sb-node.ba-changed small{color:var(--blue)}
+.sb-node.ba-new{background:var(--ac-bg)}.sb-node.ba-new small{color:var(--ac)}
+.ba-pair{gap:16px}.ba-pair figure{margin:0;display:grid;gap:6px;justify-items:center}.ba-pair figcaption{font:600 11px var(--mono);text-transform:uppercase;letter-spacing:.06em}
+@container (max-width:700px){.ba-grid{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.ba-row>.btn{grid-column:1/-1}.ba-row>span:last-child:empty{display:none}}
 .sb-outs{position:relative;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:100%}
 .sb-out{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
 .sb-when{font-size:11px;font-weight:700;background:var(--surf);border:2px solid var(--edge);border-radius:99px;padding:0 8px}
@@ -768,7 +782,7 @@ document.addEventListener('paste', e => {
 
 // ── the review, as steps ──
 const FLOW = REVIEW.flow || null;
-const screenOf = (id) => FLOW && FLOW.screens.find(s => s.id === id);
+const screenOf = (id, flow = FLOW) => flow && flow.screens.find(s => s.id === id);
 const screenTitle = (id) => (screenOf(id) || {}).title || id;
 const itemById = (id) => REVIEW.items.find(i => i.id === id);
 // The progress bar's parts, grouped by the same code that wrote the cards: a choose-one section is one
@@ -921,9 +935,9 @@ function shotHtml(s, on, live, mine){
   }).join('');
   return '<div class="app shot"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + (mine ? '<span class="shot-tag">' + I('image', 'sm') + 'Your screenshot</span>' : '') + areas + '</div></div>';
 }
-function appHtml(screenId, on, live){
-  const s = screenOf(screenId); if (!s) return '';
-  const mine = (store.pictures || []).find(p => p.screen === screenId);
+function appHtml(screenId, on, live, flow = FLOW){
+  const s = screenOf(screenId, flow); if (!s) return '';
+  const mine = flow === FLOW && (store.pictures || []).find(p => p.screen === screenId);
   if (mine) return shotHtml({ id: s.id, image: { src: picSrc(mine), alt: 'Your screenshot of ' + s.title } }, on, live, true);
   if (s.image) return shotHtml(s, on, live);
   const blocks = s.blocks || [], header = blocks.find(b => b.type === 'header');
@@ -942,7 +956,7 @@ function appHtml(screenId, on, live){
   const primary = foot.findIndex(([id]) => id !== (header && header.actions || []).map(a => a.id).find(x => x === id));
   const ordered = primary > 0 ? [foot[primary]].concat(foot.filter((_, i) => i !== primary)) : foot;
   return '<div class="app" role="img" aria-label="The screen: ' + esc(s.title) + '"><div class="sb"><span>9:41</span><span>' + I('wifi', 'sm') + I('battery', 'sm') + '</span></div>'
-    + '<div class="bar">' + (header && header.back || screenId !== FLOW.start ? I('left') : '<span></span>') + '<b>' + esc(header ? header.title : s.title) + '</b>' + I('dots') + '</div>'
+    + '<div class="bar">' + (header && header.back || screenId !== flow.start ? I('left') : '<span></span>') + '<b>' + esc(header ? header.title : s.title) + '</b>' + I('dots') + '</div>'
     + '<div class="body">' + body.join('') + '</div><div class="foot">' + ordered.map(([id, label], i) => btn(id, label, i)).join('') + '</div>' + sheet + '</div>';
 }
 function galleryHtml(nowScreen){
@@ -1253,6 +1267,33 @@ function sbChanges(s, n){
   }
   return rows.length ? '<div class="sb-card"><span class="sec-name">What changes in it</span>' + rows.join('') + '</div>' : (expectedFor(s) ? '<div class="sb-card">' + expectedFor(s) + '</div>' : '<div></div>');
 }
+// #131 — in a later round, the flow as it was next to the flow as it is now: from the two rounds' files alone.
+// Changed boxes outlined, removed ones struck through, new ones marked New; what stayed the same is left out.
+function beforeAfterHtml(){
+  const pf = VIEW && VIEW.prev.review.flow; if (!FLOW || !pf) return '';
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b), rows = [];
+  const row = (before, now, extra) => rows.push('<div class="ba-row"><div>' + before + '</div><span class="ba-to" aria-hidden="true">→</span><div>' + now + '</div>' + (extra || '<span></span>') + '</div>');
+  const kept = new Set(REVIEW.items.concat(EARLIER_STEPS).map(i => i.id));
+  for (const it of REVIEW.items) if (it.step) {
+    const b = VIEW.earlier[it.id] && VIEW.earlier[it.id].before;
+    if (!b || !b.step) { row('', sbNode('ba-new', 'New', it.title)); continue; }
+    if (same([b.title, b.step], [it.title, it.step])) continue;
+    // Same words on the box: say what it now does differently.
+    const does = (x) => x.step.outcomes.map(o => o.effect || '').join(' · '), what = b.title === it.title && does(b) !== does(it);
+    row(sbNode(b.title === it.title ? '' : 'ba-gone', '', b.title) + (what ? '<p class="ba-what"><s>' + esc(does(b)) + '</s></p>' : ''),
+      sbNode('ba-changed', VIEW.tags[it.id] === 'changed' ? 'Changed after your note' : 'Changed', it.title) + (what ? '<p class="ba-what">' + esc(does(it)) + '</p>' : ''));
+  }
+  for (const b of VIEW.prev.review.items || []) if (b.step && !kept.has(b.id)) row(sbNode('ba-gone', 'Removed', b.title), '');
+  for (const sc of FLOW.screens) { const p = screenOf(sc.id, pf);
+    if (!p) row('', sbNode('scr ba-new', 'New screen', sc.title));
+    else if (!same(p, sc)) row(sbNode('scr' + (p.title === sc.title ? '' : ' ba-gone'), '', p.title), sbNode('scr ba-changed', 'Screen changed', sc.title),
+      '<button type="button" class="btn small" data-shot="' + esc(sc.id) + '" data-before="1">' + I('expand', 'sm') + 'Before and now</button>'); }
+  for (const p of pf.screens) if (!screenOf(p.id)) row(sbNode('scr ba-gone', 'Removed screen', p.title), '');
+  if (!rows.length) return '';
+  return '<section class="brief ba"><p class="eyebrow">' + I('history', 'sm') + 'Since round ' + (VIEW.round - 1) + ': before and after</p>'
+    + '<div class="ba-grid"><div class="ba-row ba-cols"><span>Round ' + (VIEW.round - 1) + '</span><span></span><span>Now, round ' + VIEW.round + '</span><span></span></div>' + rows.join('') + '</div>'
+    + '<p class="after">Everything else in the flow is as it was.</p></section>';
+}
 function storyboardHtml(){
   const d = DIAGRAMS.find(x => x.id === st.sbTab) || DIAGRAMS[0], flowTab = d.id === 'user-flow';
   const tabs = DIAGRAMS.length > 1 ? '<div class="seg dtabs" role="group" aria-label="Diagrams">' + DIAGRAMS.map(x => '<button type="button" data-sbtab="' + esc(x.id) + '" aria-pressed="' + (x === d) + '">' + I(x.kind === 'database' ? 'db' : 'map', 'sm') + esc(x.title || x.id) + '</button>').join('') + '</div>' : '';
@@ -1278,7 +1319,7 @@ function storyboardHtml(){
   }
   const checked = CHECKED.length ? '<div class="brief sb-check"><p class="eyebrow">' + I('shield', 'sm') + 'Checked before you see it</p>' + CHECKED.map(c => '<p class="chk">' + I('check', 'sm') + esc(c) + '</p>').join('') + '<p class="after">From the results of the checker for this review.</p></div>' : '';
   return '<div class="sb-head"><span class="eyebrow">' + I('bulb', 'sm') + (flowTab ? 'What I suggest · you answer' : 'Questions about it') + '</span>' + (tabs || '<span></span>') + '<span class="eyebrow">' + I('phone', 'sm') + (flowTab ? 'What you tap' : 'What changes in it') + '</span></div>'
-    + '<div class="sb-rows">' + rows + '</div>' + checked;
+    + (flowTab ? beforeAfterHtml() : '') + '<div class="sb-rows">' + rows + '</div>' + checked;
 }
 const ovOpen = new Set();
 document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.ovd) ovOpen[d.open ? 'add' : 'delete'](d.dataset.ovd); }, true);
@@ -1310,7 +1351,7 @@ function layerHtml(){
       + (answerLabel(x) ? '<span class="r">' + I('user', 'sm') + ' You: ' + esc(answerLabel(x)) + '</span>' : '') + '</div>').join('') + '</section>';
     return '<div class="layer" role="dialog" aria-modal="true" aria-label="History"><div class="layer-head"><h3>' + I('history') + 'History · every round in one document</h3><button type="button" class="btn small pri" data-act="close-layer">' + I('x', 'sm') + 'Close</button></div><div class="layer-body"><div class="hist">' + lines + now + '</div></div></div>';
   }
-  if (st.layer === 'screen' && st.shot) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="The whole screen"><div class="sh"><h3>' + I('phone') + esc(screenTitle(st.shot.id)) + '</h3><div class="proto-wrap">' + appHtml(st.shot.id, st.shot.on) + '</div><button type="button" class="btn pri" data-act="close-layer">Close</button></div></div>';
+  if (st.layer === 'screen' && st.shot) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="The whole screen"><div class="sh"><h3>' + I('phone') + esc(screenTitle(st.shot.id)) + '</h3>' + (st.shot.before ? '<div class="proto-wrap ba-pair"><figure><figcaption>Round ' + (VIEW.round - 1) + '</figcaption>' + appHtml(st.shot.id, st.shot.on, false, VIEW.prev.review.flow) + '</figure><figure><figcaption>Now</figcaption>' + appHtml(st.shot.id, st.shot.on) + '</figure></div>' : '<div class="proto-wrap">' + appHtml(st.shot.id, st.shot.on) + '</div>') + '<button type="button" class="btn pri" data-act="close-layer">Close</button></div></div>';
   if (st.layer === 'note' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Add a note"><div class="sh"><h3>' + I('edit') + esc(stepTitle(s)) + '</h3>' + explainHtml(s) + '<button type="button" class="btn pri" data-act="close-layer">Done</button></div></div>';
   if (st.layer === 'why' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Why I ask"><div class="sh"><h3>' + I('info') + esc(stepTitle(s)) + '</h3><p class="say">' + sayFor(s) + '</p>' + earlierHtml(s) + '<div class="rowgap">' + (VIEW ? '<button type="button" class="btn" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn pri" data-act="close-layer">Got it</button></div></div></div>';
   return '';
@@ -1376,7 +1417,7 @@ document.addEventListener('click', e => {
   if (d.ptab) { st.ptab = d.ptab; return render(); }
   if (d.dtab) { st.mapTab = d.dtab; return render(); }
   if (d.sbtab) { st.sbTab = d.sbtab; return render(); }
-  if (d.shot) { st.shot = { id: d.shot, on: d.for }; st.layer = 'screen'; render(null); return $('[data-act="close-layer"]').focus(); }
+  if (d.shot) { st.shot = { id: d.shot, on: d.for, before: !!d.before }; st.layer = 'screen'; render(null); return $('[data-act="close-layer"]').focus(); }
   if (d.mzoom) { st.mapZoom = d.mzoom === 'fit' ? 1 : Math.min(3, Math.max(0.5, st.mapZoom + (d.mzoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.zoom) { st.zoom = Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.preview !== undefined) { st.preview = d.preview || null; return render(); }
