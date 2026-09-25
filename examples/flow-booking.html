@@ -154,6 +154,8 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 .hot.on{border-style:solid;background:color-mix(in srgb,var(--brand) 22%,transparent);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
 button.hot{min-width:calc(24px / var(--z, 1));min-height:calc(24px / var(--z, 1))}
 span.hot{cursor:default}
+.shot-tag{position:absolute;left:8px;bottom:8px;display:inline-flex;gap:4px;align-items:center;background:#15131A;color:#fff;border-radius:999px;padding:3px 9px;font:600 11px var(--sans)}
+.shot-tools{flex-basis:100%;display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;margin-top:10px}
 @media (pointer:coarse){button.hot{min-width:calc(44px / var(--z, 1));min-height:calc(44px / var(--z, 1))}}
 .app .sb{display:flex;justify-content:space-between;padding:7px 16px 3px;font:600 11px var(--sans);color:#16181C}
 .app .sb span{display:inline-flex;gap:4px;align-items:center}
@@ -198,7 +200,7 @@ span.hot{cursor:default}
 .app .c-sr{position:absolute;left:-9999px}
 .console{width:100%;background:#15131A;color:#E6E3EE;border-radius:12px;padding:12px;font:12px/1.6 var(--mono);display:grid;gap:2px;overflow-x:auto;white-space:pre-wrap}
 .console .p{color:#8BD5A6}.console .c{color:#9B95AC}.console .w{color:#F2C46B}.console .r{color:#F08E80}
-.proto-wrap{display:flex;justify-content:center}
+.proto-wrap{display:flex;flex-wrap:wrap;justify-content:center}
 
 /* what should happen / how I'd build it */
 .expected{display:grid;gap:8px}
@@ -656,8 +658,10 @@ function buildFeedback(review, store, now = new Date().toISOString()) {
   // picture on something that is not in the file is left out.
   const onTitle = Object.fromEntries([...responses.map((r) => [r.itemId, r.title]), ...addedItems.map((a) => [a.id, a.title]),
     ...comments.map((c) => [c.id, c.label])]);
+  // #33 — `screen`: the reviewer's screenshot of that screen, for the agent to use next round.
+  const screens = new Set((review.flow?.screens || []).map((s) => s.id));
   const pictures = (store.pictures || []).filter((p) => onTitle[p.on] !== undefined).map((p) => ({
-    id: p.id, on: p.on, onTitle: onTitle[p.on], type: p.type, width: p.width, height: p.height, data: p.data }));
+    id: p.id, on: p.on, onTitle: onTitle[p.on], ...(screens.has(p.screen) ? { screen: p.screen } : {}), type: p.type, width: p.width, height: p.height, data: p.data }));
   if (pictures.length) out.pictures = pictures;
   // #60 — changes the reviewer proposes to a diagram. `label` says what the change is on, `why` is
   // their own words from the comment on the same part.
@@ -1394,14 +1398,15 @@ const PIC_MAX = 1024 * 1024, PIC_TOTAL = 5 * 1024 * 1024, PIC_COUNT = 10;
 const picBytes = (p) => Math.floor(p.data.length * 3 / 4);
 const picSrc = (p) => PIC_TYPES.includes(p.type) && /^[A-Za-z0-9+/]+={0,2}$/.test(p.data) ? 'data:' + p.type + ';base64,' + p.data : '';
 function picsHtml(on){
-  return '<div class="pics" data-pics="' + esc(on) + '">' + (store.pictures || []).filter(p => p.on === on).map(p => '<figure class="pic"><img alt="Your picture" src="' + picSrc(p)
+  return '<div class="pics" data-pics="' + esc(on) + '">' + (store.pictures || []).filter(p => p.on === on && !p.screen).map(p => '<figure class="pic"><img alt="Your picture" src="' + picSrc(p)
     + '" width="' + (+p.width) + '" height="' + (+p.height) + '"><button class="btn small" type="button" data-unpic="' + esc(p.id) + '">' + I('x', 'sm') + 'Remove picture</button></figure>').join('')
     + '<span class="pic-msg" aria-live="polite"></span></div>';
 }
-async function addPicture(on, file){
-  const msg = (t) => { const m = document.querySelector('[data-pics="' + CSS.escape(on) + '"] .pic-msg'); if (m) m.textContent = t; };
+async function addPicture(on, file, screen){
+  const msg = (t) => { const m = document.querySelector(screen ? '.shot-tools .pic-msg' : '[data-pics="' + CSS.escape(on) + '"] .pic-msg'); if (m) m.textContent = t; };
+  const kept = (store.pictures || []).filter(x => !(screen && x.screen === screen));
   if (!file || !PIC_TYPES.includes(file.type)) return msg('Only PNG, JPEG or WebP pictures.');
-  if ((store.pictures || []).length >= PIC_COUNT) return msg('At most ' + PIC_COUNT + ' pictures in one answer.');
+  if (kept.length >= PIC_COUNT) return msg('At most ' + PIC_COUNT + ' pictures in one answer.');
   let bmp; try { bmp = await createImageBitmap(file); } catch { return msg('That file could not be read as a picture.'); }
   const k = Math.min(1, 1600 / Math.max(bmp.width, bmp.height));
   const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bmp.width * k)); c.height = Math.max(1, Math.round(bmp.height * k));
@@ -1411,8 +1416,9 @@ async function addPicture(on, file){
   const type = url.slice(5, url.indexOf(';')), data = url.slice(url.indexOf(',') + 1);
   const p = { on, type, width: c.width, height: c.height, data };
   if (picBytes(p) > PIC_MAX) return msg('That picture is too large, even made smaller. Crop it and try again.');
-  if ((store.pictures || []).reduce((n, x) => n + picBytes(x), picBytes(p)) > PIC_TOTAL) return msg('Your pictures together are too large. Remove one first.');
+  if (kept.reduce((n, x) => n + picBytes(x), picBytes(p)) > PIC_TOTAL) return msg('Your pictures together are too large. Remove one first.');
   p.id = 'picture-' + (Math.max(0, ...(store.pictures || []).map(x => +String(x.id).split('-')[1] || 0)) + 1);
+  if (screen) { p.screen = screen; store.pictures = kept.concat(p); save(); render(null); return msg('Your screenshot shows this screen now. Re-saved without hidden details such as location.'); }
   (store.pictures = store.pictures || []).push(p); save();
   document.querySelectorAll('[data-pics="' + CSS.escape(on) + '"]').forEach(box => { box.outerHTML = picsHtml(on); });
   msg('Added. Re-saved without hidden details such as location.');
@@ -1420,8 +1426,8 @@ async function addPicture(on, file){
 const picInput = Object.assign(document.createElement('input'), { type: 'file', id: 'picfile', accept: PIC_TYPES.join(','), hidden: true });
 const picLabel = Object.assign(document.createElement('label'), { htmlFor: 'picfile', className: 'skip', textContent: 'Choose a picture' });
 document.body.append(picLabel, picInput);
-let picFor = null;
-picInput.addEventListener('change', () => { const f = picInput.files[0]; picInput.value = ''; if (f && picFor) addPicture(picFor, f); });
+let picFor = null, picScreen = null;
+picInput.addEventListener('change', () => { const f = picInput.files[0]; picInput.value = ''; if (f && picFor) addPicture(picFor, f, picScreen); });
 document.addEventListener('paste', e => {
   const t = e.target.closest('textarea[data-note]'); if (!t) return;
   const f = [...(e.clipboardData?.files || [])].find(x => PIC_TYPES.includes(x.type)); if (!f) return;
@@ -1561,16 +1567,18 @@ function mapHtml(s, zoom, d){
 // The prototype: a flow's screen as the app will show it, the main button at the bottom.
 // #33 — a screenshot, with its clickable areas drawn on it. An area leads to its step; in the gallery it is only shown.
 const SHOT = /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
-function shotHtml(s, on, live){
+function shotHtml(s, on, live, mine){
   const areas = (s.hotspots || []).map(h => {
     const k = STEPS.findIndex(x => x.kind === 'item' && x.it.step && x.it.step.from === s.id && x.it.step.on === h.id), stp = k >= 0 && STEPS[k].it;
     const pos = 'style="--x:' + (+h.x) + ';--y:' + (+h.y) + ';--w:' + (+h.w) + ';--h:' + (+h.h) + '"', cls = 'hot' + (h.id === on ? ' on' : '');
     return live && stp ? '<button type="button" class="' + cls + '" ' + pos + ' data-open="' + k + '" aria-label="' + esc(stp.title) + '"' + (h.id === on ? ' aria-current="step"' : '') + '></button>' : '<span class="' + cls + '" ' + pos + '></span>';
   }).join('');
-  return '<div class="app shot"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + areas + '</div></div>';
+  return '<div class="app shot"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + (mine ? '<span class="shot-tag">' + I('image', 'sm') + 'Your screenshot</span>' : '') + areas + '</div></div>';
 }
 function appHtml(screenId, on, live){
   const s = screenOf(screenId); if (!s) return '';
+  const mine = (store.pictures || []).find(p => p.screen === screenId);
+  if (mine) return shotHtml({ id: s.id, image: { src: picSrc(mine), alt: 'Your screenshot of ' + s.title } }, on, live, true);
   if (s.image) return shotHtml(s, on, live);
   const blocks = s.blocks || [], header = blocks.find(b => b.type === 'header');
   const ctx = { targets: new Set(on ? [on] : []), still: true };
@@ -1606,10 +1614,16 @@ function examplesRows(list){
   return (list || []).map(x => exp('info', 'globe', 'Done before · ' + esc(x.name), esc(x.what || '') + (x.shows ? ' What people see: ' + esc(x.shows) + '.' : '')
     + ' ' + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>'))).join('');
 }
+// #33 — the reviewer can show the screen as it really is: their screenshot replaces it and goes back in the file.
+function shotTools(it){
+  const sid = it.step.from, mine = (store.pictures || []).find(p => p.screen === sid);
+  return '<div class="shot-tools"><button type="button" class="btn small" data-shotadd="' + esc(sid) + '" data-for="' + esc(it.id) + '" title="It goes into the file you send back, so I can use it next round.">' + I('image', 'sm') + (mine ? 'Replace your screenshot' : 'Use your screenshot') + '</button>'
+    + (mine ? '<button type="button" class="btn small" data-unpic="' + esc(mine.id) + '">' + I('x', 'sm') + 'Remove it</button>' : '') + '<span class="pic-msg" aria-live="polite"></span></div>';
+}
 function protoFor(s){
   if (!s) return '';
   if (s.kind === 'item' && s.it.approval) return consoleHtml(s.it.approval);
-  if (s.kind === 'item' && s.it.step && FLOW) return '<div class="proto-wrap">' + appHtml(s.it.step.from, s.it.step.on, true) + '</div>';
+  if (s.kind === 'item' && s.it.step && FLOW) return '<div class="proto-wrap">' + appHtml(s.it.step.from, s.it.step.on, true) + shotTools(s.it) + '</div>';
   return '';
 }
 function expectedFor(s){
@@ -1862,7 +1876,8 @@ document.addEventListener('click', e => {
   if (d.ptab) { st.ptab = d.ptab; return render(); }
   if (d.zoom) { st.zoom = Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.preview !== undefined) { st.preview = d.preview || null; return render(); }
-  if (d.picadd) { picFor = d.picadd; picInput.click(); return; }
+  if (d.picadd) { picFor = d.picadd; picScreen = null; picInput.click(); return; }
+  if (d.shotadd) { picFor = d.for; picScreen = d.shotadd; picInput.click(); return; }
   if (d.unpic) { const p = (store.pictures || []).find(x => x.id === d.unpic); if (!p) return; store.pictures = store.pictures.filter(x => x !== p); save(); return render(null); }
   if (d.unmark) { store.comments = (store.comments || []).filter(c => c.id !== d.unmark); dropPictures(d.unmark); save(); return render(null); }
   if (d.ask) { const r = store.requests[d.for] || (store.requests[d.for] = {}); r[d.ask] = !r[d.ask]; if (!r.example && !r.explain && !r.note) delete store.requests[d.for]; save(); return render(); }

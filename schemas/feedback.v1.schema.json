@@ -131,6 +131,7 @@
           "id": { "type": "string", "pattern": "^picture-[0-9]{1,4}$" },
           "on": { "type": "string", "description": "The item, added item or comment id it is attached to." },
           "onTitle": { "type": "string", "description": "Echoed title or label of what it is attached to." },
+          "screen": { "type": "string", "description": "#33 — set when the picture is the reviewer's screenshot of this flow screen: use it as that screen's image next round." },
           "type": { "enum": ["image/png", "image/jpeg", "image/webp"] },
           "width": { "type": "integer", "minimum": 1, "maximum": 4096 },
           "height": { "type": "integer", "minimum": 1, "maximum": 4096 },

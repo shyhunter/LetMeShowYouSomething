@@ -658,6 +658,7 @@ function checkFeedback(f, rep, review) {
       const w = x?.id ?? `picture #${i + 1}`;
       if (!/^picture-\d{1,4}$/.test(x?.id ?? '') || pids.indexOf(x.id) !== i) { bad.push(`${w}: needs its own id like picture-1`); continue; }
       if (!on.has(x.on)) bad.push(`${w}: is attached to "${x.on}", which is no item, added item or comment in this file`);
+      if (x.screen !== undefined && review && !(review.flow?.screens ?? []).some((s) => s.id === x.screen)) bad.push(`${w}: shows screen "${x.screen}", which is no screen in the review`);
       if (!MAGIC[x.type]) { bad.push(`${w}: "${x.type}" is not PNG, JPEG or WebP`); continue; }
       const raw = typeof x.data === 'string' && /^[A-Za-z0-9+/]+={0,2}$/.test(x.data) ? Buffer.from(x.data, 'base64') : null;
       if (!raw) { bad.push(`${w}: its data is not base64`); continue; }

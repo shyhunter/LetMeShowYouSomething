@@ -22,5 +22,5 @@ for (const p of pictures) {
   if (!ext || !/^picture-\d{1,4}$/.test(p.id ?? '')) { console.log(`skipped ${p.id}: not a PNG, JPEG or WebP picture`); continue; }
   const file = join(folder, `${p.id}.${ext}`);
   writeFileSync(file, Buffer.from(p.data, 'base64'));
-  console.log(`${file}  on "${p.onTitle}" (${p.on}), ${p.width} × ${p.height}`);
+  console.log(`${file}  on "${p.onTitle}" (${p.on}), ${p.width} × ${p.height}${typeof p.screen === 'string' ? `, the reviewer's screenshot of screen "${p.screen}": use it as that screen's image next round` : ''}`);
 }

@@ -1345,6 +1345,10 @@ test('pictures: kept on what they are attached to, refused when they are not rea
   assert.match(pair(big).stdout, /picture-1: 1\.1 MB, more than 1 MB/);
   const lost = structuredClone(fb); lost.pictures[0].on = 'nowhere';
   assert.match(pair(lost).stdout, /picture-1: is attached to "nowhere", which is no item, added item or comment in this file/);
+  // #33 — a screenshot names a screen of the review; this review has no flow.
+  const screen = structuredClone(fb); screen.pictures[0].screen = 'slot-list';
+  assert.match(pair(screen).stdout, /picture-1: shows screen "slot-list", which is no screen in the review/);
+  assert.equal(buildFeedback(review, { ...store, pictures: [{ ...store.pictures[0], screen: 'slot-list' }] }).pictures[0].screen, undefined, 'the page never sends a screen the review does not have');
   // The agent looks at them as files.
   const dir = join(tmp, 'pics');
   const w = spawnSync(process.execPath, [at('bin/pictures.mjs'), write(fb), dir], { encoding: 'utf8' });
