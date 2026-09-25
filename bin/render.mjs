@@ -270,6 +270,13 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 .app{--brand:#0F6E68;--brand-soft:#E3F2F0;width:100%;max-width:280px;border:7px solid #15131A;border-radius:32px;background:#FFFFFF;color:#16181C;overflow:hidden;font:13px/1.4 var(--sans);display:grid;grid-template-rows:auto auto 1fr auto;min-height:470px;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);position:relative;color-scheme:light}
 .app.shot{display:block;min-height:0;background:#15131A}
 .shot-in{position:relative}
+.variants{display:flex;gap:16px;overflow-x:auto;padding:4px 2px 10px;align-items:flex-start}
+.variant{flex:none;display:grid;gap:8px;justify-items:center;width:250px}
+.variant .app{max-width:250px;min-height:430px}
+.variant .app.shot{min-height:0}
+.variant.on .app{border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-bg)}
+.vname{font-size:13.5px;font-weight:600;display:flex;gap:6px;align-items:center;text-align:center}
+.vname small{font-weight:500;color:var(--mut)}
 .shot-in img{display:block;width:100%;height:auto}
 .shot-alt{aspect-ratio:1/2;margin:0;padding:24px 16px;color:#fff;font-size:13px}
 .hot{position:absolute;left:calc((var(--x) + var(--w) / 2) * 1%);top:calc((var(--y) + var(--h) / 2) * 1%);width:calc(var(--w) * 1%);height:calc(var(--h) * 1%);transform:translate(-50%,-50%);border:2px dashed var(--brand);border-radius:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);padding:0;cursor:pointer}
@@ -443,6 +450,7 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
   .slots .slot.shown .slot-body{display:block;overflow:auto;min-height:0;padding:8px}
   .slots .slot .minbtn,.right-head{display:none}
   .slots .app{zoom:.6;--z:.6;max-width:280px}
+  .slots .variant{width:auto}
   .slots .slot-head{padding:3px 8px}
   .t-nav{padding-top:6px}
 }
@@ -811,8 +819,19 @@ function shotTools(it){
   return '<div class="shot-tools"><button type="button" class="btn small" data-shotadd="' + esc(sid) + '" data-for="' + esc(it.id) + '" title="It goes into the file you send back, so I can use it next round.">' + I('image', 'sm') + (mine ? 'Replace your screenshot' : 'Use your screenshot') + '</button>'
     + (mine ? '<button type="button" class="btn small" data-unpic="' + esc(mine.id) + '">' + I('x', 'sm') + 'Remove it</button>' : '') + '<span class="pic-msg" aria-live="polite"></span></div>';
 }
+// #33 — a choice between things that look different: each option's step leads to its own screen (drawn or a
+// screenshot), and the pick shows them side by side, each with its own button.
+function variantsHtml(s){
+  const rec = s.sec.recommended && s.sec.recommended.itemId, pick = store.choices[s.sec.id];
+  const cards = s.items.map(it => { const to = it.step && it.step.outcomes.length === 1 && it.step.outcomes[0].to; return to && screenOf(to) ? [it, to] : null; }).filter(Boolean);
+  if (!FLOW || cards.length < 2) return '';
+  return '<div class="variants">' + cards.map(([it, to]) => '<div class="variant' + (pick === it.id ? ' on' : '') + '">' + appHtml(to)
+    + '<p class="vname">' + (it.id === rec ? I('star', 'sm') : '') + esc(it.title) + (it.id === rec ? ' <small>· recommended</small>' : '') + '</p>'
+    + '<button type="button" class="btn small' + (pick === it.id ? ' pri' : '') + '" data-choose="' + esc(s.sec.id) + '" data-opt="' + esc(it.id) + '" aria-pressed="' + (pick === it.id) + '">' + I('check', 'sm') + (pick === it.id ? 'Your pick' : 'Pick this') + '</button></div>').join('') + '</div>';
+}
 function protoFor(s){
   if (!s) return '';
+  if (s.kind === 'choose') return variantsHtml(s);
   if (s.kind === 'item' && s.it.approval) return consoleHtml(s.it.approval);
   if (s.kind === 'item' && s.it.step && FLOW) return '<div class="proto-wrap">' + appHtml(s.it.step.from, s.it.step.on, true) + shotTools(s.it) + '</div>';
   return '';
@@ -966,7 +985,7 @@ function renderTour(){
     + (VIEW && VIEW.earlier[s.kind === 'item' ? s.it.id : ''] ? '<button type="button" class="btn quiet round-chip" data-act="why">' + I('history', 'sm') + 'Round ' + VIEW.earlier[s.it.id].round + ': ' + esc(VIEW.earlier[s.it.id].added ? 'you added it' : VIEW.earlier[s.it.id].label || 'not answered') + '</button>' : '')
     + (VIEW ? '<button type="button" class="btn quiet" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '</div>' + earlierHtml(s) + '</header>'
     + '<div class="t-ans" id="detail">' + tilesHtml(s, false) + (v ? '<button type="button" class="btn quiet note-btn" data-act="note">' + I('edit', 'sm') + (store.notes[stepItems(s)[0].id] ? 'Edit your note' : 'Add a note or picture') + '</button>' : '') + (st.layer === 'note' ? '' : explainHtml(s)) + '</div>'
-    + '<div class="t-vis">' + slots({ map: mapHtml(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
+    + '<div class="t-vis">' + slots({ map: mapHtml(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : s.kind === 'choose' ? 'each option' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
     + navHtml(false, st.cur === n - 1 ? 'Finish' : v ? 'Next' : 'Skip for now') + '</div>';
 }
 function renderOverview(){

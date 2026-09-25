@@ -54,6 +54,7 @@ Here the answer is data:
 | A decision | The options, the agent's recommendation and why, and earlier decisions it would reopen | [`decision-review.example.json`](examples/decision-review.example.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/decision-review.html) |
 | A user flow | The app's screens to click through, a diagram of the flow, and each step to judge | [`flow-booking.review.json`](examples/flow-booking.review.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/flow-booking.html) |
 | Screenshots | The running app's own screens, with the place to tap marked on each | [`password-reset.review.json`](examples/password-reset.review.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/password-reset.html) |
+| Mockups side by side | Three layouts drawn as screens, compared and picked on one step | [`results-layout.review.json`](examples/results-layout.review.json) → [try it](https://shyhunter.github.io/LetMeShowYouSomething/examples/results-layout.html) |
 | Later rounds | What changed after your answers, what is asked again, what is settled, and every round in one page | [`flow-booking-round2.review.json`](examples/flow-booking-round2.review.json) → [round 2](https://shyhunter.github.io/LetMeShowYouSomething/examples/flow-booking-round2.html), [round 3](https://shyhunter.github.io/LetMeShowYouSomething/examples/flow-booking-round3.html) |
 
 Open any of them in your browser, no install: the pages are the product, not screenshots of it.

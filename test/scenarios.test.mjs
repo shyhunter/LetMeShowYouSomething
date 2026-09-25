@@ -158,14 +158,12 @@ test('walk through screenshots: the password reset, a step marked with a picture
   settled(feedbacks.at(-1));
 });
 
-test('compare visual variants: one is picked with a change from another, and the merged one is agreed', () => {
-  const vs = [item('v-a', 'Variant A: cards'), item('v-b', 'Variant B: a list'), item('v-c', 'Variant C: a table')].map((x) => ({ ...x, sectionId: 'look' }));
-  const sections = [{ id: 'look', label: 'Which layout', mode: 'choose-one', recommended: { itemId: 'v-a', why: 'Easiest to scan on a phone.' } }];
+test('compare visual variants: the layouts drawn side by side, one picked with a change, the merged one agreed', () => {
   const { feedbacks } = play('variants', [
-    [review('The results page', DECISION, vs, { sections }), store({}, { choices: { look: 'v-b' }, notes: { 'v-b': 'The list, with the colours of A.' } })],
-    [review('The results page', DECISION, [item('merged', 'A list with the colours of A', { summary: 'Your pick, with the change you asked for.' })]), store({ merged: 'agree' })],
+    [read('examples/results-layout.review.json'), store({}, { choices: { layout: 'opt-list' }, notes: { 'opt-list': 'The list, with the photos of the cards.' } })],
+    [review('The results page', DECISION, [item('merged', 'A list with a small photo on each line', { summary: 'Your pick, with the change you asked for.' })]), store({ merged: 'agree' })],
   ]);
-  assert.equal(feedbacks[0].choices[0].itemId, 'v-b');
+  assert.equal(feedbacks[0].choices[0].itemId, 'opt-list');
   settled(feedbacks.at(-1));
 });
 

@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -569,4 +569,20 @@ test('your own screenshot of a screen: shown in its place, replaced, kept, and s
   const pics = JSON.parse(readFileSync(file, 'utf8')).pictures;
   expect(pics).toHaveLength(1);
   expect(pics[0]).toMatchObject({ on: 'book', screen: 'slot-list' });
+});
+
+// #33 — a choice between things that look different: each option's screen, side by side on the pick, each with its button.
+test('a choice between layouts: every option drawn side by side, picked from its own screen', async ({ page }) => {
+  await page.goto(example('results-layout'));
+  await start(page); await showPlace(page, 'proto');
+  const cards = page.locator('#main .variant');
+  await expect(cards).toHaveCount(3);
+  await expect(cards.nth(1)).toContainText('recommended');
+  await expect(cards.nth(2).locator('.app')).toContainText('Rating');
+  await cards.nth(2).locator('[data-choose]').click();
+  await expect(page.locator('input[name="c-layout"][value="opt-table"]')).toBeChecked();
+  await expect(page.locator('#main .variant.on [data-choose]')).toHaveText('Your pick');
+  await page.locator('#mode-overview').click();
+  await page.locator('[data-ovd="layout"] summary').click();
+  await expect(page.locator('[data-ovd="layout"] .variant')).toHaveCount(3);
 });
