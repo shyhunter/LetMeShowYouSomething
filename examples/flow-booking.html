@@ -88,6 +88,13 @@ button{font:inherit;color:inherit}
 #start-mini b{font-weight:500;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #start-mini .more{margin-left:auto;color:var(--ac);font-weight:500;flex:none}
 body.at-start :is(#topbar,#main,#footnote),body:not(.at-start) #start{display:none}
+/* Without a script (a phone's file preview) the cards and any answers still show, and say why nothing moves. */
+html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:none}
+.no-script{border:1px solid var(--warn);background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
+#static-answers:empty{display:none}
+#static-answers{display:grid;gap:8px}
+#static-answers h2{font-size:16px;margin-top:6px}
+#static-answers .sum-row p{flex-basis:100%;font-size:13.5px;color:var(--ink2)}
 @container (max-width:700px){#start-review{justify-self:stretch}}
 
 /* answer tiles: a questionnaire, not a form */
@@ -363,7 +370,9 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 <section id="start" aria-labelledby="start-h">
   <p class="eyebrow"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>Let me explain</p>
   <h1 id="start-h">Booking and cancelling a slot</h1>
-  <ol id="start-cards" class="start-cards"></ol>
+  <p class="no-script">This page needs a web browser to answer. A phone's file preview shows it but cannot run it: open the file in a browser app such as Chrome or Safari, or on a computer.</p>
+  <ol id="start-cards" class="start-cards"><li class="scard"><span class="num">1</span><div><h3 id="brief-h"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>What I need you to decide</h3><p>When someone cancels more than 24 hours before, should they get store credit instead of their money back?</p><details class="start-more"><summary>More</summary><p>Cancelling more than 24 hours before frees the slot for someone else, but the money stays with us as store credit — the customer is not charged again, and we are not out of pocket.</p></details></div></li><li class="scard"><span class="num">2</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-star"/></svg>My recommendation</h3><p>Keep store credit rather than a refund, and say so on the confirmation screen before the person confirms, not after.</p></div></li><li class="scard"><span class="num">3</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>What I&#39;ll ask</h3><p>11 questions in 5 parts.</p><p class="start-parts"><span class="chip-part" style="--sc:var(--s1)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Book a slot</span><span class="chip-part" style="--sc:var(--s2)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Cancel a booking</span><span class="chip-part" style="--sc:var(--s3)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Pick another day</span><span class="chip-part" style="--sc:var(--s4)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Join the waiting list</span><span class="chip-part" style="--sc:var(--s5)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-phone"/></svg>Ask a question</span></p></div></li><li class="scard"><span class="num">4</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-globe"/></svg>Done before</h3><p>2 examples, like Class passes at gyms.</p><details class="start-more"><summary>More</summary><ul><li><b>Class passes at gyms</b> A cancelled class returns a credit to the pass, not money to the card; the rule is shown when you book. <a href="https://www.gov.uk/government/publications/consumer-protection-from-unfair-trading" target="_blank" rel="noopener noreferrer">www.gov.uk</a></li><li><b>A studio a colleague worked with</b> They refunded everything to the card and lost the slot as well; the rebooking rate never recovered. <span class="unverified">unverified · I could not find a source</span></li></ul></details></div></li><li class="scard"><span class="num">5</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-alert"/></svg>What could go wrong</h3><p>Customers may read &quot;credit&quot; as &quot;refund&quot; and ask for the money back anyway.</p><details class="start-more"><summary>More</summary><ul><li>Credit that expires is the part people complain about; nothing here says whether it does.</li><li>Cancelling less than 24 hours before keeps neither the slot nor the money, which is the harshest step in the flow.</li></ul></details></div></li><li class="scard"><span class="num">6</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>How to answer</h3><p>Click through booking and cancelling.</p><details class="start-more"><summary>More</summary><p>Judge each step: does it make sense, and is what happens behind it right?</p></details></div></li><li class="scard"><span class="num">7</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>What happens next</h3><p>Steps you agree with are built as shown.</p><details class="start-more"><summary>More</summary><p>Anything else I change and send back as a new round.</p><p>Nothing is sent until you download your answers.</p></details></div></li></ol>
+  <div id="static-answers"></div>
   <button class="btn pri" type="button" id="start-review">Start<svg class="ic " aria-hidden="true" focusable="false"><use href="#i-right"/></svg></button>
 </section>
 <div id="topbar">
@@ -382,6 +391,8 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 // D076 — the page as it arrived, before anything is drawn: the answered HTML download saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
+// Taken after PAGE, so a downloaded copy opened without scripts still shows what needs them.
+document.documentElement.classList.add('js');
 const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"booking-flow-2026-09","title":"Booking and cancelling a slot","audience":"Product owner and one developer","ask":"Click through booking and cancelling. Judge each step: does it make sense, and is what happens behind it right?","afterwards":"Steps you agree with are built as shown. Anything else I change and send back as a new round.","addNoun":"step","focus":"user-flow","brief":{"question":"When someone cancels more than 24 hours before, should they get store credit instead of their money back?","explains":"Cancelling more than 24 hours before frees the slot for someone else, but the money stays with us as store credit — the customer is not charged again, and we are not out of pocket.","highlights":{"nodes":["step:confirm"],"screens":["cancelled","too-late"]},"recommendation":"Keep store credit rather than a refund, and say so on the confirmation screen before the person confirms, not after.","examples":[{"name":"Class passes at gyms","what":"A cancelled class returns a credit to the pass, not money to the card; the rule is shown when you book.","source":"https://www.gov.uk/government/publications/consumer-protection-from-unfair-trading"},{"name":"A studio a colleague worked with","what":"They refunded everything to the card and lost the slot as well; the rebooking rate never recovered."}],"risks":["Customers may read \"credit\" as \"refund\" and ask for the money back anyway.","Credit that expires is the part people complain about; nothing here says whether it does.","Cancelling less than 24 hours before keeps neither the slot nor the money, which is the harshest step in the flow."]},"createdAt":"2026-09-17T21:00:00Z","createdBy":{"agent":"claude-code"},"verdictSet":{"id":"decision","options":[{"value":"agree","label":"Agree","tone":"positive"},{"value":"partly-agree","label":"Partly agree","tone":"caution"},{"value":"disagree","label":"Disagree","tone":"negative"},{"value":"revisit","label":"Revisit","tone":"caution","hint":"Right question, not ready to decide"},{"value":"changed-mind","label":"Changed my mind","tone":"neutral"}]},"flow":{"start":"slot-list","layers":{"default":["ui","flow"]},"parts":[{"id":"booking","title":"Booking"},{"id":"book-slot","title":"Book a slot","parent":"booking","status":"exists","basis":{"kind":"code","ref":"test/fixtures/booking-app/src/booking.mjs:6"}},{"id":"cancel-booking","title":"Cancel a booking","parent":"booking","status":"exists","basis":{"kind":"code","ref":"test/fixtures/booking-app/src/booking.mjs:10"}},{"id":"another-day","title":"Pick another day","parent":"booking","status":"proposed","basis":{"kind":"prd","ref":"Booking PRD v2, section \"Rebooking\""}},{"id":"waiting-list","title":"Join the waiting list","parent":"booking","status":"suggested","basis":{"kind":"conversation","note":"Product owner, booking flow review: \"reserve, if possible, with conditions\""}},{"id":"ask-question","title":"Ask a question","parent":"booking","status":"suggested","basis":{"kind":"assumption","note":"Customers email the venue with questions today; nothing in the app handles it"}}],"screens":[{"id":"slot-list","title":"Pick a time","blocks":[{"type":"header","title":"Book a studio","actions":[{"id":"help","label":"Ask a question"}]},{"type":"date-time","id":"day","label":"Day","mode":"date","value":"2026-10-03"},{"type":"stepper","id":"guests","label":"Guests","value":2,"min":1,"max":8},{"type":"card","id":"slot-10","title":"10:00 · Studio A","text":"2 places left","actions":[{"id":"book","label":"Book 10:00"}]},{"type":"card","id":"slot-11","title":"11:00 · Studio A","text":"Fully booked"}]},{"id":"booked","title":"Booked","blocks":[{"type":"header","title":"Your booking"},{"type":"chip","text":"Confirmed","tone":"positive"},{"type":"card","id":"booking","title":"Saturday 3 October, 10:00 · Studio A","text":"2 guests","actions":[{"id":"cancel","label":"Cancel booking"}]}]},{"id":"slot-taken","title":"Slot taken","blocks":[{"type":"banner","tone":"caution","text":"Someone just took 10:00.","because":"Another person booked a moment earlier","canNow":"Pick another time, another day, or join the waiting list"},{"type":"button","id":"back","label":"Pick another time"},{"type":"button","id":"another-day","label":"Pick another day"},{"type":"button","id":"join-waitlist","label":"Join the waiting list for 10:00"}]},{"id":"confirm-cancel","title":"Confirm cancelling","blocks":[{"type":"dialog","id":"cancel-dialog","title":"Cancel this booking?","text":"You get €20.00 store credit.","actions":[{"id":"confirm","label":"Cancel booking"},{"id":"keep","label":"Keep it"}]}]},{"id":"cancelled","title":"Cancelled","end":true,"blocks":[{"type":"toast","text":"Booking cancelled"},{"type":"chip","text":"€20.00 credit","tone":"neutral"},{"type":"empty-state","text":"No upcoming bookings.","action":{"id":"find-time","label":"Find a time"}}]},{"id":"too-late","title":"Too late to cancel","end":true,"blocks":[{"type":"banner","tone":"negative","text":"This booking can't be cancelled online any more.","because":"Less than 24 hours to go","canNow":"Call the venue: +49 30 0000 0000"}]},{"id":"pick-day","title":"Pick another day","blocks":[{"type":"header","title":"Pick another day"},{"type":"date-time","id":"other-day","label":"Day","mode":"date","value":"2026-10-04"},{"type":"button","id":"show-times","label":"Show times"}]},{"id":"waitlisted","title":"On the waiting list","end":true,"blocks":[{"type":"chip","text":"Waiting list · position 1","tone":"neutral"},{"type":"text","text":"If 10:00 frees up, you get an email and 30 minutes to book it."}]},{"id":"question","title":"Ask the venue","blocks":[{"type":"header","title":"Ask the venue"},{"type":"input","id":"question-text","label":"Your question","placeholder":"Is there parking nearby?"},{"type":"button","id":"send","label":"Send"}]},{"id":"question-sent","title":"Question sent","end":true,"blocks":[{"type":"toast","text":"Question sent"},{"type":"text","text":"The venue replies by email, usually within a day."}]}]},"items":[{"id":"book","title":"Taps Book 10:00","step":{"goal":"to secure the Saturday slot","part":"book-slot","from":"slot-list","on":"book","outcomes":[{"label":"Slot is free","effect":"Reserves the slot and emails a confirmation","to":"booked","canNow":"Cancel the booking if plans change","system":[{"id":"capacity-guard","kind":"guard","name":"Slot still has capacity","status":"exists","ref":"test/fixtures/booking-app/src/booking.mjs:4"},{"id":"reserve","kind":"component","name":"reserve()","status":"exists","ref":"test/fixtures/booking-app/src/booking.mjs:6"},{"id":"email","kind":"external","name":"Confirmation email","status":"proposed"}],"data":[{"id":"booking-row","entity":"bookings","change":"insert","status":"proposed","fields":[{"name":"starts_at","after":"2026-10-03T08:00:00Z"},{"name":"status","after":"confirmed"}]},{"id":"capacity-left","entity":"slots","change":"update","status":"proposed","fields":[{"name":"capacity_left","before":"1","after":"0"}]}]},{"label":"Someone took it first","effect":"Nothing is saved","to":"slot-taken","because":"Another person booked 10:00 a moment earlier","canNow":"Pick another time, another day, or join the waiting list"}],"status":"exists","basis":{"kind":"code","ref":"test/fixtures/booking-app/src/booking.mjs:6"}}},{"id":"back","title":"Taps Pick another time","step":{"goal":"to choose a different slot","part":"book-slot","from":"slot-taken","on":"back","outcomes":[{"effect":"Shows the time list again, refreshed","to":"slot-list","canNow":"Book any time still listed"}]}},{"id":"cancel","title":"Taps Cancel booking","step":{"goal":"to free the slot","part":"cancel-booking","from":"booked","on":"cancel","outcomes":[{"effect":"Asks for confirmation first","to":"confirm-cancel","canNow":"Confirm, or keep the booking"}],"status":"exists","basis":{"kind":"code","ref":"test/fixtures/booking-app/src/booking.mjs:10"}}},{"id":"confirm","title":"Confirms Cancel booking","step":{"goal":"to get store credit instead of the slot","part":"cancel-booking","status":"exists","basis":{"kind":"code","ref":"test/fixtures/booking-app/src/booking.mjs:12"},"from":"confirm-cancel","on":"confirm","outcomes":[{"label":"24 hours or more before","effect":"Cancels the booking and adds €20.00 store credit","to":"cancelled","system":[{"id":"cancel-rule","kind":"component","name":"cancel()","status":"exists","ref":"test/fixtures/booking-app/src/booking.mjs:12"}],"data":[{"id":"booking-status","entity":"bookings","change":"update","status":"proposed","fields":[{"name":"status","before":"confirmed","after":"cancelled"}]},{"id":"credit-row","entity":"credits","change":"insert","status":"proposed","fields":[{"name":"amount","after":"20.00"},{"name":"expires_at","after":"2027-10-03T08:00:00Z"}]}]},{"label":"Less than 24 hours before","effect":"Nothing changes","to":"too-late","because":"Cancelling this late leaves the slot empty for others","canNow":"Call the venue"}]},"affects":[{"decision":{"review":"booking-rules-2026-09","itemId":"no-refunds","title":"Customers never get money back after booking","verdict":"agree"},"effect":"extends","why":"Store credit is not money back, so the rule still holds."}]},{"id":"keep","title":"Taps Keep it","step":{"goal":"to change their mind","part":"cancel-booking","from":"confirm-cancel","on":"keep","outcomes":[{"effect":"Nothing changes","to":"booked","canNow":"Cancel later if plans change"}]}},{"id":"find","title":"Taps Find a time","step":{"goal":"to book again","part":"book-slot","from":"cancelled","on":"find-time","outcomes":[{"effect":"Shows the time list","to":"slot-list","canNow":"Book any time still listed"}]}},{"id":"another-day","title":"Taps Pick another day","step":{"goal":"to find a free slot on a different day","part":"another-day","status":"proposed","basis":{"kind":"prd","ref":"Booking PRD v2, section \"Rebooking\""},"from":"slot-taken","on":"another-day","outcomes":[{"effect":"Opens the day picker","to":"pick-day","canNow":"Choose a date and see its times"}]}},{"id":"show-times","title":"Taps Show times","step":{"goal":"to see what is free that day","part":"another-day","status":"proposed","basis":{"kind":"prd","ref":"Booking PRD v2, section \"Rebooking\""},"from":"pick-day","on":"show-times","outcomes":[{"effect":"Shows the times for the chosen day","to":"slot-list","canNow":"Book any listed time"}]}},{"id":"join-waitlist","title":"Taps Join the waiting list for 10:00","step":{"goal":"to get the slot if it frees up","part":"waiting-list","status":"suggested","basis":{"kind":"conversation","note":"Product owner, booking flow review: \"reserve, if possible, with conditions\""},"from":"slot-taken","on":"join-waitlist","outcomes":[{"effect":"Adds the customer to the waiting list for 10:00","to":"waitlisted","system":[{"id":"waitlist-email","kind":"external","name":"Email when the slot frees up","status":"proposed"}],"data":[{"id":"waitlist-row","entity":"waitlist","change":"insert","status":"proposed","fields":[{"name":"slot_starts_at","after":"2026-10-03T08:00:00Z"},{"name":"position","after":"1"}]}]}]}},{"id":"ask","title":"Taps Ask a question","step":{"goal":"to get an answer before booking","part":"ask-question","status":"suggested","basis":{"kind":"assumption","note":"Customers email the venue with questions today; nothing in the app handles it"},"from":"slot-list","on":"help","outcomes":[{"effect":"Opens a question form","to":"question","canNow":"Type the question and send it"}]}},{"id":"send-question","title":"Taps Send","step":{"goal":"to get a reply by email","part":"ask-question","status":"suggested","basis":{"kind":"assumption","note":"Customers email the venue with questions today; nothing in the app handles it"},"from":"question","on":"send","outcomes":[{"effect":"Sends the question to the venue","to":"question-sent","system":[{"id":"venue-email","kind":"external","name":"Email to the venue","status":"proposed"}]}]}}],"diagrams":[{"id":"booking-behind","kind":"flowchart","title":"What happens behind booking","lanes":[{"id":"customer","title":"Customer"},{"id":"app","title":"Booking system"},{"id":"email","title":"Email provider"}],"nodes":[{"id":"start","kind":"start","lane":"customer","label":"Wants a class"},{"id":"tap-book","kind":"user-action","lane":"customer","label":"Taps Book 10:00","step":"book"},{"id":"free","kind":"decision","lane":"app","label":"Slot still free?"},{"id":"reserve","kind":"system-action","lane":"app","label":"Reserve the slot","icon":"calendar","part":"book-slot"},{"id":"send-mail","kind":"send","lane":"app","label":"Send confirmation"},{"id":"provider","kind":"receive","lane":"email","label":"Provider takes the email","icon":"cloud"},{"id":"delivered","kind":"decision","lane":"email","label":"Delivered?"},{"id":"retry","kind":"retry","lane":"app","label":"Retry in 5 minutes","icon":"clock"},{"id":"booked","kind":"end","lane":"customer","label":"Booked","component":{"type":"toast","text":"Booking saved"}},{"id":"taken","kind":"process","lane":"customer","label":"Sees \"slot taken\"","icon":"warning"},{"id":"join","kind":"user-action","lane":"customer","label":"Joins the waiting list","step":"join-waitlist"},{"id":"waitlist","kind":"data-store","lane":"app","label":"Waiting list"},{"id":"wait-free","kind":"timer","lane":"app","label":"Waits until a place frees up"},{"id":"offer","kind":"send","lane":"app","label":"Offer the place by email"},{"id":"offered","kind":"end","lane":"customer","label":"Has 30 minutes to book","icon":"clock"}],"edges":[{"from":"start","to":"tap-book"},{"from":"tap-book","to":"free"},{"from":"free","to":"reserve","kind":"conditional","label":"yes"},{"from":"free","to":"taken","kind":"conditional","label":"no"},{"from":"reserve","to":"send-mail"},{"from":"send-mail","to":"provider","kind":"message"},{"from":"provider","to":"delivered"},{"from":"delivered","to":"booked","kind":"conditional","label":"yes"},{"from":"delivered","to":"retry","kind":"conditional","label":"no"},{"from":"retry","to":"send-mail"},{"from":"taken","to":"join"},{"from":"join","to":"waitlist"},{"from":"waitlist","to":"wait-free"},{"from":"wait-free","to":"offer"},{"from":"offer","to":"offered","kind":"message"}]},{"id":"booking-system","kind":"system","title":"What the booking system runs on","lanes":[{"id":"people","title":"Who uses it"},{"id":"ours","title":"What we run"},{"id":"outside","title":"Someone else's"}],"nodes":[{"id":"member","kind":"client","lane":"people","label":"The member's phone"},{"id":"venue-staff","kind":"client","lane":"people","label":"The venue's tablet"},{"id":"signin","kind":"guard","lane":"ours","label":"Signed in as a member?"},{"id":"booking-api","kind":"service","lane":"ours","label":"Booking service","icon":"gear"},{"id":"slots","kind":"data-store","lane":"ours","label":"Slots and bookings"},{"id":"outbox","kind":"queue","lane":"ours","label":"Emails waiting to go"},{"id":"mailer","kind":"external","lane":"outside","label":"Email provider","icon":"envelope"},{"id":"calendar","kind":"external","lane":"outside","label":"The venue's calendar","icon":"calendar"},{"id":"note-retry","kind":"note","lane":"outside","label":"A failed email is tried again for an hour, then the member sees it in the app"}],"edges":[{"from":"member","to":"signin","label":"books a slot"},{"from":"venue-staff","to":"signin","label":"cancels for a member"},{"from":"signin","to":"booking-api"},{"from":"booking-api","to":"slots","label":"holds the slot"},{"from":"booking-api","to":"outbox","kind":"async","label":"confirmation"},{"from":"outbox","to":"mailer","kind":"async"},{"from":"booking-api","to":"calendar","kind":"message","label":"writes the booking"},{"from":"mailer","to":"note-retry","kind":"association"}]},{"id":"booking-calls","kind":"sequence","title":"Booking a slot, call by call","nodes":[{"id":"app","kind":"client","label":"The member's phone"},{"id":"booking","kind":"service","label":"Booking service"},{"id":"slots","kind":"data-store","label":"Slots and bookings"},{"id":"outbox","kind":"queue","label":"Emails waiting to go"},{"id":"mailer","kind":"external","label":"Email provider"}],"edges":[{"from":"app","to":"booking","label":"book 10:00 on Saturday"},{"from":"booking","to":"slots","label":"is 10:00 still free?"},{"from":"slots","to":"booking","kind":"return","label":"free"},{"from":"booking","to":"slots","label":"hold it for this member"},{"from":"slots","to":"booking","kind":"return","label":"held"},{"from":"booking","to":"outbox","kind":"async","label":"confirmation email"},{"from":"booking","to":"app","kind":"return","label":"booked, with the cancel window"},{"from":"outbox","to":"mailer","kind":"async","label":"send it"},{"from":"mailer","to":"outbox","kind":"return","label":"accepted, or try again in five minutes"}]}]};
 const SEED = null;
 // SPDX-License-Identifier: MIT-0
@@ -721,6 +732,60 @@ const DRAW = {
 function drawBlock(block, ctx) {
   const draw = DRAW[block?.type];
   return draw ? draw(block, ctx) : `<p class="c-unknown">${esc(block?.type)}</p>`;
+}
+
+// SPDX-License-Identifier: MIT-0
+// The parts of a review and its "Let me explain" cards. Pure: no DOM. The renderer uses it to write the
+// cards into the page itself (#74: a phone's file preview runs no script and must still show them), and
+// inlines it verbatim so the page groups its questions the same way.
+
+function partsEsc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Text without its Markdown marks, for a sentence shown as plain words.
+function plain(t) { return String(t || '').split('**').join('').split(String.fromCharCode(96)).join('').trim(); }
+function firstSentence(t) { const s = plain(t), m = s.match(/^.+?[.!?](?=\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
+
+// The review's sections, a flow's journeys, or one part. Each part keeps its items in the review's order.
+function reviewParts(review) {
+  const flow = review.flow || null, items = review.items || [], sections = review.sections || [];
+  const partsById = flow ? Object.fromEntries((flow.parts || []).map((p) => [p.id, p])) : {};
+  const top = flow ? (flow.parts || []).filter((p) => !p.parent) : [];
+  const journeys = top.length === 1 ? (flow.parts || []).filter((p) => p.parent === top[0].id) : top;
+  const journeyOf = (it) => { for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (journeys.some((j) => j.id === p.id)) return p.id; return null; };
+  const list = [], taken = new Set();
+  const iconFor = (sec, its) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : its.every((i) => i.approval) ? 'shield' : flow ? 'phone' : 'help';
+  const add = (label, sec, its) => { if (!its.length) return; its.forEach((i) => taken.add(i.id)); list.push({ label, sec, items: its, icon: iconFor(sec, its) }); };
+  for (const sec of sections) add(sec.label || sec.id, sec, items.filter((i) => i.sectionId === sec.id));
+  if (flow && !sections.length) for (const j of journeys) add(j.title || j.id, null, items.filter((i) => i.step && !taken.has(i.id) && journeyOf(i) === j.id));
+  const rest = items.filter((i) => !taken.has(i.id));
+  add(list.length ? 'Other questions' : 'Questions', null, rest);
+  list.forEach((p, i) => { p.color = 'var(--s' + (i % 6 + 1) + ')'; p.questions = p.sec && p.sec.mode === 'choose-one' ? 1 : p.items.length; });
+  return list;
+}
+
+// #105 — Let me explain in short cards: one sentence each, the rest one tap away, never dropped.
+function startCardsHtml(review, parts, icon) {
+  const b = review.brief || {}, n = parts.reduce((k, p) => k + p.questions, 0);
+  const card = (ic, title, text, moreHtml) => {
+    const fs = firstSentence(text), more = (fs[1] ? '<p>' + partsEsc(fs[1]) + '</p>' : '') + (moreHtml || '');
+    return [ic, title, '<p>' + partsEsc(fs[0]) + '</p>' + (more ? '<details class="start-more"><summary>More</summary>' + more + '</details>' : '')];
+  };
+  const about = b.question || b.explains || review.intro || review.subtitle || review.title;
+  const aboutMore = [b.question && b.explains, about !== review.intro && review.intro].filter(Boolean).map((t) => '<p>' + partsEsc(plain(t)) + '</p>').join('');
+  const exRows = (b.examples || []).map((x) => '<li><b>' + partsEsc(x.name) + '</b> ' + partsEsc(x.what || '') + (x.shows ? ' What people see: ' + partsEsc(x.shows) : '') + ' '
+    + (x.source ? '<a href="' + partsEsc(x.source) + '" target="_blank" rel="noopener noreferrer">' + partsEsc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
+  const cards = [
+    card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
+    b.recommendation && card('star', 'My recommendation', b.recommendation),
+    ['list', "What I'll ask", '<p>' + n + (n === 1 ? ' question' : ' questions') + (parts.length > 1 ? ' in ' + parts.length + ' parts.' : '.') + '</p><p class="start-parts">'
+      + parts.map((p) => '<span class="chip-part" style="--sc:' + p.color + '">' + icon(p.icon, 'sm') + partsEsc(p.label) + '</span>').join('') + '</p>'],
+    (b.examples || []).length && card('globe', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', '<ul>' + exRows + '</ul>'),
+    (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map((r) => '<li>' + partsEsc(r) + '</li>').join('') + '</ul>' : ''),
+    card('help', 'How to answer', review.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
+    card('send', 'What happens next', review.afterwards || 'Nothing is sent until you download your answers.', review.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
+  ].filter(Boolean);
+  return cards.map(([ic, title, h], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3' + (i === 0 ? ' id="brief-h"' : '') + '>' + icon(ic, 'sm') + partsEsc(title) + '</h3>' + h + '</div></li>').join('');
 }
 
 // SPDX-License-Identifier: MIT-0
@@ -1247,8 +1312,6 @@ const OPTS = REVIEW.verdictSet.options;
 const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' }, { value: 'decline', label: 'Decline', tone: 'negative' }];
 const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
 const TILE = { positive: ['t-ok', 'check'], caution: ['t-warn', 'half'], negative: ['t-bad', 'x'], neutral: ['t-neut', 'help'] };
-const plain = (t) => String(t || '').split('**').join('').split(String.fromCharCode(96)).join('').trim();
-function firstSentence(t){ const s = plain(t), m = s.match(/^.+?[.!?](?=\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
 
 // #60 — pictures on a note. The page redraws each one, at most 1600 px, and saves it again: hidden
 // details such as a photo's location are gone, and the size stays small enough to send.
@@ -1293,29 +1356,14 @@ document.addEventListener('paste', e => {
 
 // ── the review, as steps ──
 const FLOW = REVIEW.flow || null;
-const partsById = FLOW ? Object.fromEntries((FLOW.parts || []).map(p => [p.id, p])) : {};
-const topParts = FLOW ? (FLOW.parts || []).filter(p => !p.parent) : [];
-const JOURNEYS = topParts.length === 1 ? (FLOW.parts || []).filter(p => p.parent === topParts[0].id) : topParts;
-function journeyOf(it){ for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (JOURNEYS.some(j => j.id === p.id)) return p.id; return null; }
 const screenOf = (id) => FLOW && FLOW.screens.find(s => s.id === id);
 const screenTitle = (id) => (screenOf(id) || {}).title || id;
 const itemById = (id) => REVIEW.items.find(i => i.id === id);
-const secOf = (it) => (REVIEW.sections || []).find(s => s.id === it.sectionId);
-// The progress bar's parts: the review's sections, a flow's journeys, or one part. A choose-one section
-// is one question, its options the answers.
-const SEGS = (() => {
-  const list = [], taken = new Set();
-  const add = (label, sec, items, icon) => { if (!items.length) return; items.forEach(i => taken.add(i.id));
-    const steps = sec && sec.mode === 'choose-one' ? [{ kind: 'choose', sec, items }] : items.map(it => ({ kind: 'item', it }));
-    list.push({ label, sec, steps, icon }); };
-  const iconFor = (sec, items) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : items.every(i => i.approval) ? 'shield' : FLOW ? 'phone' : 'help';
-  for (const sec of REVIEW.sections || []) { const items = REVIEW.items.filter(i => i.sectionId === sec.id); add(sec.label || sec.id, sec, items, iconFor(sec, items)); }
-  if (FLOW && !(REVIEW.sections || []).length) for (const j of JOURNEYS) { const items = REVIEW.items.filter(i => i.step && !taken.has(i.id) && journeyOf(i) === j.id); add(j.title || j.id, null, items, 'phone'); }
-  const rest = REVIEW.items.filter(i => !taken.has(i.id));
-  add(list.length ? 'Other questions' : 'Questions', null, rest, iconFor(null, rest));
-  list.forEach((s, i) => { s.color = 'var(--s' + (i % 6 + 1) + ')'; s.steps.forEach(st => { st.seg = s; }); });
-  return list;
-})();
+// The progress bar's parts, grouped by the same code that wrote the cards: a choose-one section is one
+// question, its options the answers.
+const SEGS = reviewParts(REVIEW).map(p => ({ label: p.label, sec: p.sec, icon: p.icon, color: p.color,
+  steps: p.sec && p.sec.mode === 'choose-one' ? [{ kind: 'choose', sec: p.sec, items: p.items }] : p.items.map(it => ({ kind: 'item', it })) }));
+SEGS.forEach(s => s.steps.forEach(x => { x.seg = s; }));
 const STEPS = SEGS.flatMap(s => s.steps);
 const stepItems = (s) => s.kind === 'choose' ? s.items : [s.it];
 const stepAnswer = (s) => s.kind === 'choose' ? store.choices[s.sec.id] : store.verdicts[s.it.id];
@@ -1543,8 +1591,19 @@ function toMarkdown(){
   if (out.gaps.length) L.push('## Needs attention', '', ...out.gaps.map(g => '- ' + ((itemById(g) || {}).title || g)), '');
   return L.join('\n');
 }
+// The answered page also carries its answers as plain text, shown only where no script runs (a phone's
+// file preview). Line breaks become <br>, so no answer can start a line of the page (#78 reads the SEED line).
+const flat = (t) => esc(t).replace(/\r\n|[\r\n\u2028\u2029]/g, '<br>');
+function staticAnswers(){
+  const rows = STEPS.map(s => { const v = answerLabel(s);
+    return '<div class="sum-row"><span>' + flat(stepTitle(s)) + '</span><span class="v' + (v ? '' : ' open') + '">' + (v ? flat(v) : 'Stays open') + '</span>'
+      + stepItems(s).map(it => (store.notes[it.id] || '').trim() ? '<p>' + flat(store.notes[it.id].trim()) + '</p>' : '').join('')
+      + (store.comments || []).filter(c => stepItems(s).some(it => it.id === c.item) && (c.note || '').trim()).map(c => '<p>On the map, ' + flat(c.label) + ': ' + flat(c.note.trim()) + '</p>').join('') + '</div>'; }).join('');
+  const added = (store.added || []).map(a => '<div class="sum-row"><span>Added: ' + flat(a.title) + '</span>' + (a.body ? '<p>' + flat(a.body) + '</p>' : '') + '</div>').join('');
+  return '<div id="static-answers"><h2>The answers in this file</h2>' + rows + added + '</div>';
+}
 const htmlSeed = () => { const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
-  return PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'); };
+  return PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';').replace('<div id="static-answers">' + '</div>', () => staticAnswers()); };
 const saveAs = (text, type, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
 function downloadsHtml(){
   const open = STEPS.length - answeredCount(), notes = Object.values(store.notes).filter(x => (x || '').trim()).length, added = (store.added || []).length;
@@ -1712,30 +1771,6 @@ document.addEventListener('input', e => {
   if (c) { const m = (store.comments || []).find(x => x.id === c.dataset.comment); if (m) { m.note = c.value; save(); } }
 });
 
-// #105 — Let me explain in short cards: one sentence each, the rest one tap away, never dropped.
-function drawStart(){
-  const b = REVIEW.brief || {}, n = STEPS.length;
-  const card = (icon, title, text, moreHtml, extra) => {
-    const fs = firstSentence(text), more = (fs[1] ? '<p>' + esc(fs[1]) + '</p>' : '') + (moreHtml || '');
-    return [icon, title, '<p>' + esc(fs[0]) + '</p>' + (extra || '') + (more ? '<details class="start-more"><summary>More</summary>' + more + '</details>' : '')];
-  };
-  const about = b.question || b.explains || REVIEW.intro || REVIEW.subtitle || REVIEW.title;
-  const aboutMore = [b.question && b.explains, about !== REVIEW.intro && REVIEW.intro].filter(Boolean).map(t => '<p>' + esc(plain(t)) + '</p>').join('');
-  const exRows = (b.examples || []).map(x => '<li><b>' + esc(x.name) + '</b> ' + esc(x.what || '') + (x.shows ? ' What people see: ' + esc(x.shows) : '') + ' '
-    + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
-  const cards = [
-    card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
-    b.recommendation && card('star', 'My recommendation', b.recommendation),
-    ['list', "What I'll ask", '<p>' + n + (n === 1 ? ' question' : ' questions') + (SEGS.length > 1 ? ' in ' + SEGS.length + ' parts.' : '.') + '</p><p class="start-parts">'
-      + SEGS.map(s => '<span class="chip-part" style="--sc:' + s.color + '">' + I(s.icon, 'sm') + esc(s.label) + '</span>').join('') + '</p>'],
-    (b.examples || []).length && card('globe', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', '<ul>' + exRows + '</ul>'),
-    (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul>' : ''),
-    card('help', 'How to answer', REVIEW.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
-    card('send', 'What happens next', REVIEW.afterwards || 'Nothing is sent until you download your answers.', REVIEW.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
-  ].filter(Boolean);
-  $('#start-cards').innerHTML = cards.map(([icon, title, h], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3' + (i === 0 ? ' id="brief-h"' : '') + '>' + I(icon, 'sm') + esc(title) + '</h3>' + h + '</div></li>').join('');
-}
-drawStart();
 render(null);
 if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
 </script>

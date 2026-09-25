@@ -636,7 +636,9 @@ doubts, an approval, an explanation, or a diagram.
 **Let me explain** comes first, on its own screen (#105): short numbered cards, each with a symbol and
 one sentence (what the agent needs decided or explains, its recommendation, what it will ask,
 precedents, the risks, how to answer, what happens next), the rest of each behind "More", never
-dropped, and one action: **Start**. After Start it folds to one bar that opens it again.
+dropped, and one action: **Start**. After Start it folds to one bar that opens it again. The cards are written into the page itself, so a phone's file preview, which runs no script, still
+shows them, with a note that answering needs a browser; an answered page there also shows every
+question, answer and note as plain text.
 
 **The tour**, one question at a time, then **Return**. **Back** and **Next** are always visible with
 "Step N of M"; an unanswered question can be skipped ("Skip for now") and stays open. A **progress

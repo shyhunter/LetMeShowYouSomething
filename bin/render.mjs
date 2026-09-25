@@ -18,6 +18,7 @@ import { createHash } from 'node:crypto';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { reviewParts, startCardsHtml } from '../lib/review-parts.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const [inPath, outPathArg] = process.argv.slice(2);
@@ -38,6 +39,7 @@ const drawer = readFileSync(join(HERE, '..', 'lib', 'draw-components.mjs'), 'utf
 // Diagrams: layout and drawing, inlined the same way; their imports are dropped because the page
 // already defines everything they import.
 const inline = (file) => readFileSync(join(HERE, '..', 'lib', file), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '');
+const partsLib = inline('review-parts.mjs');
 const diagrams = inline('draw-ai.mjs') + '\n' + inline('layout.mjs') + '\n' + inline('draw-database.mjs') + '\n' + inline('draw-diagram.mjs');
 
 // `</script>` inside a JSON string would close the tag early; escaping `<` is enough and keeps the
@@ -93,6 +95,10 @@ try {
   favicon = `<link rel="icon" href="data:image/svg+xml;base64,${Buffer.from(logo).toString('base64')}">`;
   mark = (logo.match(/<g [\s\S]*<\/g>/) || [''])[0];
 } catch {}
+
+// #74 — the Let me explain cards are written into the page itself: a phone's file preview runs no
+// script and must still show them.
+const startCards = startCardsHtml(review, reviewParts(review), I);
 
 const html = `<!doctype html>
 <html lang="en"><head>
@@ -184,6 +190,13 @@ button{font:inherit;color:inherit}
 #start-mini b{font-weight:500;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #start-mini .more{margin-left:auto;color:var(--ac);font-weight:500;flex:none}
 body.at-start :is(#topbar,#main,#footnote),body:not(.at-start) #start{display:none}
+/* Without a script (a phone's file preview) the cards and any answers still show, and say why nothing moves. */
+html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:none}
+.no-script{border:1px solid var(--warn);background:var(--warn-bg);border-radius:10px;padding:10px 12px;font-size:14px;color:var(--ink)}
+#static-answers:empty{display:none}
+#static-answers{display:grid;gap:8px}
+#static-answers h2{font-size:16px;margin-top:6px}
+#static-answers .sum-row p{flex-basis:100%;font-size:13.5px;color:var(--ink2)}
 @container (max-width:700px){#start-review{justify-self:stretch}}
 
 /* answer tiles: a questionnaire, not a form */
@@ -459,7 +472,9 @@ ${SPRITE}
 <section id="start" aria-labelledby="start-h">
   <p class="eyebrow">${I('flag', 'sm')}Let me explain</p>
   <h1 id="start-h">${esc(review.title)}</h1>
-  <ol id="start-cards" class="start-cards"></ol>
+  <p class="no-script">This page needs a web browser to answer. A phone's file preview shows it but cannot run it: open the file in a browser app such as Chrome or Safari, or on a computer.</p>
+  <ol id="start-cards" class="start-cards">${startCards}</ol>
+  <div id="static-answers"></div>
   <button class="btn pri" type="button" id="start-review">Start${I('right')}</button>
 </section>
 <div id="topbar">
@@ -478,10 +493,13 @@ ${SPRITE}
 // D076 — the page as it arrived, before anything is drawn: the answered HTML download saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
 const PAGE = '<!doctype html>\\n' + document.documentElement.outerHTML;
+// Taken after PAGE, so a downloaded copy opened without scripts still shows what needs them.
+document.documentElement.classList.add('js');
 const REVIEW = ${embed(review)};
 const SEED = null;
 ${builder}
 ${drawer}
+${partsLib}
 ${diagrams}
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
@@ -507,8 +525,6 @@ const OPTS = REVIEW.verdictSet.options;
 const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' }, { value: 'decline', label: 'Decline', tone: 'negative' }];
 const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
 const TILE = { positive: ['t-ok', 'check'], caution: ['t-warn', 'half'], negative: ['t-bad', 'x'], neutral: ['t-neut', 'help'] };
-const plain = (t) => String(t || '').split('**').join('').split(String.fromCharCode(96)).join('').trim();
-function firstSentence(t){ const s = plain(t), m = s.match(/^.+?[.!?](?=\\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
 
 // #60 — pictures on a note. The page redraws each one, at most 1600 px, and saves it again: hidden
 // details such as a photo's location are gone, and the size stays small enough to send.
@@ -553,29 +569,14 @@ document.addEventListener('paste', e => {
 
 // ── the review, as steps ──
 const FLOW = REVIEW.flow || null;
-const partsById = FLOW ? Object.fromEntries((FLOW.parts || []).map(p => [p.id, p])) : {};
-const topParts = FLOW ? (FLOW.parts || []).filter(p => !p.parent) : [];
-const JOURNEYS = topParts.length === 1 ? (FLOW.parts || []).filter(p => p.parent === topParts[0].id) : topParts;
-function journeyOf(it){ for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (JOURNEYS.some(j => j.id === p.id)) return p.id; return null; }
 const screenOf = (id) => FLOW && FLOW.screens.find(s => s.id === id);
 const screenTitle = (id) => (screenOf(id) || {}).title || id;
 const itemById = (id) => REVIEW.items.find(i => i.id === id);
-const secOf = (it) => (REVIEW.sections || []).find(s => s.id === it.sectionId);
-// The progress bar's parts: the review's sections, a flow's journeys, or one part. A choose-one section
-// is one question, its options the answers.
-const SEGS = (() => {
-  const list = [], taken = new Set();
-  const add = (label, sec, items, icon) => { if (!items.length) return; items.forEach(i => taken.add(i.id));
-    const steps = sec && sec.mode === 'choose-one' ? [{ kind: 'choose', sec, items }] : items.map(it => ({ kind: 'item', it }));
-    list.push({ label, sec, steps, icon }); };
-  const iconFor = (sec, items) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : items.every(i => i.approval) ? 'shield' : FLOW ? 'phone' : 'help';
-  for (const sec of REVIEW.sections || []) { const items = REVIEW.items.filter(i => i.sectionId === sec.id); add(sec.label || sec.id, sec, items, iconFor(sec, items)); }
-  if (FLOW && !(REVIEW.sections || []).length) for (const j of JOURNEYS) { const items = REVIEW.items.filter(i => i.step && !taken.has(i.id) && journeyOf(i) === j.id); add(j.title || j.id, null, items, 'phone'); }
-  const rest = REVIEW.items.filter(i => !taken.has(i.id));
-  add(list.length ? 'Other questions' : 'Questions', null, rest, iconFor(null, rest));
-  list.forEach((s, i) => { s.color = 'var(--s' + (i % 6 + 1) + ')'; s.steps.forEach(st => { st.seg = s; }); });
-  return list;
-})();
+// The progress bar's parts, grouped by the same code that wrote the cards: a choose-one section is one
+// question, its options the answers.
+const SEGS = reviewParts(REVIEW).map(p => ({ label: p.label, sec: p.sec, icon: p.icon, color: p.color,
+  steps: p.sec && p.sec.mode === 'choose-one' ? [{ kind: 'choose', sec: p.sec, items: p.items }] : p.items.map(it => ({ kind: 'item', it })) }));
+SEGS.forEach(s => s.steps.forEach(x => { x.seg = s; }));
 const STEPS = SEGS.flatMap(s => s.steps);
 const stepItems = (s) => s.kind === 'choose' ? s.items : [s.it];
 const stepAnswer = (s) => s.kind === 'choose' ? store.choices[s.sec.id] : store.verdicts[s.it.id];
@@ -803,8 +804,19 @@ function toMarkdown(){
   if (out.gaps.length) L.push('## Needs attention', '', ...out.gaps.map(g => '- ' + ((itemById(g) || {}).title || g)), '');
   return L.join('\\n');
 }
+// The answered page also carries its answers as plain text, shown only where no script runs (a phone's
+// file preview). Line breaks become <br>, so no answer can start a line of the page (#78 reads the SEED line).
+const flat = (t) => esc(t).replace(/\\r\\n|[\\r\\n\\u2028\\u2029]/g, '<br>');
+function staticAnswers(){
+  const rows = STEPS.map(s => { const v = answerLabel(s);
+    return '<div class="sum-row"><span>' + flat(stepTitle(s)) + '</span><span class="v' + (v ? '' : ' open') + '">' + (v ? flat(v) : 'Stays open') + '</span>'
+      + stepItems(s).map(it => (store.notes[it.id] || '').trim() ? '<p>' + flat(store.notes[it.id].trim()) + '</p>' : '').join('')
+      + (store.comments || []).filter(c => stepItems(s).some(it => it.id === c.item) && (c.note || '').trim()).map(c => '<p>On the map, ' + flat(c.label) + ': ' + flat(c.note.trim()) + '</p>').join('') + '</div>'; }).join('');
+  const added = (store.added || []).map(a => '<div class="sum-row"><span>Added: ' + flat(a.title) + '</span>' + (a.body ? '<p>' + flat(a.body) + '</p>' : '') + '</div>').join('');
+  return '<div id="static-answers"><h2>The answers in this file</h2>' + rows + added + '</div>';
+}
 const htmlSeed = () => { const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\\u2028\\u2029]/g, (c) => '\\\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
-  return PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';'); };
+  return PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';').replace('<div id="static-answers">' + '</div>', () => staticAnswers()); };
 const saveAs = (text, type, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
 function downloadsHtml(){
   const open = STEPS.length - answeredCount(), notes = Object.values(store.notes).filter(x => (x || '').trim()).length, added = (store.added || []).length;
@@ -972,30 +984,6 @@ document.addEventListener('input', e => {
   if (c) { const m = (store.comments || []).find(x => x.id === c.dataset.comment); if (m) { m.note = c.value; save(); } }
 });
 
-// #105 — Let me explain in short cards: one sentence each, the rest one tap away, never dropped.
-function drawStart(){
-  const b = REVIEW.brief || {}, n = STEPS.length;
-  const card = (icon, title, text, moreHtml, extra) => {
-    const fs = firstSentence(text), more = (fs[1] ? '<p>' + esc(fs[1]) + '</p>' : '') + (moreHtml || '');
-    return [icon, title, '<p>' + esc(fs[0]) + '</p>' + (extra || '') + (more ? '<details class="start-more"><summary>More</summary>' + more + '</details>' : '')];
-  };
-  const about = b.question || b.explains || REVIEW.intro || REVIEW.subtitle || REVIEW.title;
-  const aboutMore = [b.question && b.explains, about !== REVIEW.intro && REVIEW.intro].filter(Boolean).map(t => '<p>' + esc(plain(t)) + '</p>').join('');
-  const exRows = (b.examples || []).map(x => '<li><b>' + esc(x.name) + '</b> ' + esc(x.what || '') + (x.shows ? ' What people see: ' + esc(x.shows) : '') + ' '
-    + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\\/\\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
-  const cards = [
-    card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
-    b.recommendation && card('star', 'My recommendation', b.recommendation),
-    ['list', "What I'll ask", '<p>' + n + (n === 1 ? ' question' : ' questions') + (SEGS.length > 1 ? ' in ' + SEGS.length + ' parts.' : '.') + '</p><p class="start-parts">'
-      + SEGS.map(s => '<span class="chip-part" style="--sc:' + s.color + '">' + I(s.icon, 'sm') + esc(s.label) + '</span>').join('') + '</p>'],
-    (b.examples || []).length && card('globe', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', '<ul>' + exRows + '</ul>'),
-    (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map(r => '<li>' + esc(r) + '</li>').join('') + '</ul>' : ''),
-    card('help', 'How to answer', REVIEW.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
-    card('send', 'What happens next', REVIEW.afterwards || 'Nothing is sent until you download your answers.', REVIEW.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
-  ].filter(Boolean);
-  $('#start-cards').innerHTML = cards.map(([icon, title, h], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3' + (i === 0 ? ' id="brief-h"' : '') + '>' + I(icon, 'sm') + esc(title) + '</h3>' + h + '</div></li>').join('');
-}
-drawStart();
 render(null);
 if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
 </script>

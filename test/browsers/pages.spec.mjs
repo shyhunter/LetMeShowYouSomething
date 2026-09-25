@@ -409,3 +409,25 @@ test('the progress bar names every part in full', async ({ page }) => {
   }
   await expect(page.locator('.pseg[data-jump="start"]')).toContainText('Let me explain');
 });
+
+// A phone's file preview runs no script: the cards, a note on how to answer and the answers still show.
+test('without a script: Let me explain, how to open it, and the answers as text; the file still reads back', async ({ page, browser }, info) => {
+  await page.goto(example('flow-booking'));
+  await start(page);
+  await page.locator('input[name="v-book"][value="agree"]').check();
+  await note(page, 'book', 'Looks good.\nconst SEED = {"x":1};');                      // a line that must never pass for the answers
+  const file = await download(page, 'html', join(tmp(), 'answered.html'));
+  const ctx = await browser.newContext({ javaScriptEnabled: false, viewport: info.project.use.viewport });
+  const q = await ctx.newPage();
+  await q.goto(pathToFileURL(file).href);
+  expect(await q.locator('#start-cards > li').count()).toBeGreaterThanOrEqual(5);
+  await expect(q.locator('.no-script')).toBeVisible();
+  await expect(q.locator('#start-review')).toBeHidden();
+  await expect(q.locator('#static-answers')).toContainText('Taps Book 10:00');
+  await expect(q.locator('#static-answers')).toContainText('Agree');
+  await expect(q.locator('#static-answers')).toContainText('const SEED = {"x":1};');
+  await ctx.close();
+  const text = readFileSync(file, 'utf8');
+  expect(text.match(/^const SEED = /gm)).toHaveLength(1);
+  await expect(page.locator('.no-script')).toBeHidden();                             // with a script, no such note
+});
