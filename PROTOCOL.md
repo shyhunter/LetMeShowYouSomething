@@ -262,7 +262,9 @@ with `followup` and `history` against the one before, the `continues` links, tha
 share an id, and that every `reply` answers something. A **flow** review that continues another may
 carry only the steps still open: on its own, a screen it no longer reaches is a warning, and `check
 rounds` requires every screen to be reached by a step of this round or a round before. The map then
-keeps the steps settled earlier, marked answered. The
+keeps the steps settled earlier, marked answered. In the same way a diagram may keep a box whose `step`
+is a part answered in a round before (a warning on its own; `check rounds` refuses one no round asked),
+and the page marks it answered. The
 page carries the rounds in one line of its script, `const HISTORY = {…};`, a closed envelope
 ([`schemas/history.v1.schema.json`](schemas/history.v1.schema.json)): `{ protocol, schemaVersion,
 rounds: [{ review, feedback }] }`, each snapshot the review.v1 and feedback.v1 exactly as they were,
