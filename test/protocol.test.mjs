@@ -13,7 +13,6 @@ import './feedback-identity.test.mjs';
 import './answered-html.test.mjs';
 import './proposal-outcomes.test.mjs';
 import './conformance.test.mjs';
-import './review-selection.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -251,11 +250,7 @@ test('each theme is readable', () => {
     'dark (system)': css.match(/prefers-color-scheme:dark\)\{:root:not\(\[data-theme\]\)\{([^}]*)\}/)[1],
   };
   blocks['dark (toggle)'] = css.match(/:root\[data-theme="dark"\]\{([^}]*)\}/)[1];
-  // Every style (D080), in light and in dark (D083), sets its own scheme and colours.
-  for (const [, name, dark, block] of css.matchAll(/:root\[data-style="([\w-]+)"\](\[data-theme="dark"\])?\{([^}]*--bg[^}]*)\}/g)) {
-    blocks[`${name} ${dark ? 'dark' : 'light'}`] = block;
-  }
-  assert.equal(Object.keys(blocks).length, 11, 'three base blocks and four styles in two modes');
+  assert.equal(Object.keys(blocks).length, 3, 'light, dark by the system, dark by choice');
   const token = (block, name) => block.match(new RegExp(`--${name}:\\s*(#[0-9A-Fa-f]{6})`))?.[1];
   const lum = (hex) => {
     const [r, g, b] = [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
@@ -756,7 +751,7 @@ test('flow page inlines the drawing and feedback code verbatim, and fetches noth
   for (const lib of ['lib/draw-components.mjs', 'lib/build-feedback.mjs', 'lib/layout.mjs', 'lib/draw-diagram.mjs'])
     assert.ok(html.includes(readFileSync(at(lib), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '')), `${lib} is not inlined verbatim`);
   offline(html, 'the flow page');
-  assert.match(html, /id="upanel"/);
+  assert.match(html, /id="start-review"/);
 });
 
 // D051 — in a doubts section (kind: challenge), agree means the concern is real: that is the gap.
@@ -1174,17 +1169,7 @@ test('checker refuses a Mermaid section diagram, and a list chart may point at i
   assert.match(checkReviewObj(r).stdout, /step "nowhere" is not an item in this review/);
 });
 
-// #48 — an explanation asks nothing: its brief is headed as one.
-test('the brief is headed by what it does: a decision, or an explanation', () => {
-  const page = (brief) => {
-    const src = join(tmp, `brief-${Math.random().toString(36).slice(2)}.json`), out = src.replace(/json$/, 'html');
-    writeFileSync(src, JSON.stringify(ownId(withBrief((r) => Object.assign(r.brief, brief)))));
-    spawnSync(process.execPath, [at('bin/render.mjs'), src, out]);
-    return readFileSync(out, 'utf8').match(/id="brief-h">([^<]*)/)[1];
-  };
-  assert.equal(page({ question: 'Store credit or refund?' }), 'What I need you to decide');
-  assert.equal(page({ question: undefined }), 'What this explains');
-});
+// #48 — an explanation's heading ("What this is about") is checked in the browser: test/browsers/pages.spec.mjs.
 
 // #52 — the next round carries everything the reviewer left open.
 test('followup: gaps, added items and requests are carried into the next review', () => {

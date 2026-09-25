@@ -61,10 +61,11 @@ All three are on the [project site](https://shyhunter.github.io/LetMeShowYouSome
 review (a 30-second recording), the file the page exported, the checker's verdict, and what the agent says back, gaps
 first. Every piece is real; the files are in [`examples/`](examples) ([the report](examples/flow-booking.report.md)).
 
-The flow page draws the steps as a diagram with the sub-processes beside it. It also shows every
-screen at once, connected like a prototype, so you can judge the whole journey and not only one
-screen. You can pin the parts you want to keep in view, and pick a style (Macintosh 1984,
-Cyberpunk, Newsletter, ShyHunter) in light or dark.
+Every page starts with **Let me explain**, a few short cards and one button, then walks through one
+question at a time. Each question shows the same four places in the same order: the map (you are
+here), the screen as the app will show it, what should happen, and how it would be built. The
+Overview puts the whole review on one page, and the last step downloads your answers as HTML,
+Markdown or JSON.
 
 ## Quick start
 
@@ -78,7 +79,7 @@ node bin/check.mjs review examples/review.example.json
 # 2. It becomes one page
 node bin/render.mjs examples/review.example.json review.html
 
-# 3. The reviewer opens review.html, answers, and sends back the page (Export feedback.html)
+# 3. The reviewer opens review.html, answers, and on the last step downloads the answered page (HTML)
 #    or its feedback.json. The agent checks what came back before acting on it:
 node bin/answer.mjs examples/review.example.json answered.html feedback.json   # a returned page
 node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
