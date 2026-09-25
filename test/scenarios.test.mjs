@@ -262,3 +262,21 @@ test('resume later, or in another agent: each answers file reads on its own, and
   assert.equal(JSON.parse(line.slice('const HISTORY = '.length, -1)).rounds.length, 1, 'the page of round 2 carries round 1');
   settled(feedbacks.at(-1));
 });
+
+test('two people answer the same page: the copies are compared, the person who asked picks the answer of record, the difference is asked again', () => {
+  const t = [item('t1', 'Refunds within 14 days'), item('t2', 'Data kept for one year')];
+  const dir = mkdtempSync(join(tmpdir(), 'scenario-two-')), r1 = review('The contract terms', DECISION, t);
+  r1.id = 'two-r1'; const rp = join(dir, 'r1.json'); writeFileSync(rp, JSON.stringify(r1));
+  const ana = buildFeedback(r1, store({ t1: 'agree', t2: 'agree' }, { respondent: { name: 'Ana' } }), '2026-09-20T10:00:00Z');
+  const ben = buildFeedback(r1, store({ t1: 'agree', t2: 'disagree' }, { respondent: { name: 'Ben' }, notes: { t2: 'Six months is enough.' } }), '2026-09-20T11:00:00Z');
+  const [ap, bp] = [['ana', ana], ['ben', ben]].map(([n, f]) => { const p = join(dir, `${n}.json`); writeFileSync(p, JSON.stringify(f)); return p; });
+  const copies = run(at('bin/check.mjs'), 'copies', rp, ap, bp);
+  assert.equal(copies.status, 1, 'competing answers are never merged silently');
+  assert.match(copies.stdout, /"Data kept for one year": copy 1 \(Ana\) Agree, copy 2 \(Ben\) Disagree "Six months is enough\."/);
+  // The person who asked says Ana's answers count; Ben's different answer is asked again, quoted, in round 2.
+  const { feedbacks } = play('two', [
+    [r1, () => ana],
+    [review('The contract terms', DECISION, [{ ...t[1], summary: 'Ben answered Disagree ("Six months is enough."), Ana answered Agree. Which one holds?', reply: 'Your two answers differ; asking again.' }]), store({ t2: 'agree' }, { notes: { t2: 'One year, after talking to Ben.' } })],
+  ]);
+  settled(feedbacks.at(-1));
+});

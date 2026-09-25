@@ -370,7 +370,7 @@ test('SKILL.md frontmatter is valid and every path it names exists', async () =>
   assert.ok(paths.length >= 4, `expected SKILL.md to reference its tools, found ${paths.length}`);
   for (const p of paths) assert.ok(existsSync(at(p.replace(/\/$/, ''))), `SKILL.md names ${p}, which does not exist`);
   for (const mode of skill.matchAll(/check\.mjs (\w+)/g))
-    assert.ok(['review', 'feedback', 'pair', 'history', 'followup'].includes(mode[1]), `SKILL.md uses unknown checker mode "${mode[1]}"`);
+    assert.ok(['review', 'feedback', 'pair', 'history', 'followup', 'rounds', 'copies'].includes(mode[1]), `SKILL.md uses unknown checker mode "${mode[1]}"`);
 });
 
 // Licensing (LICENSING.md): a generated page must carry no obligation, so everything copied into it is

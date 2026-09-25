@@ -92,3 +92,23 @@ test('rounds: a wrong or missing link, and a screen no round reaches, are refuse
   assert.equal(reordered.status, 1);
   assert.match(reordered.stdout, /each round continues the one before/);
 });
+
+// #82 — two answers files for one round (the page went to two people, or was answered twice).
+test('copies: the same answers twice are one answer; different answers are refused, each difference named', async () => {
+  const { buildFeedback } = await import('../lib/build-feedback.mjs');
+  const review = read(R1), dir = mkdtempSync(join(tmpdir(), 'copies-'));
+  const store = (verdicts, name) => ({ verdicts, notes: {}, added: [], choices: {}, requests: {}, respondent: { name } });
+  const write = (n, f) => { const p = join(dir, n); writeFileSync(p, JSON.stringify(f)); return p; };
+  const a = write('a.json', buildFeedback(review, store({ 'guest-checkout': 'works' }, 'Ana'), '2026-09-20T10:00:00Z'));
+  const again = write('again.json', buildFeedback(review, store({ 'guest-checkout': 'works' }, 'Ana'), '2026-09-21T10:00:00Z'));
+  const b = write('b.json', buildFeedback(review, store({ 'guest-checkout': 'fails' }, 'Ben'), '2026-09-20T11:00:00Z'));
+  const same = node(at('bin/check.mjs'), 'copies', at(R1), a, again);
+  assert.equal(same.status, 0, same.stdout);
+  assert.match(same.stdout, /! copies are the same answers: the 2 files hold the same answers: use one of them, and count them once/);
+  const differ = node(at('bin/check.mjs'), 'copies', at(R1), a, b);
+  assert.equal(differ.status, 1, differ.stdout);
+  assert.match(differ.stdout, /✗ copies agree: 2 answers files for "Checkout rebuild — acceptance pass" do not agree: "A guest can buy without creating an account": copy 1 \(Ana\) Works, copy 2 \(Ben\) Doesn't work\. .*never merge them or keep one yourself/);
+  // The same round given twice is not history twice: the renderer refuses it.
+  const twice = node(at('bin/render.mjs'), at(R2), join(dir, 'twice.html'), '--earlier', at(R1), at(F1), '--earlier', at(R1), a);
+  assert.notEqual(twice.status, 0);
+});

@@ -268,7 +268,14 @@ carry only the steps still open: on its own, a screen it no longer reaches is a 
 rounds` requires every screen to be reached by a step of this round or a round before. The map then
 keeps the steps settled earlier, marked answered. In the same way a diagram may keep a box whose `step`
 is a part answered in a round before (a warning on its own; `check rounds` refuses one no round asked),
-and the page marks it answered. The
+and the page marks it answered.
+
+**Two answers files for one round** (the page went to two people, or was answered twice) are compared
+with `check copies <review> <feedback>...`: the same answers are one answer, counted once; different
+answers are refused (`copies agree`), each difference named with who answered what. They are never
+merged, and the agent never picks one: the person who asked for the review names the answer of
+record, which is the one the next round continues, and the next round asks each difference again. A
+round given twice to the renderer is refused, so history is never doubled. The
 page carries the rounds in one line of its script, `const HISTORY = {…};`, a closed envelope
 ([`schemas/history.v1.schema.json`](schemas/history.v1.schema.json)): `{ protocol, schemaVersion,
 rounds: [{ review, feedback }] }`, each snapshot the review.v1 and feedback.v1 exactly as they were,
