@@ -468,7 +468,9 @@ function diagramFaults(d, ctx) {
       if (!kinds.has(n.kind)) unresolved.push(`${w}: ${NODE_KINDS.has(n.kind) ? `"${n.kind}" does not belong in a ${d.kind} diagram` : `unknown kind "${n.kind}"`}. Use one of: ${[...kinds].join(', ')}, or it can't be drawn`);
     if (n.icon !== undefined && !ICONS.includes(n.icon)) unresolved.push(`${w}: unknown icon "${n.icon}". Use one of: ${ICONS.join(', ')}`);
     if (n.lane !== undefined && !lanes.includes(n.lane)) unresolved.push(`${w}: lane "${n.lane}" does not exist. Use one of: ${lanes.join(', ') || '(declare lanes first)'}`);
-    if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${flow ? 'a step' : 'an item'} in this review. Point at ${flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
+    // #82 — a round that continues another may keep a box on a part answered before; check rounds proves it was.
+    if (n.step !== undefined && !stepIds.has(n.step) && ctx.earlierLinks) ctx.earlierLinks.push(`${w} → ${n.step}`);
+    else if (n.step !== undefined && !stepIds.has(n.step)) unresolved.push(`${w}: step "${n.step}" is not ${flow ? 'a step' : 'an item'} in this review. Point at ${flow ? 'a step' : 'an item'} id or drop the link, or selecting it highlights nothing`);
     if (n.part !== undefined && !partIds.has(n.part)) unresolved.push(`${w}: part "${n.part}" is not a part of this flow. Point at a part id or drop the link`);
     if (n.subflow !== undefined && !diagramIds.includes(n.subflow) && !partIds.has(n.subflow)) unresolved.push(`${w}: subflow "${n.subflow}" is neither a diagram nor a part. Point at one, or the reader can't open it`);
     if (n.component) {
@@ -545,7 +547,7 @@ function checkDiagrams(r, rep) {
   // Without a flow, a box may point at any item (#47): tapping it opens that item.
   const ctx = { stepIds: new Set((r.items ?? []).filter((i) => i?.step || !r.flow).map((i) => i.id)),
     partIds: new Set((r.flow?.parts ?? []).map((p) => p.id)),
-    diagramIds: r.diagrams.map((d) => d?.id), flow: !!r.flow };
+    diagramIds: r.diagrams.map((d) => d?.id), flow: !!r.flow, earlierLinks: r.continues ? [] : null };
   const unresolved = [], senseless = [], collisions = [];
   for (const id of new Set(ctx.diagramIds.filter((x, i) => ctx.diagramIds.indexOf(x) !== i)))
     unresolved.push(`diagram id "${id}" is used twice. Rename one, or links to it are ambiguous`);
@@ -556,6 +558,7 @@ function checkDiagrams(r, rep) {
   rep.check('diagrams resolve', unresolved.length === 0, unresolved.join(' · '));
   rep.check('diagrams make sense', senseless.length === 0, senseless.join(' · '));
   rep.check("diagram pins don't collide", collisions.length === 0, collisions.join(' · '));
+  rep.warn('diagrams point at earlier rounds', ctx.earlierLinks?.length, `${ctx.earlierLinks?.join(', ')}: not in this round. check rounds proves each was asked in a round before, or the box highlights nothing`);
 }
 
 // ── focus and the agent's brief (D057, D059) ────────────────────────────────────────────────────
@@ -989,6 +992,13 @@ function checkRounds(current, rounds, rep) {
       unreached.length && `no step in this round or the rounds before reaches ${unreached.join(', ')}. Carry a step that leads there, or remove the screen`,
       stuck.length && `no way out of ${stuck.join(', ')} in any round, and not marked end. Add a step out, or set "end": true`,
     ].filter(Boolean).join(' · '));
+  });
+  // A box may point at a part answered in a round before; never at one no round asked.
+  chain.forEach((r, k) => {
+    if (!r?.continues || !r.diagrams) return;
+    const asked = new Set(chain.slice(0, k + 1).flatMap((x) => (x?.items ?? []).map((it) => it.id)));
+    const lost = r.diagrams.flatMap((d) => (d?.nodes ?? []).filter((n) => n?.step !== undefined && !asked.has(n.step)).map((n) => `${d.id}.${n.id} → ${n.step}`));
+    as(`round ${k + 1}`).check('diagrams resolve across the rounds', !lost.length, `${lost.join(', ')}: no round asked about it. Point at an item of this round or one before, or drop the link`);
   });
   rounds.forEach(({ review, feedback }, i) => {
     const here = as(`round ${i + 1}`), next = i + 1 < rounds.length ? rounds[i + 1].review : current, there = as(`round ${i + 2}`);
