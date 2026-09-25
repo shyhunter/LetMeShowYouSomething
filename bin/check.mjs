@@ -25,6 +25,15 @@ import { applyProposals, findLayerEntry, layerEntryText, partLabel } from '../li
 import { flowAsDiagram } from '../lib/draw-diagram.mjs';
 import { databaseFaults } from '../lib/check-database.mjs';
 import { aiFaults, agentControlEdges } from '../lib/check-ai.mjs';
+import { schemaErrors } from '../lib/schema-check.mjs';
+
+// The schemas themselves: a field the protocol does not have, or a missing one, is refused here, where the
+// agent sees it, and not only by a page that would quietly ignore or misread it.
+const SCHEMAS = Object.fromEntries(['review', 'feedback', 'history'].map((k) => [k, JSON.parse(readFileSync(new URL(`../schemas/${k}.v1.schema.json`, import.meta.url), 'utf8'))]));
+function checkSchema(kind, x, rep) {
+  const e = schemaErrors(SCHEMAS[kind], x, Object.values(SCHEMAS));
+  rep.check('matches the schema', e.length === 0, `${e.slice(0, 8).join(' · ')}${e.length > 8 ? ` · and ${e.length - 8} more` : ''}. Fix each one to match schemas/${kind}.v1.schema.json (PROTOCOL.md says what every field means); a field the protocol does not have is ignored by the page, so what you meant never reaches the reviewer`);
+}
 
 // #38 — the examples' ids are taken: a review that keeps one (agents start from the examples) would share
 // its answers with the example page in the same browser. Only the example itself may carry its id.
@@ -63,6 +72,7 @@ class Report {
 function checkReview(r, rep) {
   rep.check('protocol', r?.protocol === 'letmeshowyousomething/review', `expected "letmeshowyousomething/review", got ${JSON.stringify(r?.protocol)}`);
   rep.check('schemaVersion', r?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(r?.schemaVersion)}`);
+  checkSchema('review', r, rep);
   rep.check('review id', ID.test(r?.id ?? ''), `"${r?.id}" is not a valid id`);
   const example = EXAMPLE_IDS[r?.id];
   rep.check('own id', !example || example.text === JSON.stringify(r),
@@ -599,6 +609,7 @@ function checkBrief(r, rep) {
 function checkFeedback(f, rep, review) {
   rep.check('protocol', f?.protocol === 'letmeshowyousomething/feedback', `expected "letmeshowyousomething/feedback", got ${JSON.stringify(f?.protocol)}`);
   rep.check('schemaVersion', f?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(f?.schemaVersion)}`);
+  checkSchema('feedback', f, rep);
   rep.check('names its review', ID.test(f?.review?.id ?? '') && !!f?.review?.title, 'feedback must name the review id AND echo its title');
 
   const responses = Array.isArray(f?.responses) ? f.responses : [];
