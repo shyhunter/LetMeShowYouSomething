@@ -66,7 +66,7 @@ await withChrome('export-hostile', async ({ dir, say, ev, load, exported }) => {
   await load(render(CHECKOUT, dir)); await ev(overview);
   const bad = '</script><script>window.__pwned=1</script><img src=x onerror="window.__pwned=1">';
   await ev(`document.querySelector('input[name="v-declined-card"][value="fails"]').click()`);
-  await ev(`(()=>{const t=document.querySelector('#n-declined-card');t.value=${JSON.stringify(bad)};t.dispatchEvent(new Event('input',{bubbles:true}))})()`);
+  await ev(`(()=>{const t=document.querySelector('#n-declined-card');t.value=${JSON.stringify(bad).replace(/</g, '\\u003c')};t.dispatchEvent(new Event('input',{bubbles:true}))})()`);
   await ev(exportAs('html'));
   const file = await exported('.feedback.html');
   const text = file ? readFileSync(file, 'utf8') : '';
