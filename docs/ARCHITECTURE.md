@@ -11,7 +11,7 @@ agent writes review.json ──► check review ──► render ──► one o
                                                                                    │
 agent continues ◄── check pair ◄── feedback.json ◄── answer.mjs (reads the page) ◄─┘
                                         ▲
-                                        └── or the page's own "Export feedback.json"
+                                        └── or the JSON downloaded on the page's last step
 ```
 
 The page is one way to show a review, the reference one. The contract is the two JSON formats,
