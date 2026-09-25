@@ -357,7 +357,11 @@ span.hot{cursor:default}
 
 /* the map: every kind of diagram drawn the way of the approved design */
 .map-scroll{overflow:auto}
-.map-scroll svg{display:block;min-width:680px;width:100%;height:auto}
+.map-scroll svg{display:block;min-width:calc(var(--mz,1) * 680px);width:calc(var(--mz,1) * 100%);max-width:none;height:auto}
+.map-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dtabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%}
+.dtabs button{font-size:12.5px;min-height:32px;padding:5px 10px;white-space:nowrap;flex:none}
+@media (pointer:coarse){.dtabs button{min-height:44px}.zoom .btn{min-width:44px}}
 .layer .map-scroll svg{min-width:0;width:auto;max-width:none}
 .dg .dg-shape{fill:var(--sunk);stroke:var(--line2);stroke-width:1.5}
 .dg .dg-label{fill:var(--ink);font:12.5px var(--sans)}
@@ -674,7 +678,7 @@ if (REVIEW.focus) { const k = DIAGRAMS.findIndex(d => d.id === REVIEW.focus); if
 const mapFor = (s) => (s && DIAGRAMS.find(d => (d.nodes || []).some(n => stepItems(s).some(it => n.step === it.id)))) || DIAGRAMS[0] || null;
 
 // ── the view: where you are lives in memory only (D003); the view and minimised places in this browser ──
-const st = { mode: 'tour', phase: 'start', cur: 0, min: new Set(), ptab: 'map', layer: null, zoom: 1, preview: null, marking: null, missing: false, lmin: new Set() };
+const st = { mode: 'tour', phase: 'start', cur: 0, min: new Set(), ptab: 'map', layer: null, zoom: 1, mapZoom: 1, mapTab: null, preview: null, marking: null, missing: false, lmin: new Set() };
 try { const v = JSON.parse(localStorage.getItem(LS + ':view') || '{}'); if (v.mode === 'overview') { st.mode = 'overview'; st.phase = 'q'; } if (v.min) st.min = new Set(v.min); if (v.ptab) st.ptab = v.ptab; } catch {}
 const saveView = () => { try { localStorage.setItem(LS + ':view', JSON.stringify({ mode: st.mode, min: [...st.min], ptab: st.ptab })); } catch {} };
 
@@ -759,8 +763,20 @@ function mapHtml(s, zoom, d){
   const marked = (store.comments || []).filter(c => c.diagram === d.id && c.node !== undefined).map(c => c.node);
   for (const n of marked) out = out.split('<g data-node="' + escSvg(n) + '" class="dg-node').join('<g data-node="' + escSvg(n) + '" class="dg-node dg-marked');
   if (zoom) out = out.replace(/ width="(\\d+(?:\\.\\d+)?)" height="(\\d+(?:\\.\\d+)?)"/, (m, w, h) => ' width="' + Math.round(w * zoom) + '" height="' + Math.round(h * zoom) + '"');
-  return (st.marking ? '<p class="markhint">' + I('pin', 'sm') + 'Tap the part you mean.</p>' : '') + '<div class="map-scroll' + (st.marking ? ' marking' : '') + '" data-map="' + esc(d.id) + '">' + out + '</div>'
+  return (st.marking ? '<p class="markhint">' + I('pin', 'sm') + 'Tap the part you mean.</p>' : '') + '<div class="map-scroll' + (st.marking ? ' marking' : '') + '" data-map="' + esc(d.id) + '"' + (zoom ? '' : ' style="--mz:' + st.mapZoom + '"') + '>' + out + '</div>'
     + '<div class="legend"><span><i class="done"></i>Answered</span><span><i class="on"></i>You are here</span>' + (marked.length ? '<span><i class="pin"></i>Marked by you</span>' : '') + '</div>';
+}
+
+// The Map place: the question's own diagram first, every other one a tab beside it, and zoom in place.
+// Each question opens on its own diagram again; marking a part always uses it.
+function mapPlace(s){
+  const main = mapFor(s); if (!main) return '';
+  const d = !st.marking && DIAGRAMS.find(x => x.id === st.mapTab) || main;
+  const tabs = DIAGRAMS.length > 1 && !st.marking ? '<div class="seg dtabs" role="group" aria-label="Diagrams">' + [main].concat(DIAGRAMS.filter(x => x !== main)).map(x => '<button type="button" data-dtab="' + esc(x.id) + '" aria-pressed="' + (x === d) + '">'
+    + I(x.kind === 'database' ? 'db' : 'map', 'sm') + esc(x.title || x.id) + '</button>').join('') + '</div>' : '';
+  const zoom = '<span class="zoom" role="group" aria-label="Zoom the map"><button type="button" class="btn icon small" data-mzoom="-" aria-label="Zoom out"' + (st.mapZoom <= 0.5 ? ' disabled' : '') + '>' + I('minus', 'sm') + '</button><output>' + Math.round(st.mapZoom * 100) + '%</output>'
+    + '<button type="button" class="btn icon small" data-mzoom="+" aria-label="Zoom in"' + (st.mapZoom >= 3 ? ' disabled' : '') + '>' + I('plus', 'sm') + '</button><button type="button" class="btn small" data-mzoom="fit"' + (st.mapZoom === 1 ? ' disabled' : '') + '>Fit</button></span>';
+  return '<div class="map-tools">' + tabs + zoom + '</div>' + mapHtml(s, null, d);
 }
 
 // The prototype: a flow's screen as the app will show it, the main button at the bottom.
@@ -975,7 +991,7 @@ function renderTour(){
   if (st.phase === 'return') return '<div class="tour">' + progressHtml(null)
     + '<header class="t-head" style="--sc:var(--s0)"><p class="sec-name">' + I('send', 'sm') + 'Return</p><h2 id="q-title" tabindex="-1">Take your answers back</h2><p class="say">' + answeredCount() + ' of ' + STEPS.length + ' answered. Anything unanswered stays open: I will ask again and never assume a yes.</p></header>'
     + '<div class="t-ans">' + missingHtml() + '</div>'
-    + '<div class="t-vis">' + slots({ map: mapHtml(null), proto: galleryHtml(''), expected: '<div class="expected">' + summaryRows() + '</div>' + settledHtml(), build: downloadsHtml() }, { proto: FLOW ? 'every screen' : '', expected: 'your answers', build: 'downloads' }) + '</div>'
+    + '<div class="t-vis">' + slots({ map: mapPlace(null), proto: galleryHtml(''), expected: '<div class="expected">' + summaryRows() + '</div>' + settledHtml(), build: downloadsHtml() }, { proto: FLOW ? 'every screen' : '', expected: 'your answers', build: 'downloads' }) + '</div>'
     + navHtml(false, 'Download answers', 'download') + '</div>';
   const s = STEPS[st.cur], n = STEPS.length, v = stepAnswer(s);
   return '<div class="tour">' + progressHtml(s)
@@ -985,7 +1001,7 @@ function renderTour(){
     + (VIEW && VIEW.earlier[s.kind === 'item' ? s.it.id : ''] ? '<button type="button" class="btn quiet round-chip" data-act="why">' + I('history', 'sm') + 'Round ' + VIEW.earlier[s.it.id].round + ': ' + esc(VIEW.earlier[s.it.id].added ? 'you added it' : VIEW.earlier[s.it.id].label || 'not answered') + '</button>' : '')
     + (VIEW ? '<button type="button" class="btn quiet" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '</div>' + earlierHtml(s) + '</header>'
     + '<div class="t-ans" id="detail">' + tilesHtml(s, false) + (v ? '<button type="button" class="btn quiet note-btn" data-act="note">' + I('edit', 'sm') + (store.notes[stepItems(s)[0].id] ? 'Edit your note' : 'Add a note or picture') + '</button>' : '') + (st.layer === 'note' ? '' : explainHtml(s)) + '</div>'
-    + '<div class="t-vis">' + slots({ map: mapHtml(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : s.kind === 'choose' ? 'each option' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
+    + '<div class="t-vis">' + slots({ map: mapPlace(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : s.kind === 'choose' ? 'each option' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
     + navHtml(false, st.cur === n - 1 ? 'Finish' : v ? 'Next' : 'Skip for now') + '</div>';
 }
 function renderOverview(){
@@ -1000,7 +1016,7 @@ function renderOverview(){
     + '<div class="facts"><span class="fact">' + I('list', 'sm') + STEPS.length + (STEPS.length === 1 ? ' question' : ' questions') + '</span><span class="fact">' + I('layers', 'sm') + SEGS.length + (SEGS.length === 1 ? ' part' : ' parts') + '</span></div>'
     + (REVIEW.afterwards ? '<p class="after"><b>What happens next:</b> ' + esc(REVIEW.afterwards) + '</p>' : '')
     + '<button type="button" class="btn quiet" data-mode="tour" style="justify-self:start">' + I('flag', 'sm') + 'Take the guided tour instead</button></div>'
-    + progressHtml(null) + (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapHtml(null), 'the whole review') : '') + body + settledHtml() + missingHtml()
+    + progressHtml(null) + (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapPlace(null), 'the whole review') : '') + body + settledHtml() + missingHtml()
     + '<div class="brief"><p class="eyebrow">' + I('send', 'sm') + 'Return</p><div class="expected">' + summaryRows() + '</div>' + downloadsHtml() + '</div></div>';
 }
 const ovOpen = new Set();
@@ -1043,7 +1059,7 @@ function keyOf(el){
   if (!el || el === document.body) return null;
   if (el.id && el.id !== 'q-title') return '#' + CSS.escape(el.id);
   if (el.name && el.type === 'radio') return 'input[name="' + CSS.escape(el.name) + '"][value="' + CSS.escape(el.value) + '"]';
-  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
+  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-mzoom', 'data-dtab', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
     const f = el.getAttribute('data-for'); return '[' + a + '="' + CSS.escape(el.getAttribute(a)) + '"]' + (f ? '[data-for="' + CSS.escape(f) + '"]' : ''); }
   if (el.dataset && el.dataset.ask) return '[data-ask="' + el.dataset.ask + '"][data-for="' + CSS.escape(el.dataset.for) + '"]';
   if (el.dataset && el.dataset.opt) return '[data-opt="' + CSS.escape(el.dataset.opt) + '"]';
@@ -1063,7 +1079,7 @@ function render(focus){
   saveView();
 }
 function go(phase, cur){
-  st.phase = phase; if (cur !== undefined) st.cur = cur; st.layer = null; st.marking = null; st.preview = null; st.mode = 'tour';
+  st.phase = phase; if (cur !== undefined) st.cur = cur; st.layer = null; st.mapTab = null; st.marking = null; st.preview = null; st.mode = 'tour';
   render(null); scrollTo(0, 0);
   const t = phase === 'start' ? $('#start-review') : $('#q-title'); if (t) t.focus({ preventScroll: true });
 }
@@ -1096,6 +1112,8 @@ document.addEventListener('click', e => {
   if (d.min) { st.min.has(d.min) ? st.min.delete(d.min) : st.min.add(d.min); return render(); }
   if (d.lmin) { st.lmin.has(d.lmin) ? st.lmin.delete(d.lmin) : st.lmin.add(d.lmin); return render(); }
   if (d.ptab) { st.ptab = d.ptab; return render(); }
+  if (d.dtab) { st.mapTab = d.dtab; return render(); }
+  if (d.mzoom) { st.mapZoom = d.mzoom === 'fit' ? 1 : Math.min(3, Math.max(0.5, st.mapZoom + (d.mzoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.zoom) { st.zoom = Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.preview !== undefined) { st.preview = d.preview || null; return render(); }
   if (d.picadd) { picFor = d.picadd; picScreen = null; picInput.click(); return; }

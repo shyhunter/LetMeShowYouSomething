@@ -586,3 +586,27 @@ test('a choice between layouts: every option drawn side by side, picked from its
   await page.locator('[data-ovd="layout"] summary').click();
   await expect(page.locator('[data-ovd="layout"] .variant')).toHaveCount(3);
 });
+
+// The Map place: the question's own diagram first, every other diagram a tab beside it, and zoom in place. Each
+// question opens on its own diagram again.
+test('the map: other diagrams as tabs in place, zoom in place, and each question opens on its own diagram', async ({ page }) => {
+  await page.goto(example('flow-booking'));
+  await start(page);
+  const shown = () => page.locator('#slot-map .map-scroll').getAttribute('data-map');
+  const tabs = page.locator('#slot-map [data-dtab]');
+  await expect(tabs).toHaveCount(4);
+  await expect(tabs.first()).toHaveAttribute('aria-pressed', 'true');
+  expect(await shown()).toBe('user-flow');
+  const width = async () => (await page.locator('#slot-map svg.dg').boundingBox()).width;
+  const before = await width();
+  await page.locator('#slot-map [data-mzoom="+"]').click();
+  await expect(page.locator('#slot-map .zoom output')).toHaveText('125%');
+  expect(await width()).toBeGreaterThan(before * 1.2);
+  await page.locator('#slot-map [data-dtab="booking-system"]').click();
+  expect(await shown()).toBe('booking-system');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
+  await page.locator('#next').click();
+  expect(await shown(), 'the next question opens on its own diagram').toBe('user-flow');
+  await page.locator('#slot-map [data-mzoom="fit"]').click();
+  await expect(page.locator('#slot-map .zoom output')).toHaveText('100%');
+});

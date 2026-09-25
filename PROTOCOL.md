@@ -707,7 +707,9 @@ map**, and asking back with **Show me an example** and **Explain it differently*
 order**, each with a number, a symbol and a − button that folds it to its title:
 
 1. **Map**: the diagram the question is on (every kind: flowchart, system, sequence, database, AI),
-   its box marked "you are here", answered steps marked "answered".
+   its box marked "you are here", answered steps marked "answered". The review's other diagrams are
+   tabs beside it, to look at in place; the next question opens on its own diagram again. It zooms
+   in place (−, +, Fit), as well as in the expanded view.
 2. **Prototype**: a flow step's screen as the app will show it, in a phone frame: the app bar, the
    body drawn by `lib/draw-components.mjs` (inlined verbatim), the buttons at the bottom with the main
    one first, a dialog as a bottom sheet, and the part the step taps marked. An approval shows a dry
