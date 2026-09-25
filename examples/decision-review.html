@@ -64,6 +64,16 @@ button{font:inherit;color:inherit}
 .st-known{color:var(--ok);background:var(--ok-bg)}.st-suggested,.st-question{color:var(--ac);background:var(--ac-bg)}.st-planned{color:var(--blue);background:var(--blue-bg)}
 .st-risk-high{color:var(--bad);background:var(--bad-bg)}.st-risk-medium{color:var(--warn);background:var(--warn-bg)}.st-risk-low{color:var(--ok);background:var(--ok-bg)}
 .chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.tg-new{color:var(--ac);background:var(--ac-bg)}.tg-changed{color:var(--blue);background:var(--blue-bg)}.tg-again{color:var(--warn);background:var(--warn-bg)}.tg-open{color:var(--neut);background:var(--neut-bg)}.tg-added,.tg-settled{color:var(--ok);background:var(--ok-bg)}.tg-bad{color:var(--bad);background:var(--bad-bg)}
+.settled{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);padding:10px 14px}
+.settled summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--ok);display:inline-flex;gap:6px;align-items:center;min-height:32px}
+@media (pointer:coarse){.settled summary{min-height:44px}}
+.settled ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;color:var(--ink2);display:grid;gap:4px}
+.hist{display:grid;gap:12px;max-width:760px;width:100%;margin:0 auto}
+.hround{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:8px}
+.hround .who{font:600 10.5px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);display:flex;gap:6px;align-items:center}
+.hline{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;font-size:13.5px;padding:8px 0;border-top:1px solid var(--line)}
+.hline .q{font-weight:600}.hline .nn{grid-column:1/-1;color:var(--mut)}.hline .r{grid-column:1/-1;color:var(--blue)}
 .facts{display:flex;flex-wrap:wrap;gap:6px}
 .fact{font-size:12.5px;padding:5px 10px;border-radius:99px;background:var(--sunk);color:var(--ink2);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center}
 .earlier{border-left:3px solid var(--blue);background:var(--blue-bg);border-radius:0 10px 10px 0;padding:9px 12px;font-size:13.5px;display:grid;gap:4px}
@@ -268,7 +278,7 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 .sec-name{font:600 11px var(--mono);letter-spacing:.09em;text-transform:uppercase;color:var(--sc,var(--ac));display:flex;gap:6px;align-items:center}
 .t-head h2{font-size:clamp(19px,2.6cqi,24px);letter-spacing:-.015em;line-height:1.2}
 .say{font-size:14.5px;color:var(--ink2)}
-.say-more,.note-btn{display:none}
+.say-more,.note-btn,.round-chip{display:none}
 .ptabs{display:none}
 details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 @container (max-width:700px){
@@ -279,7 +289,9 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
   .t-head .say{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font-size:13.5px}
   .t-head .earlier,.t-head .facts,.t-head .after,.t-head details.more{display:none}
   .t-head .chips:has(.status) .status{display:none}
-  .say-more,.note-btn{display:inline-flex}
+  .t-head .rowgap{flex-wrap:nowrap;overflow:hidden;gap:4px}
+  .t-head .rowgap [data-act="history"]{display:none}
+  .say-more,.note-btn,.round-chip{display:inline-flex}
   .t-head .rowgap .btn{min-height:32px;padding-block:2px;font-size:12.5px;white-space:nowrap}
   @media (pointer:coarse){.t-head .rowgap .btn{min-height:44px}}
   .t-ans{margin-top:0;border-top:1px solid var(--line);border-radius:var(--r);padding:8px 10px;gap:6px}
@@ -395,6 +407,7 @@ const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
 document.documentElement.classList.add('js');
 const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"answer-storage-2026-09","title":"Where do reviewer answers go?","subtitle":"One choice, before the export path is built","audience":"Product owner; no code knowledge needed","ask":"Pick one of the three options, and mark anything you disagree with on the way.","afterwards":"Your pick is what I build in v0.1. If you mark the recommendation \"revisit\", I draft two more options instead of building.","createdAt":"2026-09-17T15:00:00Z","createdBy":{"agent":"claude-code"},"verdictSet":{"id":"decision","options":[{"value":"agree","label":"Agree","tone":"positive"},{"value":"partly-agree","label":"Partly agree","tone":"caution"},{"value":"disagree","label":"Disagree","tone":"negative"},{"value":"revisit","label":"Revisit","tone":"caution","hint":"Right question, not ready to decide"},{"value":"changed-mind","label":"Changed my mind","tone":"neutral"}]},"fields":[{"key":"assumes","label":"Assumes"},{"key":"risk","label":"Risk","tone":"caution"},{"key":"would_change_my_mind","label":"Would change my mind"}],"sections":[{"id":"storage","label":"Where the answers are kept","mode":"choose-one","recommended":{"itemId":"opt-file","why":"It is the only option that works offline and for a reviewer with no account."}},{"id":"follow-up","label":"Consequences of any choice"},{"id":"challenge","label":"Where I could be wrong","kind":"challenge","description":"If I were you, I would push back on these. Agree means the concern is real."}],"items":[{"id":"opt-file","sectionId":"storage","title":"The reviewer exports a file and sends it back","summary":"One click saves feedback.json; the reviewer emails or drops it wherever the agent can read it.","body":"Answers autosave in the reviewer's own browser while they work. Nothing leaves the machine until they choose to send the file.","fields":{"assumes":"The reviewer can send a file back (email, chat, shared folder).","risk":"They forget to send it, and the agent waits.","would_change_my_mind":"Most reviewers turn out to be colleagues on the same hosted workspace."}},{"id":"opt-db","sectionId":"storage","title":"Answers save to a hosted database as the reviewer works","summary":"No export step; the agent reads answers the moment they are given.","fields":{"assumes":"A server we run, and an account or link for every reviewer.","risk":"Breaks offline use and puts reviewer notes on a third-party host."},"affects":[{"decision":{"review":"offline-first-2026-09","itemId":"no-network","title":"The review page makes zero network requests","verdict":"agree"},"effect":"contradicts","why":"Every save would need the network."}]},{"id":"opt-both","sectionId":"storage","title":"Export a file now, optional sync later","summary":"Build the file export first; add sync only if reviewers ask for it.","fields":{"risk":"Two paths to maintain once sync exists."},"affects":[{"decision":{"review":"offline-first-2026-09","itemId":"no-network","title":"The review page makes zero network requests","verdict":"agree"},"effect":"extends","why":"Offline stays the default; sync would be opt-in."}]},{"id":"autosave-local","sectionId":"follow-up","title":"Autosave stays in the reviewer's browser only","summary":"Half-finished answers survive a reload, and are never sent anywhere automatically."},{"id":"challenge-forgotten-file","sectionId":"challenge","title":"A reviewer who forgets to send the file is a bigger problem than I make it sound","summary":"If this happens often, the agent waits silently and the loop stalls.","fields":{"would_change_my_mind":"Reviewers in the first real rounds send files back without a reminder."}},{"id":"challenge-browser-storage","sectionId":"challenge","title":"Autosave in the browser can lose work when a reviewer clears their data","summary":"Answers only become safe once exported."}]};
 const SEED = null;
+const HISTORY = null;
 // SPDX-License-Identifier: MIT-0
 // The single source of truth for what a completed review exports.
 //
@@ -764,8 +777,18 @@ function reviewParts(review) {
   return list;
 }
 
+// #82 — Since last time: what became of the round before, in one sentence, the settled answers behind More.
+function sinceCard(view, icon) {
+  const count = (t) => Object.values(view.tags).filter((x) => x === t).length;
+  const said = [['changed', 'changed after your notes'], ['again', 'asked again'], ['open', 'still open'], ['added', 'you added'], ['new', 'new']]
+    .map(([t, words]) => [count(t), words]).filter(([k]) => k).map(([k, words]) => k + ' ' + words);
+  if (view.settled.length) said.push(view.settled.length + ' settled');
+  const more = view.settled.length ? '<details class="start-more"><summary>More</summary><ul>' + view.settled.map((x) => '<li>' + partsEsc(x.title) + ': ' + partsEsc(x.label) + ' (round ' + x.round + ')</li>').join('') + '</ul></details>' : '';
+  return ['history', 'Since last time', '<p>Round ' + view.round + ': ' + partsEsc(said.join(', ')) + '.</p>' + more];
+}
+
 // #105 — Let me explain in short cards: one sentence each, the rest one tap away, never dropped.
-function startCardsHtml(review, parts, icon) {
+function startCardsHtml(review, parts, icon, view) {
   const b = review.brief || {}, n = parts.reduce((k, p) => k + p.questions, 0);
   const card = (ic, title, text, moreHtml) => {
     const fs = firstSentence(text), more = (fs[1] ? '<p>' + partsEsc(fs[1]) + '</p>' : '') + (moreHtml || '');
@@ -782,11 +805,43 @@ function startCardsHtml(review, parts, icon) {
       + parts.map((p) => '<span class="chip-part" style="--sc:' + p.color + '">' + icon(p.icon, 'sm') + partsEsc(p.label) + '</span>').join('') + '</p>'],
     (b.examples || []).length && card('globe', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', '<ul>' + exRows + '</ul>'),
     (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map((r) => '<li>' + partsEsc(r) + '</li>').join('') + '</ul>' : ''),
+    view && sinceCard(view, icon),
     card('help', 'How to answer', review.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
     card('send', 'What happens next', review.afterwards || 'Nothing is sent until you download your answers.', review.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
   ].filter(Boolean);
   return cards.map(([ic, title, h], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3' + (i === 0 ? ' id="brief-h"' : '') + '>' + icon(ic, 'sm') + partsEsc(title) + '</h3>' + h + '</div></li>').join('');
 }
+
+// #82 — what became of each question since the round before, from the files alone: never invented.
+// earlier[itemId]: the answer given to it in the round before (same id, or quoted by its `affects`).
+// tags[itemId]: new · added (the reviewer raised it) · open (left unanswered) · changed (answered, and the
+// question changed since) · again (answered, the same question asked again). settled: answers with a
+// positive tone that the next round no longer carries.
+function roundsView(review, rounds) {
+  if (!rounds || !rounds.length) return null;
+  const prev = rounds[rounds.length - 1], pr = prev.review, fb = prev.feedback;
+  const APPROVAL = { approve: { label: 'Approve', tone: 'positive' }, decline: { label: 'Decline', tone: 'negative' } };
+  const optionOf = (rv, v) => (rv.verdictSet?.options || []).find((o) => o.value === v) || APPROVAL[v] || null;
+  const known = (id) => (fb.responses || []).some((r) => r.itemId === id) || (fb.addedItems || []).some((a) => a.id === id);
+  const earlier = {}, tags = {};
+  for (const it of review.items || []) {
+    let id = it.id;
+    if (!known(id)) { const a = (it.affects || []).find((x) => x.decision && x.decision.review === pr.id && known(x.decision.itemId)); if (a) id = a.decision.itemId; else { tags[it.id] = 'new'; continue; } }
+    const response = (fb.responses || []).find((r) => r.itemId === id), added = (fb.addedItems || []).find((a) => a.id === id);
+    const before = (pr.items || []).find((i) => i.id === id), option = response && optionOf(pr, response.verdict);
+    earlier[it.id] = { id, round: rounds.length, response, added, before, label: option ? option.label : null, tone: option ? option.tone : null };
+    const text = (x) => JSON.stringify([x.title, x.summary, x.body, x.step, x.fields, x.approval]);
+    tags[it.id] = added ? 'added' : !response || response.verdict === 'unset' ? 'open' : before && text(before) === text(it) ? 'again' : 'changed';
+  }
+  const settled = [];
+  rounds.forEach(({ review: rv, feedback: f }, i) => {
+    const next = i + 1 < rounds.length ? rounds[i + 1].review : review;
+    const carried = (id) => (next.items || []).some((x) => x.id === id || (x.affects || []).some((a) => a.decision && a.decision.review === rv.id && a.decision.itemId === id));
+    for (const r of f.responses || []) { const o = optionOf(rv, r.verdict); if (o && o.tone === 'positive' && !carried(r.itemId)) settled.push({ id: r.itemId, title: r.title, label: o.label, round: i + 1 }); }
+  });
+  return { round: rounds.length + 1, prev, earlier, tags, settled };
+}
+const ROUND_TAGS = { new: ['tg-new', 'New', 'star'], changed: ['tg-changed', 'Changed after your note', 'repeat'], again: ['tg-again', 'Asked again', 'repeat'], open: ['tg-open', 'Still open', 'open'], added: ['tg-added', 'You added', 'plus'] };
 
 // SPDX-License-Identifier: MIT-0
 // Pure, bounded presentation shared by layout, static rendering and offline pages.
@@ -1290,7 +1345,7 @@ function flowAsDiagram(review) {
 
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':dc0afe4a62b4' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':c31db34a05d2' + (SEED ? ':copy:' + SEED.exportedAt : '');
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
@@ -1364,6 +1419,16 @@ const itemById = (id) => REVIEW.items.find(i => i.id === id);
 const SEGS = reviewParts(REVIEW).map(p => ({ label: p.label, sec: p.sec, icon: p.icon, color: p.color,
   steps: p.sec && p.sec.mode === 'choose-one' ? [{ kind: 'choose', sec: p.sec, items: p.items }] : p.items.map(it => ({ kind: 'item', it })) }));
 SEGS.forEach(s => s.steps.forEach(x => { x.seg = s; }));
+// #82 — the rounds before this one, and what became of each question since: derived, never invented.
+const VIEW = roundsView(REVIEW, HISTORY && HISTORY.rounds);
+const tagOf = (s) => VIEW && s.kind === 'item' ? VIEW.tags[s.it.id] : null;
+const tagChip = (t) => t ? '<span class="tag ' + ROUND_TAGS[t][0] + '">' + I(ROUND_TAGS[t][2], 'sm') + ROUND_TAGS[t][1] + '</span>' : '';
+const day = (t) => { const d = new Date(t); return t && !isNaN(d) ? d.toLocaleDateString(undefined, { day: 'numeric', month: 'short' }) : ''; };
+function settledHtml(){
+  if (!VIEW || !VIEW.settled.length) return '';
+  return '<details class="settled"><summary>' + I('settled', 'sm') + 'Settled in earlier rounds (' + VIEW.settled.length + ')</summary><ul>'
+    + VIEW.settled.map(x => '<li>' + esc(x.title) + ': <b>' + esc(x.label) + '</b> · round ' + x.round + '</li>').join('') + '</ul></details>';
+}
 const STEPS = SEGS.flatMap(s => s.steps);
 const stepItems = (s) => s.kind === 'choose' ? s.items : [s.it];
 const stepAnswer = (s) => s.kind === 'choose' ? store.choices[s.sec.id] : store.verdicts[s.it.id];
@@ -1390,7 +1455,8 @@ function chipsHtml(s){
   else if (s.it.approval) { const r = s.it.approval.risk; c.push(['st-risk-' + (['high', 'medium', 'low'].includes(r) ? r : 'medium'), r === 'high' ? 'High risk' : r === 'low' ? 'Low risk' : 'Medium risk', r === 'low' ? 'check' : 'alert']); }
   else if (s.it.step) c.push(STATUS[s.it.step.status || 'proposed'] || STATUS.proposed);
   else if (s.seg.sec && s.seg.sec.kind === 'challenge') c.push(['st-question', 'Where I could be wrong', 'alert']);
-  return c.length ? '<span class="chips">' + c.map(([k, t, i]) => '<span class="status ' + k + '">' + I(i, 'sm') + esc(t) + '</span>').join('') + '</span>' : '';
+  const tag = tagChip(tagOf(s));
+  return c.length || tag ? '<span class="chips">' + tag + c.map(([k, t, i]) => '<span class="status ' + k + '">' + I(i, 'sm') + esc(t) + '</span>').join('') + '</span>' : '';
 }
 function sayFor(s){
   if (s.kind === 'choose') return esc(s.sec.description || (s.sec.recommended ? s.sec.recommended.why : '') || 'Choose one.');
@@ -1406,8 +1472,13 @@ function subFor(s){
   return it.summary && it.body ? '' : '';
 }
 function earlierHtml(s){
-  if (s.kind !== 'item' || !(s.it.affects || []).length) return '';
-  return s.it.affects.map(a => '<div class="earlier"><b class="h">' + I('history', 'sm') + 'Earlier · ' + esc(a.effect) + '</b><p>' + I('user', 'sm') + ' You answered "' + esc(a.decision.title) + '": <b>'
+  if (s.kind !== 'item') return '';
+  const e = VIEW && VIEW.earlier[s.it.id];
+  const round = e ? '<div class="earlier"><b class="h">' + I('history', 'sm') + 'Round ' + e.round + '</b>'
+    + (e.added ? '<p>' + I('user', 'sm') + ' You added: <b>' + esc(e.added.title) + '</b>' + (e.added.body ? ' · "' + esc(e.added.body) + '"' : '') + '</p>'
+      : '<p>' + I('user', 'sm') + ' You: <b>' + esc(e.label || 'Not answered') + '</b>' + (e.response && e.response.note ? ' · "' + esc(e.response.note) + '"' : '') + '</p>')
+    + (s.it.reply ? '<p>' + I('bot', 'sm') + ' Me: ' + esc(s.it.reply) + '</p>' : '') + '</div>' : '';
+  return round + (s.it.affects || []).filter(a => !(VIEW && a.decision && a.decision.review === VIEW.prev.review.id)).map(a => '<div class="earlier"><b class="h">' + I('history', 'sm') + 'Earlier · ' + esc(a.effect) + '</b><p>' + I('user', 'sm') + ' You answered "' + esc(a.decision.title) + '": <b>'
     + esc(a.decision.verdict) + '</b></p><p>' + I('bot', 'sm') + ' ' + esc(a.why) + '</p></div>').join('');
 }
 function tilesHtml(s, compact){
@@ -1589,6 +1660,19 @@ function toMarkdown(){
   if (open.length) L.push('## Still open', '', ...open.map(s => '- ' + stepTitle(s)), '');
   if ((out.addedItems || []).length) L.push('## Added by you', '', ...out.addedItems.map(a => '- ' + a.title + (a.body ? ': ' + a.body : '')), '');
   if (out.gaps.length) L.push('## Needs attention', '', ...out.gaps.map(g => '- ' + ((itemById(g) || {}).title || g)), '');
+  if (VIEW) {
+    if (VIEW.settled.length) L.push('## Settled in earlier rounds', '', ...VIEW.settled.map(x => '- ' + x.title + ': ' + x.label + ' (round ' + x.round + ')'), '');
+    HISTORY.rounds.forEach((r, i) => {
+      const next = i + 1 < HISTORY.rounds.length ? HISTORY.rounds[i + 1].review : REVIEW;
+      L.push('## History · round ' + (i + 1) + (day(r.review.createdAt) ? ' (sent ' + day(r.review.createdAt) + (day(r.feedback.respondedAt) ? ', answered ' + day(r.feedback.respondedAt) : '') + ')' : ''), '');
+      for (const x of (r.feedback.responses || []).concat((r.feedback.addedItems || []).map(a => ({ ...a, itemId: a.id, added: true })))) {
+        const o = (r.review.verdictSet.options || []).concat(APPROVAL_OPTS).find(v => v.value === x.verdict);
+        const c = (next.items || []).find(y => y.id === x.itemId || (y.affects || []).some(a => a.decision && a.decision.review === r.review.id && a.decision.itemId === x.itemId));
+        L.push('- **' + (x.added ? 'You added: ' : '') + x.title + '**: ' + (o ? o.label : 'not answered') + ((x.note || x.body) ? ' · "' + (x.note || x.body) + '"' : '') + (c && c.reply ? '. Reply: ' + c.reply : c ? '. Asked again in round ' + (i + 2) : ''));
+      }
+      L.push('');
+    });
+  }
   return L.join('\n');
 }
 // The answered page also carries its answers as plain text, shown only where no script runs (a phone's
@@ -1607,7 +1691,8 @@ const htmlSeed = () => { const seed = JSON.stringify({ ...store, exportedAt: new
 const saveAs = (text, type, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
 function downloadsHtml(){
   const open = STEPS.length - answeredCount(), notes = Object.values(store.notes).filter(x => (x || '').trim()).length, added = (store.added || []).length;
-  const inc = [answeredCount() + ' answers', open + ' still open', notes + ' note' + (notes === 1 ? '' : 's'), added + ' added by you'];
+  const inc = [answeredCount() + ' answers', open + ' still open', notes + ' note' + (notes === 1 ? '' : 's'), added + ' added by you']
+    .concat(VIEW ? [(VIEW.round - 1) + (VIEW.round === 2 ? ' earlier round' : ' earlier rounds') + ' of history', VIEW.settled.length + ' settled earlier'] : []);
   const p = st.preview, txt = p === 'md' ? toMarkdown() : p === 'json' ? JSON.stringify(buildFeedback(REVIEW, store), null, 2) : p === 'html' ? 'The whole page, exactly as you see it, with your answers inside.\nOpens in any browser, even offline. It holds:\n\n' + toMarkdown() : '';
   const f = (fmt, icon, title, text, pri) => '<div class="dlf"><h4>' + I(icon) + title + '</h4><p>' + text + '</p><div class="rowgap"><button type="button" class="btn small' + (pri ? ' pri' : '') + '" data-export="' + fmt.toLowerCase() + '">' + I('download', 'sm') + fmt + '</button><button type="button" class="btn small" data-preview="' + fmt.toLowerCase() + '" aria-pressed="' + (p === fmt.toLowerCase()) + '">' + I('eye', 'sm') + 'Preview</button></div></div>';
   return '<div class="included" aria-label="Included in every download">' + inc.map(x => '<span>' + I('check', 'sm') + esc(x) + '</span>').join('') + '</div>'
@@ -1625,13 +1710,15 @@ function renderTour(){
   if (st.phase === 'return') return '<div class="tour">' + progressHtml(null)
     + '<header class="t-head" style="--sc:var(--s0)"><p class="sec-name">' + I('send', 'sm') + 'Return</p><h2 id="q-title" tabindex="-1">Take your answers back</h2><p class="say">' + answeredCount() + ' of ' + STEPS.length + ' answered. Anything unanswered stays open: I will ask again and never assume a yes.</p></header>'
     + '<div class="t-ans">' + missingHtml() + '</div>'
-    + '<div class="t-vis">' + slots({ map: mapHtml(null), proto: galleryHtml(''), expected: '<div class="expected">' + summaryRows() + '</div>', build: downloadsHtml() }, { proto: FLOW ? 'every screen' : '', expected: 'your answers', build: 'downloads' }) + '</div>'
+    + '<div class="t-vis">' + slots({ map: mapHtml(null), proto: galleryHtml(''), expected: '<div class="expected">' + summaryRows() + '</div>' + settledHtml(), build: downloadsHtml() }, { proto: FLOW ? 'every screen' : '', expected: 'your answers', build: 'downloads' }) + '</div>'
     + navHtml(false, 'Done') + '</div>';
   const s = STEPS[st.cur], n = STEPS.length, v = stepAnswer(s);
   return '<div class="tour">' + progressHtml(s)
     + '<header class="t-head" style="--sc:' + s.seg.color + '"><p class="sec-name" id="t-where">' + I(s.seg.icon, 'sm') + esc(s.seg.label) + ' · ' + (s.seg.steps.indexOf(s) + 1) + ' of ' + s.seg.steps.length + '</p><h2 id="q-title" tabindex="-1">' + esc(stepTitle(s)) + '</h2>' + chipsHtml(s)
     + '<p class="say">' + sayFor(s) + '</p>' + (s.kind === 'item' && s.it.summary && s.it.body ? '<details class="more"><summary>More detail</summary><p class="say">' + esc(s.it.body) + '</p></details>' : '')
-    + '<div class="rowgap"><button type="button" class="btn quiet say-more" data-act="why">' + I('info', 'sm') + 'Why I ask</button></div>' + earlierHtml(s) + '</header>'
+    + '<div class="rowgap"><button type="button" class="btn quiet say-more" data-act="why">' + I('info', 'sm') + 'Why I ask</button>'
+    + (VIEW && VIEW.earlier[s.kind === 'item' ? s.it.id : ''] ? '<button type="button" class="btn quiet round-chip" data-act="why">' + I('history', 'sm') + 'Round ' + VIEW.earlier[s.it.id].round + ': ' + esc(VIEW.earlier[s.it.id].added ? 'you added it' : VIEW.earlier[s.it.id].label || 'not answered') + '</button>' : '')
+    + (VIEW ? '<button type="button" class="btn quiet" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '</div>' + earlierHtml(s) + '</header>'
     + '<div class="t-ans" id="detail">' + tilesHtml(s, false) + (v ? '<button type="button" class="btn quiet note-btn" data-act="note">' + I('edit', 'sm') + (store.notes[stepItems(s)[0].id] ? 'Edit your note' : 'Add a note or picture') + '</button>' : '') + (st.layer === 'note' ? '' : explainHtml(s)) + '</div>'
     + '<div class="t-vis">' + slots({ map: mapHtml(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
     + navHtml(false, st.cur === n - 1 ? 'Finish' : v ? 'Next' : 'Skip for now') + '</div>';
@@ -1643,12 +1730,12 @@ function renderOverview(){
     const detail = p || e || bu ? '<details data-ovd="' + esc(key) + '"' + (ovOpen.has(key) ? ' open' : '') + '><summary>' + I('phone', 'sm') + 'Show the prototype and what should happen</summary><div class="pair">' + (p || '') + '<div style="display:grid;gap:10px">' + e + bu + '</div></div></details>' : '';
     return '<li class="c-item" style="--sc:' + g.color + '" data-card="' + esc(key) + '"><div class="c-top"><div><h3>' + esc(stepTitle(s)) + '</h3><p>' + (subFor(s) || sayFor(s)) + '</p></div>' + chipsHtml(s) + '</div>'
       + earlierHtml(s) + tilesHtml(s, false) + explainHtml(s) + detail + '<button type="button" class="btn quiet" data-open="' + STEPS.indexOf(s) + '">' + I('flag', 'sm') + 'Open in the tour</button></li>'; }).join('') + '</ol>').join('');
-  return '<div class="ov"><div class="brief"><div class="m-head"><p class="eyebrow">' + I('flag', 'sm') + 'A review for you</p><button type="button" class="btn small" data-act="expand">' + I('expand', 'sm') + 'Expand</button></div>'
+  return '<div class="ov"><div class="brief"><div class="m-head"><p class="eyebrow">' + I('flag', 'sm') + 'A review for you' + (VIEW ? ' · round ' + VIEW.round : '') + '</p><div class="rowgap">' + (VIEW ? '<button type="button" class="btn small" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn small" data-act="expand">' + I('expand', 'sm') + 'Expand</button></div></div>'
     + '<h2>' + esc(REVIEW.title) + '</h2>' + (about ? '<p class="task">' + esc(plain(about)) + '</p>' : '')
     + '<div class="facts"><span class="fact">' + I('list', 'sm') + STEPS.length + (STEPS.length === 1 ? ' question' : ' questions') + '</span><span class="fact">' + I('layers', 'sm') + SEGS.length + (SEGS.length === 1 ? ' part' : ' parts') + '</span></div>'
     + (REVIEW.afterwards ? '<p class="after"><b>What happens next:</b> ' + esc(REVIEW.afterwards) + '</p>' : '')
     + '<button type="button" class="btn quiet" data-mode="tour" style="justify-self:start">' + I('flag', 'sm') + 'Take the guided tour instead</button></div>'
-    + progressHtml(null) + (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapHtml(null), 'the whole review') : '') + body + missingHtml()
+    + progressHtml(null) + (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapHtml(null), 'the whole review') : '') + body + settledHtml() + missingHtml()
     + '<div class="brief"><p class="eyebrow">' + I('send', 'sm') + 'Return</p><div class="expected">' + summaryRows() + '</div>' + downloadsHtml() + '</div></div>';
 }
 const ovOpen = new Set();
@@ -1663,8 +1750,26 @@ function layerHtml(){
       + (FLOW ? part('screens', 'phone', 'Every screen, in order', galleryHtml(now)) : protoFor(s) ? part('screens', 'phone', 'What it looks like', protoFor(s)) : '')
       + DIAGRAMS.filter(d => d !== main).map(d => part('d-' + d.id, 'map', d.title || d.id, mapHtml(s, st.zoom, d))).join('') + '</div></div>';
   }
+  if (st.layer === 'history' && VIEW) {
+    const rounds = HISTORY.rounds;
+    const optionOf = (rv, v) => (rv.verdictSet.options || []).concat(APPROVAL_OPTS).find(o => o.value === v);
+    const lines = rounds.map((r, i) => {
+      const next = i + 1 < rounds.length ? rounds[i + 1].review : REVIEW;
+      const carrier = (id) => (next.items || []).find(x => x.id === id || (x.affects || []).some(a => a.decision && a.decision.review === r.review.id && a.decision.itemId === id));
+      const answers = (r.feedback.responses || []).map(x => ({ id: x.itemId, title: x.title, verdict: x.verdict, note: x.note }))
+        .concat((r.feedback.addedItems || []).map(x => ({ id: x.id, title: x.title, verdict: x.verdict, note: x.note || x.body, added: true })));
+      return '<section class="hround"><p class="who">' + I('send', 'sm') + 'Round ' + (i + 1) + (day(r.review.createdAt) ? ' · sent ' + day(r.review.createdAt) : '') + (day(r.feedback.respondedAt) ? ' · you answered ' + day(r.feedback.respondedAt) : '') + '</p>'
+        + answers.map(x => { const o = optionOf(r.review, x.verdict), c = carrier(x.id);
+          const what = c ? (c.reply ? I('bot', 'sm') + ' ' + esc(c.reply) : I('repeat', 'sm') + ' Asked again in round ' + (i + 2)) : o && o.tone === 'positive' ? I('settled', 'sm') + ' Settled' : '';
+          return '<div class="hline"><span class="q">' + (x.added ? 'You added: ' : '') + esc(x.title) + '</span><span class="tag ' + (o ? (o.tone === 'positive' ? 'tg-settled' : o.tone === 'negative' ? 'tg-bad' : o.tone === 'caution' ? 'tg-again' : 'tg-open') : 'tg-open') + '">' + esc(o ? o.label : 'Not answered') + '</span>'
+            + (x.note ? '<span class="nn">' + I('user', 'sm') + ' "' + esc(x.note) + '"</span>' : '') + (what ? '<span class="r">' + what + '</span>' : '') + '</div>'; }).join('') + '</section>';
+    }).join('');
+    const now = '<section class="hround"><p class="who">' + I('flag', 'sm') + 'Round ' + VIEW.round + ' · now</p>' + STEPS.map(x => '<div class="hline"><span class="q">' + esc(stepTitle(x)) + '</span>' + tagChip(tagOf(x))
+      + (answerLabel(x) ? '<span class="r">' + I('user', 'sm') + ' You: ' + esc(answerLabel(x)) + '</span>' : '') + '</div>').join('') + '</section>';
+    return '<div class="layer" role="dialog" aria-modal="true" aria-label="History"><div class="layer-head"><h3>' + I('history') + 'History · every round in one document</h3><button type="button" class="btn small pri" data-act="close-layer">' + I('x', 'sm') + 'Close</button></div><div class="layer-body"><div class="hist">' + lines + now + '</div></div></div>';
+  }
   if (st.layer === 'note' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Add a note"><div class="sh"><h3>' + I('edit') + esc(stepTitle(s)) + '</h3>' + explainHtml(s) + '<button type="button" class="btn pri" data-act="close-layer">Done</button></div></div>';
-  if (st.layer === 'why' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Why I ask"><div class="sh"><h3>' + I('info') + esc(stepTitle(s)) + '</h3><p class="say">' + sayFor(s) + '</p>' + earlierHtml(s) + '<button type="button" class="btn pri" data-act="close-layer">Got it</button></div></div>';
+  if (st.layer === 'why' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Why I ask"><div class="sh"><h3>' + I('info') + esc(stepTitle(s)) + '</h3><p class="say">' + sayFor(s) + '</p>' + earlierHtml(s) + '<div class="rowgap">' + (VIEW ? '<button type="button" class="btn" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn pri" data-act="close-layer">Got it</button></div></div></div>';
   return '';
 }
 
@@ -1744,6 +1849,7 @@ document.addEventListener('click', e => {
     case 'next': return next();
     case 'prev': return prev();
     case 'expand': st.layer = 'expand'; render(null); return $('[data-act="close-layer"]').focus();
+    case 'history': st.layer = 'history'; render(null); return $('[data-act="close-layer"]').focus();
     case 'why': case 'note': st.layer = d.act; render(null); return ($('.sheet-layer textarea') || $('[data-act="close-layer"]')).focus();
     case 'close-layer': st.layer = null; render(null); return ($('[data-act="expand"]') || $('#q-title') || document.body).focus();
     case 'focus-proto': st.min = new Set(['map', 'expected', 'build']); st.ptab = 'proto'; return render();

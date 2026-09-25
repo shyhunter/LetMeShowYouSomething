@@ -171,6 +171,7 @@
                 }}
             ]}
           },
+          "reply": {"type": "string", "minLength": 1, "maxLength": 2000, "description": "#82 — in a continuing review, what the agent did with the reviewer's answer on this item in the round before, in its own words (for example \"Changed: the main button now says Pick another day\"). Shown beside that earlier answer; never an answer itself. `check rounds` refuses a reply to nothing."},
           "affects": {
             "type": "array",
             "description": "Earlier decisions this item reopens, extends, contradicts or depends on. Each quotes the decision so it is readable without the earlier file; `check history` verifies the quote against that file.",

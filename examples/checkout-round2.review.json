@@ -1,0 +1,219 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "checkout-uat-2026-09-r2",
+  "title": "Checkout rebuild — acceptance pass · round 2",
+  "subtitle": "Three open points from round 1, and the one you added",
+  "intro": "In round 2 I changed what did not work, and I ask again where your answer left it open. Guest checkout, which works, is settled.",
+  "createdAt": "2026-09-24T09:00:00Z",
+  "createdBy": {
+    "agent": "claude-code",
+    "note": "Derived from the acceptance criteria in issue #218."
+  },
+  "verdictSet": {
+    "id": "test",
+    "options": [
+      {
+        "value": "works",
+        "label": "Works",
+        "tone": "positive"
+      },
+      {
+        "value": "partial",
+        "label": "Partially works",
+        "tone": "caution",
+        "hint": "Completes, but not the way it should"
+      },
+      {
+        "value": "fails",
+        "label": "Doesn't work",
+        "tone": "negative"
+      },
+      {
+        "value": "blocked",
+        "label": "Couldn't test it",
+        "tone": "neutral",
+        "hint": "Something upstream stopped you"
+      }
+    ]
+  },
+  "fields": [
+    {
+      "key": "expect",
+      "label": "Expected",
+      "tone": "positive"
+    },
+    {
+      "key": "watch",
+      "label": "Watch for",
+      "tone": "caution"
+    }
+  ],
+  "allowAddedItems": true,
+  "addNoun": "flow",
+  "sections": [
+    {
+      "id": "happy",
+      "label": "The path most people take",
+      "description": "If any of these are wrong, nothing below matters."
+    },
+    {
+      "id": "edges",
+      "label": "Where it usually breaks",
+      "description": "Declines, timeouts, and the back button."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "checkout-path",
+      "kind": "flowchart",
+      "title": "The checkout, start to finish",
+      "nodes": [
+        {
+          "id": "cart",
+          "kind": "start",
+          "label": "Items in the cart",
+          "icon": "cart"
+        },
+        {
+          "id": "signed-in",
+          "kind": "decision",
+          "label": "Signed in?"
+        },
+        {
+          "id": "guest",
+          "kind": "user-action",
+          "label": "Checks out as a guest"
+        },
+        {
+          "id": "saved",
+          "kind": "user-action",
+          "label": "Picks a saved card",
+          "step": "saved-card"
+        },
+        {
+          "id": "pay",
+          "kind": "system-action",
+          "label": "Takes the payment",
+          "icon": "card"
+        },
+        {
+          "id": "result",
+          "kind": "decision",
+          "label": "What happens?"
+        },
+        {
+          "id": "confirmed",
+          "kind": "end",
+          "label": "Order confirmed"
+        },
+        {
+          "id": "declined",
+          "kind": "error",
+          "label": "Says why the card was declined",
+          "step": "declined-card"
+        },
+        {
+          "id": "back",
+          "kind": "end-failed",
+          "label": "Back pressed: charged once at most",
+          "step": "back-button"
+        }
+      ],
+      "edges": [
+        {
+          "from": "cart",
+          "to": "signed-in"
+        },
+        {
+          "from": "signed-in",
+          "to": "guest",
+          "kind": "conditional",
+          "label": "no"
+        },
+        {
+          "from": "signed-in",
+          "to": "saved",
+          "kind": "conditional",
+          "label": "yes"
+        },
+        {
+          "from": "guest",
+          "to": "pay"
+        },
+        {
+          "from": "saved",
+          "to": "pay"
+        },
+        {
+          "from": "pay",
+          "to": "result"
+        },
+        {
+          "from": "result",
+          "to": "confirmed",
+          "kind": "conditional",
+          "label": "accepted"
+        },
+        {
+          "from": "result",
+          "to": "declined",
+          "kind": "conditional",
+          "label": "declined"
+        },
+        {
+          "from": "result",
+          "to": "back",
+          "kind": "conditional",
+          "label": "Back pressed"
+        },
+        {
+          "from": "declined",
+          "to": "pay",
+          "label": "tries another card"
+        }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "saved-card",
+      "sectionId": "happy",
+      "title": "A returning customer can pay with a saved card",
+      "fields": {
+        "expect": "Card shown masked, one tap to pay."
+      },
+      "ref": "src/checkout/wallet.ts:112",
+      "reply": "Changed: the saved card is now chosen by default, and a second card can be picked from the list.",
+      "summary": "The saved card is chosen by default; another card can be picked from the list."
+    },
+    {
+      "id": "declined-card",
+      "sectionId": "edges",
+      "title": "A declined card explains itself",
+      "body": "Use the test card that always declines.",
+      "fields": {
+        "expect": "Plain-language reason, cart intact, retry without re-entering the address.",
+        "watch": "A raw gateway error code reaching the customer."
+      },
+      "reply": "Changed: error 51 now reads \"Your bank declined this card: not enough funds\", and the cart is kept.",
+      "summary": "A declined card says why, in words, and the cart stays as it was."
+    },
+    {
+      "id": "back-button",
+      "sectionId": "edges",
+      "title": "The back button mid-payment does not double-charge",
+      "fields": {
+        "expect": "One charge, one order, whatever the customer does."
+      },
+      "reply": "You did not get to this one last time, so I ask again."
+    },
+    {
+      "id": "added-1",
+      "sectionId": "edges",
+      "title": "Currency switches halfway through",
+      "summary": "The price now stays in the currency the customer started with, from the cart to the receipt.",
+      "reply": "Fixed, as you raised: the currency is fixed when the cart is created."
+    }
+  ]
+}
