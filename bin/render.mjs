@@ -19,6 +19,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { reviewParts, startCardsHtml, roundsView } from '../lib/review-parts.mjs';
+import { readImage } from '../lib/image-meta.mjs';
 import { spawnSync } from 'node:child_process';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -31,6 +32,11 @@ if (!inPath || earlierFiles.length % 2 || earlierFiles.some((f) => !f || f.start
 }
 
 const review = JSON.parse(readFileSync(inPath, 'utf8'));
+// Screenshots go into the page without what a viewer never sees (EXIF, XMP, comments, text chunks).
+for (const s of review.flow?.screens ?? []) {
+  const img = s?.image && readImage(s.image.src);
+  if (img?.removed.length) { s.image.src = img.src; console.log(`${s.id}: left out of the page: ${[...new Set(img.removed)].join(', ')}`); }
+}
 if (review.protocol !== 'letmeshowyousomething/review') {
   console.error(`✗ not a review: protocol is ${JSON.stringify(review.protocol)}`);
   process.exit(2);

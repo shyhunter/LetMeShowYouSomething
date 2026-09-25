@@ -533,7 +533,10 @@ future (`usage is honest`).
 
 Reviews get emailed and forwarded. The checker refuses **any** review containing something shaped
 like an access key, API token, private key, JWT or credentials in a URL. Use a placeholder such as
-`<API_KEY>`. Inline image data is not scanned.
+`<API_KEY>`. Inline image data is not scanned for secrets; what a picture shows is checked by no tool, so use
+sample data. What it hides is handled: each screenshot is read by its own bytes and refused if it is
+not the type it says, over 2 MB or over 4096 px on a side; EXIF, XMP, IPTC, comments and text chunks
+are named in a warning (`pictures carry hidden details`) and left out of the page by `render.mjs`.
 
 ## Messages
 

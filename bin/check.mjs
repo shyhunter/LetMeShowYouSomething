@@ -26,6 +26,7 @@ import { flowAsDiagram } from '../lib/draw-diagram.mjs';
 import { databaseFaults } from '../lib/check-database.mjs';
 import { aiFaults, agentControlEdges } from '../lib/check-ai.mjs';
 import { schemaErrors } from '../lib/schema-check.mjs';
+import { readImage } from '../lib/image-meta.mjs';
 
 // The schemas themselves: a field the protocol does not have, or a missing one, is refused here, where the
 // agent sees it, and not only by a page that would quietly ignore or misread it.
@@ -357,15 +358,26 @@ function checkFlow(r, rep) {
     deadEnds.length && `no way out and not marked end: ${deadEnds.join(', ')}. Add a step out, or set "end": true if the flow may stop there; otherwise the reviewer gets stuck`,
   ].filter(Boolean).join(' · '));
 
-  const unsafe = [];
+  const unsafe = [], hidden = [];
   for (const s of screens) {
     if (s.image && !IMAGE.test(s.image.src ?? '')) unsafe.push(`${s.id}: image must be inline PNG, JPEG or WebP. Convert it and inline it as a data: URL; SVG can carry script and a URL breaks offline use`);
+    else if (s.image) {
+      // #125 follow-up — judged by its own bytes: really the type it says, not too large, and what it hides.
+      const img = readImage(s.image.src);
+      if (!img) unsafe.push(`${s.id}: the image is not really the picture type its data: URL says. Save it again as PNG, JPEG or WebP`);
+      else {
+        if (img.bytes > 2 * 1024 * 1024) unsafe.push(`${s.id}: the image is ${(img.bytes / 1048576).toFixed(1)} MB, more than 2 MB. Save it smaller; the page gets forwarded`);
+        if (img.width > 4096 || img.height > 4096) unsafe.push(`${s.id}: the image is ${img.width} × ${img.height}, more than 4096 on a side. Scale it down`);
+        if (img.removed.length) hidden.push(`${s.id} (${[...new Set(img.removed)].join(', ')})`);
+      }
+    }
     if (s.hotspots?.length && !s.image) unsafe.push(`${s.id}: hotspots but no image. Add the screenshot they sit on, or remove them`);
     for (const h of s.hotspots ?? []) if ([h.x, h.y, h.w, h.h].some((n) => typeof n !== 'number' || n < 0 || n > 100) || !(h.w > 0 && h.h > 0) || h.x + h.w > 100 || h.y + h.h > 100) unsafe.push(`${s.id}.${h.id}: hotspot not inside the image. Give x, y, w, h as percent of the image, w and h above 0, x + w and y + h at most 100, or it can't be tapped`);
     for (const b of s.blocks ?? []) if (!COMPONENT_RULES[b.type]) unsafe.push(`${s.id}: unknown block type "${b.type}". Use one of: ${Object.keys(COMPONENT_RULES).join(', ')}, or it won't be drawn`);
   }
   for (const l of flow.layers?.default ?? []) if (!LAYERS.has(l)) unsafe.push(`unknown default layer "${l}". Use ui, flow, system or data`);
   rep.check('screens are safe to show', unsafe.length === 0, unsafe.join(' · '));
+  rep.warn('pictures carry hidden details', hidden.length, `${hidden.join(', ')}: details a viewer never sees, such as where and when it was taken. render.mjs leaves them out of the page; also check what each picture shows, as no tool can`);
 
   // #33 — an area on a screenshot that no step starts from is a tap that does nothing.
   const idle = screens.flatMap((s) => (s.hotspots ?? []).filter((h) => !steps.some((it) => it.step.from === s.id && it.step.on === h.id)).map((h) => `${s.id}.${h.id}`));
