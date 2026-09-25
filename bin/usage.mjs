@@ -35,14 +35,19 @@ export function measure(lines, sinceIso, capturedIso) {
     const id = String(e.message.id || e.requestId || '');
     const nums = [u.input_tokens, u.output_tokens, u.cache_read_input_tokens ?? 0, u.cache_creation_input_tokens ?? 0].map(count);
     if (!id || nums.includes(null)) { gaps.add('some calls in the log have no id or no valid counts'); continue; }
-    if (calls.has(id) && calls.get(id).join() !== nums.join()) gaps.add('the log gives one call two different counts');
-    calls.set(id, nums);
+    // A call can be logged while it streams (no stop_reason yet, output still growing) and again when done:
+    // the finished entry is its count. Two finished entries that disagree cannot both be true.
+    const done = !!e.message.stop_reason, had = calls.get(id);
+    if (had && had.done && done && had.nums.join() !== nums.join()) gaps.add('the log gives one call two different counts');
+    if (!had || done || !had.done) calls.set(id, { nums: had && had.done && !done ? had.nums : nums, done: done || !!had?.done });
     if (typeof e.message.model === 'string' && /^[a-z0-9][a-z0-9._-]{0,63}$/i.test(e.message.model)) models.add(e.message.model);
   }
   if (unreadable) gaps.add(`${unreadable} line${unreadable === 1 ? '' : 's'} of the log could not be read`);
   if (handedOff) gaps.add(`work handed to ${handedOff} sub-agent${handedOff === 1 ? '' : 's'} is not counted`);
+  const open = [...calls.values()].filter((c) => !c.done).length;
+  if (open) gaps.add(`${open} call${open === 1 ? ' has' : 's have'} no final count in the log (cut off, or still running)`);
   if (!calls.size) return { status: 'unavailable', reason: `no model call was found in the log between ${sinceIso} and ${capturedIso}` };
-  const sum = (k) => [...calls.values()].reduce((n, x) => n + x[k], 0);
+  const sum = (k) => [...calls.values()].reduce((n, x) => n + x.nums[k], 0);
   return { status: gaps.size ? 'partial' : 'measured', ...(gaps.size ? { reason: [...gaps].join('; ') } : {}),
     models: [...models].slice(0, 10), calls: calls.size, tokens: { input: sum(0), output: sum(1), cacheRead: sum(2), cacheWrite: sum(3) } };
 }
@@ -60,14 +65,27 @@ function main() {
   const base = { source: { host: hostName || 'Claude Code', method: 'session-transcript', since: new Date(since).toISOString(), capturedAt } };
   const unavailable = (reason) => ({ status: 'unavailable', reason, ...base });
 
+  // A sub-agent's commands see the same session id as the main conversation, so the id alone does not say whose
+  // calls to count. The call running this command is itself logged, in the main log or in one sub-agent's log:
+  // the log holding this very command (with this --since) is the one. None, or more than one: unavailable.
   function findLog() {
     const id = process.env.CLAUDE_CODE_SESSION_ID;
     if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return [null, 'this is not running inside a Claude Code session that says which one it is (no CLAUDE_CODE_SESSION_ID)'];
     const projects = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects');
     let dirs = [];
     try { dirs = readdirSync(projects); } catch { return [null, 'Claude Code keeps no session logs where they are expected']; }
-    const found = dirs.map((d) => join(projects, d, `${id}.jsonl`)).filter((p) => existsSync(p));
-    return found.length === 1 ? [found[0], null] : [null, found.length ? 'two session logs share this session\'s id' : 'this session\'s log was not found'];
+    const mains = dirs.map((d) => join(projects, d, `${id}.jsonl`)).filter((p) => existsSync(p));
+    if (mains.length !== 1) return [null, mains.length ? 'two session logs share this session\'s id' : 'this session\'s log was not found'];
+    const subDir = mains[0].replace(/\.jsonl$/, ''), logs = [mains[0]];
+    try { logs.push(...readdirSync(join(subDir, 'subagents')).filter((f) => f.endsWith('.jsonl')).map((f) => join(subDir, 'subagents', f))); } catch {}
+    const holds = logs.filter((p) => { let text; try { text = readFileSync(p, 'utf8'); } catch { return false; }
+      return text.split('\n').some((l) => l.includes('usage.mjs') && l.includes(since) && runsThis(l)); });
+    if (holds.length === 1) return [holds[0], null];
+    return [null, holds.length ? 'this command is in more than one log of the session, so whose calls to count is not known' : 'this command was not found in the session\'s logs, so whose calls to count is not known'];
+  }
+  function runsThis(line) {
+    let e; try { e = JSON.parse(line); } catch { return false; }
+    return e?.type === 'assistant' && (e.message?.content || []).some((c) => c?.type === 'tool_use' && typeof c.input?.command === 'string' && c.input.command.includes('usage.mjs') && c.input.command.includes(since));
   }
 
   let record;
@@ -78,7 +96,7 @@ function main() {
     try { text = readFileSync(log, 'utf8'); } catch { record = unavailable('the session log could not be read'); }
     if (text !== null) { const m = measure(text.split('\n'), base.source.since, capturedAt); record = { ...m, ...base }; }
   }
-  record.scope = `the model calls of this session's main conversation from ${base.source.since} until ${capturedAt}, as ${base.source.host} logged them`;
+  record.scope = `the model calls of ${log && log.includes('/subagents/') ? 'the sub-agent that ran this command' : 'the conversation that ran this command'} from ${base.source.since} until ${capturedAt}, as ${base.source.host} logged them`;
 
   if (!into) { console.log(JSON.stringify(record, null, 2)); return; }
   let review;

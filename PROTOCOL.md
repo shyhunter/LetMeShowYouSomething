@@ -514,8 +514,12 @@ these are drawings, not a retry engine, reservation implementation or live AI in
 ## What making it used
 
 A review may say what making it used (#84): `usage`, written by `bin/usage.mjs`, never by hand. In
-Claude Code it reads the session's own log (found by `CLAUDE_CODE_SESSION_ID`, never guessed) and
-adds up what the model API reported for each call since `source.since`, each call once: `input`,
+Claude Code it reads the log of the conversation that ran it: of the session's logs (found by
+`CLAUDE_CODE_SESSION_ID`), the main one or one sub-agent's, the one that holds this very command. A
+sub-agent sees the main conversation's session id, so the id alone would count the wrong calls; if no
+log or more than one holds the command, it is unavailable. It adds up what the model API reported for
+each call since `source.since`, each call once, by its finished entry (a call can be logged while it
+streams): `input`,
 `output`, `cacheRead` and `cacheWrite` tokens, kept apart. It copies numbers and model names, never a
 prompt or an answer. `status` is `measured`, or `partial` with the `reason` (work handed to sub-agents,
 unreadable lines, a call counted two ways), or `unavailable` with the `reason` (no session log, nothing
