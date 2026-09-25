@@ -700,6 +700,11 @@ honest derived fields.
 
 ## The reference renderer
 
+**The look (#129): soft brutalist.** Bold outlines and clearly bounded blocks; a hard offset shadow only on
+what can be pressed (answers, buttons, switches), so the style shows what is clickable; the question you
+are on is lifted in the accent colour; the calm palette stays; headings, labels and buttons in a heavy
+weight of the system font (no font file: the page fetches nothing and stays MIT-0).
+
 ```bash
 node bin/render.mjs examples/review.example.json out.html
 ```

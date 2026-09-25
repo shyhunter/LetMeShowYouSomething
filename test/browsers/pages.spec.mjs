@@ -611,3 +611,16 @@ test('the map: other diagrams as tabs in place, zoom in place, and each question
   await page.locator('#slot-map [data-mzoom="fit"]').click();
   await expect(page.locator('#slot-map .zoom output')).toHaveText('100%');
 });
+
+// #129 — soft brutalist: a hard shadow says "you can press this"; information stays flat; the question you are on is lifted.
+test('the style: pressable things carry a hard shadow, information none, the current question is lifted', async ({ page }) => {
+  await page.goto(example('flow-booking'));
+  await start(page);
+  const shadow = (sel) => page.locator(sel).first().evaluate((el) => getComputedStyle(el).boxShadow);
+  const hard = /rgb\([^)]*\) \d+px \d+px 0px/;
+  for (const sel of ['#main .tile', '#next', '#start-mini', '#topbar .seg']) expect(await shadow(sel), sel).toMatch(hard);
+  await showPlace(page, 'expected');
+  for (const sel of ['#slot-expected .exp']) expect(await shadow(sel), sel).toBe('none');
+  expect(await shadow('#main .t-ans'), 'the question you are on').toMatch(hard);
+  expect(await page.locator('#main .tile').first().evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('2px');
+});
