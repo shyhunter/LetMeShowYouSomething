@@ -141,6 +141,7 @@ function checkReview(r, rep) {
   if (r?.flow) checkFlow(r, rep);
   if (Array.isArray(r?.diagrams)) checkDiagrams(r, rep);
   if (r?.focus !== undefined || r?.brief || items.some((i) => i?.examples)) checkBrief(r, rep);
+  if (r?.usage) checkUsage(r, rep);
 
   const fieldKeys = new Set((r?.fields ?? []).map((f) => f.key));
   const strayFields = items.flatMap((i) => Object.keys(i?.fields ?? {}).filter((k) => !fieldKeys.has(k)).map((k) => `${i.id}.${k}`));
@@ -572,6 +573,13 @@ function checkDiagrams(r, rep) {
 }
 
 // ── focus and the agent's brief (D057, D059) ────────────────────────────────────────────────────
+// #84 — the usage record is bound to its time: counted from a start to a capture, and never captured in the future.
+function checkUsage(r, rep) {
+  const u = r.usage; if (!u?.source) return;
+  const from = Date.parse(u.source.since), to = Date.parse(u.source.capturedAt);
+  rep.check('usage is honest', from <= to && to <= Date.now() + 10 * 60 * 1000, `usage counts from ${u.source.since} to ${u.source.capturedAt}. Record it with bin/usage.mjs after the last call you count; never write the numbers by hand, and never estimate them`);
+}
+
 function checkBrief(r, rep) {
   const computed = ['user-flow'];
   const diagramIds = (r.diagrams ?? []).map((d) => d?.id);

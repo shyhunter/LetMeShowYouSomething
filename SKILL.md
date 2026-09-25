@@ -35,8 +35,11 @@ Start from the closest example in `<skill>/examples/`: `decision-review.example.
 ```bash
 node <skill>/bin/check.mjs review docs/<name>.review.json --root .   # fix every ✗; --root proves flow refs
 node <skill>/bin/check.mjs history docs/<name>.review.json <earlier>.feedback.json   # if you used affects
+node <skill>/bin/usage.mjs --claude-code --since <when you started on it> --into docs/<name>.review.json   # what making it used
 node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
 ```
+
+Note the time when you start on a review (`date -u +%FT%TZ`) and give it as `--since`. `usage.mjs` counts the model calls your host logged since then, each once, and writes them into the review; the page shows them as reported, never as a price. Outside Claude Code, or when it cannot count everything (work handed to sub-agents), it says so: "unavailable" or "partial", with the reason. Never write these numbers by hand, and never estimate them.
 
 ## 2. Hand it over
 

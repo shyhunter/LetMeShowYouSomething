@@ -61,7 +61,7 @@ proposal, checked against the diagrams (#87) · conformance fixtures (#89) · th
 approved design: Let me explain, the tour with four places, the Overview, Return with HTML, Markdown
 and JSON, a phone layout on one screen (#74, #100–#103, #105). · every round of a review in
 one page: tags, replies, History, the chain checked (#82). · a flow's screens as screenshots with
-clickable areas, checked; the reviewer's own screenshot of a screen, sent back; a choice between mockups, side by side (#33).
+clickable areas, checked; the reviewer's own screenshot of a screen, sent back; a choice between mockups, side by side (#33). · what making a review used, as Claude Code logged it, or unavailable with the reason (#84).
 
 Proposed or in progress, **not** shipped, whatever an issue says:
 
@@ -70,7 +70,6 @@ Proposed or in progress, **not** shipped, whatever an issue says:
 | [#94](https://github.com/shyhunter/LetMeShowYouSomething/issues/94) | the page shows what became of each proposal (the check exists; the display does not) |
 | [#83](https://github.com/shyhunter/LetMeShowYouSomething/issues/83) | saving back to the same file, where the browser allows |
 | [#66](https://github.com/shyhunter/LetMeShowYouSomething/issues/66) | proposing changes to a flow's steps, outcomes and screens |
-| [#84](https://github.com/shyhunter/LetMeShowYouSomething/issues/84) | measured token use per review |
 
 ## Why it is this way
 

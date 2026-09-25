@@ -18,6 +18,32 @@
     "subtitle": {"type": "string", "maxLength": 400},
     "intro": {"type": "string", "description": "Markdown. What the reviewer is being asked to do and why."},
     "createdAt": {"type": "string", "format": "date-time"},
+    "usage": {
+      "type": "object", "additionalProperties": false, "required": ["status", "source", "scope"],
+      "description": "#84 — what making this review used, as its host reported it (bin/usage.mjs), or unavailable with the reason. Never an estimate, never a price.",
+      "properties": {
+        "status": {"enum": ["measured", "partial", "unavailable"]},
+        "reason": {"type": "string", "minLength": 1, "maxLength": 300},
+        "scope": {"type": "string", "minLength": 1, "maxLength": 300},
+        "source": {"type": "object", "additionalProperties": false, "required": ["host", "method", "since", "capturedAt"], "properties": {
+          "host": {"type": "string", "minLength": 1, "maxLength": 80},
+          "method": {"enum": ["session-transcript"]},
+          "since": {"type": "string", "format": "date-time"},
+          "capturedAt": {"type": "string", "format": "date-time"}}},
+        "models": {"type": "array", "maxItems": 10, "items": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$"}},
+        "calls": {"type": "integer", "minimum": 1, "maximum": 1000000},
+        "tokens": {"type": "object", "additionalProperties": false, "required": ["input", "output", "cacheRead", "cacheWrite"], "properties": {
+          "input": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+          "output": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+          "cacheRead": {"type": "integer", "minimum": 0, "maximum": 1000000000000},
+          "cacheWrite": {"type": "integer", "minimum": 0, "maximum": 1000000000000}}}
+      },
+      "allOf": [
+        {"if": {"properties": {"status": {"const": "unavailable"}}}, "then": {"required": ["reason"], "not": {"anyOf": [{"required": ["tokens"]}, {"required": ["calls"]}, {"required": ["models"]}]}}},
+        {"if": {"properties": {"status": {"const": "partial"}}}, "then": {"required": ["reason", "calls", "tokens"]}},
+        {"if": {"properties": {"status": {"const": "measured"}}}, "then": {"required": ["calls", "tokens"], "not": {"required": ["reason"]}}}
+      ]
+    },
     "continues": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$", "description": "#82 — in a continuing review, the id of the round this one follows. `check rounds` holds it against the round before, so a missing, reordered or wrong round is refused. A flow review that continues another may carry only the steps still open: the flow must then be whole with the rounds before (`check rounds`)."},
     "ask": {
       "type": "string",

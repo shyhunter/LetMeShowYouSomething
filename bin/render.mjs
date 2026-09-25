@@ -119,6 +119,15 @@ try {
 // #74 — the Let me explain cards are written into the page itself: a phone's file preview runs no
 // script and must still show them.
 const startCards = startCardsHtml(review, reviewParts(review), I, view);
+// #84 — what making this review used, in one line under it: as the host reported it, never an estimate or a price.
+const usageLine = (() => {
+  const u = review.usage; if (!u || typeof u !== 'object') return '';
+  const n = (x) => Number.isSafeInteger(x) && x >= 0 ? x.toLocaleString('en-US') : '?';
+  const who = `reported by ${esc(u.source?.host || 'the host')}'s session log, not independently verified`;
+  if (u.status === 'unavailable') return `<p class="usage">Making this review: usage unavailable (${esc(u.reason || 'no reason given')}).</p>`;
+  const t = u.tokens || {};
+  return `<p class="usage">Making this review${u.status === 'partial' ? ', at least' : ''}: ${n(t.input)} tokens in, ${n(t.output)} out, ${n(t.cacheRead)} read from cache and ${n(t.cacheWrite)} written to it, over ${n(u.calls)} model call${u.calls === 1 ? '' : 's'}${(u.models || []).length ? ` (${u.models.map(esc).join(', ')})` : ''}; ${who}.${u.status === 'partial' ? ` Partial: ${esc(u.reason || '')}.` : ''} Cost: not measured.</p>`;
+})();
 
 const html = `<!doctype html>
 <html lang="en"><head>
@@ -520,6 +529,7 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 .made{display:flex;align-items:center;gap:7px;margin:18px 0 0;font-size:12.5px;color:var(--mut)}
 .made svg{width:16px;height:16px;flex:none;color:var(--ac)}
 .made a{color:inherit;text-underline-offset:2px}
+.usage{margin:6px 0 0;font-size:12px;color:var(--mut);max-width:80ch}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head><body class="at-start">
@@ -542,6 +552,7 @@ ${SPRITE}
 <main id="main"></main>
 <p class="note" id="footnote">Answers are kept in this browser as you go, not in a file. Downloading or saving writes a file; nothing is sent from this page.</p>
 <p class="made">${mark ? `<svg viewBox="0 0 64 64" aria-hidden="true">${mark}</svg>` : ''}Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
+${usageLine}
 </div>
 <div id="layer-root"></div>
 <p id="announce" class="skip" aria-live="polite"></p>
