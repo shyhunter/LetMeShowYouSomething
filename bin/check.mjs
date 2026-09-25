@@ -59,14 +59,17 @@ const load = (p) => {
 };
 function fail(msg) { console.error(`✗ ${msg}`); process.exit(2); }
 
+// Each finding is also kept as data (--format json): a stable code from the check's name, the round or copy it
+// is about, and the message, which says what is wrong and what to do.
+const codeOf = (name) => { const m = /^((?:round|copy) \d+): (.+)$/.exec(name); return { code: (m ? m[2] : name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''), scope: m ? m[1] : null }; };
 class Report {
-  constructor() { this.errors = []; this.warnings = []; this.checks = []; }
+  constructor() { this.errors = []; this.warnings = []; this.checks = []; this.found = []; }
   check(name, ok, detail) {
     this.checks.push({ name, ok });
-    if (!ok) this.errors.push(`${name}: ${detail}`);
+    if (!ok) { this.errors.push(`${name}: ${detail}`); this.found.push({ severity: 'error', check: name, ...codeOf(name), message: detail }); }
     return ok;
   }
-  warn(name, cond, detail) { if (cond) this.warnings.push(`${name}: ${detail}`); }
+  warn(name, cond, detail) { if (cond) { this.warnings.push(`${name}: ${detail}`); this.found.push({ severity: 'warning', check: name, ...codeOf(name), message: detail }); } }
 }
 
 // ── review ──────────────────────────────────────────────────────────────────────────────────────
@@ -1073,6 +1076,8 @@ function checkCopies(review, copies, rep) {
 
 // ── run ─────────────────────────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
+const formatAt = argv.indexOf('--format'), FORMAT = formatAt >= 0 ? argv.splice(formatAt, 2)[1] : 'text';
+if (!['text', 'json'].includes(FORMAT)) { console.error('✗ --format is text or json'); process.exit(2); }
 const rootAt = argv.indexOf('--root');
 const ROOT = rootAt >= 0 ? resolve(argv.splice(rootAt, 2)[1] ?? '.') : null;
 const [mode, a, b] = argv;
@@ -1108,6 +1113,12 @@ else if (mode === 'rounds') {
 }
 else fail(`unknown mode "${mode}"`);
 
+if (FORMAT === 'json') {
+  const n = rep.checks.length;
+  console.log(JSON.stringify({ tool: 'letmeshowyousomething/check', version: 1, mode, ok: rep.errors.length === 0, passed: n - rep.errors.length, total: n,
+    checks: rep.checks.map((c) => ({ check: c.name, ...codeOf(c.name), ok: c.ok })), problems: rep.found }, null, 2));
+  process.exit(rep.errors.length === 0 ? 0 : 1);
+}
 for (const c of rep.checks) console.log(`  ${c.ok ? '✓' : '✗'} ${c.name}`);
 for (const w of rep.warnings) console.log(`  ! ${w}`);
 if (rep.errors.length) {
