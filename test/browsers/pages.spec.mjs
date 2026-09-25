@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -18,7 +18,7 @@ guard(test);
 // running text, the skip link, and the drawn app screen and diagrams, which are pictures.
 const smallTargets = (page, min) => page.evaluate((min) => [...document.querySelectorAll('button, a[href], summary, select, textarea, input:not([type=hidden]), [role=tab]')]
   .map((el) => (el.matches('input[type=radio], input[type=checkbox]') && el.closest('label')) || el)
-  .filter((el, i, all) => all.indexOf(el) === i && el.getClientRects().length && !el.matches('.skip, p a, li a, span a, .app *, .dg *'))
+  .filter((el, i, all) => all.indexOf(el) === i && el.getClientRects().length && !el.matches('.skip, p a, li a, span a, .app :not(.hot), .dg *'))
   .map((el) => { const b = el.getBoundingClientRect(); return { el: el.id || el.className || el.tagName, w: Math.round(b.width), h: Math.round(b.height) }; })
   .filter((x) => x.w < min || x.h < min), min);
 
@@ -513,4 +513,23 @@ test('each answer tile has its own symbol; Revisit turns back', async ({ page })
   expect(new Set(icons).size).toBe(icons.length);
   await expect(page.locator('.tile:has(input[value="revisit"]) .dot use')).toHaveAttribute('href', '#i-undo');
   await expect(page.locator('.tile:has(input[value="partly-agree"]) .dot use')).toHaveAttribute('href', '#i-half');
+});
+
+// #33 — a screen can be a screenshot: its areas are drawn on it, visible without hover, and each opens its step.
+test('a screenshot: its areas are visible, big enough to tap, and open their step', async ({ page }, info) => {
+  await page.goto(example('password-reset'));
+  await start(page); await showPlace(page, 'proto');
+  const shot = page.locator('#main .app.shot img');
+  await expect(shot).toHaveAttribute('alt', /Sign-in screen/);
+  const area = page.locator('#main button.hot');
+  await expect(area).toHaveCount(1);
+  await expect(area).toHaveAttribute('aria-current', 'step');
+  expect(await area.evaluate((el) => getComputedStyle(el).borderStyle)).toBe('solid');
+  const box = await area.boundingBox(), min = info.project.use.hasTouch ? 44 : 24;
+  expect(Math.min(box.width, box.height)).toBeGreaterThanOrEqual(min);
+  await page.locator('#next').click();
+  await showPlace(page, 'proto');
+  await expect(page.locator('#q-title')).toHaveText('Taps Send reset link');
+  await page.locator('#main button.hot[aria-label="Taps Back"]').click();
+  await expect(page.locator('#q-title')).toHaveText('Taps Back');
 });

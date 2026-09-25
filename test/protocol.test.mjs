@@ -438,12 +438,16 @@ const flowFaults = {
   'screens are safe to show': [(r) => { r.flow.screens[0].image = { src: 'data:image/svg+xml;base64,PHN2Zz4=', alt: 'x' }; }, /image must be inline PNG, JPEG or WebP.*Convert it/],
   'layer entries honest': [(r) => { delete r.items[0].step.outcomes[0].system[0].ref; }, /marked exists but gives no ref.*Add the file:line, or mark it proposed/],
 };
-for (const [name, [inject, advice]] of Object.entries(flowFaults)) {
+// #33 — an area on a screenshot lies inside it, and a step starts from it.
+const shot = (r, area) => { r.flow.screens[0].image = { src: 'data:image/png;base64,AAAA', alt: 'Time list' }; r.flow.screens[0].hotspots = [area]; r.items[0].step.on = area.id; };
+flowFaults['every area leads to a step'] = [(r) => { shot(r, { id: 'times', x: 0, y: 0, w: 50, h: 50 }); r.items[0].step.on = 'book'; }, /no step starts from: slot-list\.times.*Add a step "on" it, or remove the area/];
+flowFaults['an area outside the image is not safe to show'] = [(r) => shot(r, { id: 'times', x: 80, y: 0, w: 30, h: 10 }), /hotspot not inside the image.*x \+ w and y \+ h at most 100/, 'screens are safe to show'];
+for (const [name, [inject, advice, check = name]] of Object.entries(flowFaults)) {
   test(`checker refuses: ${name}`, () => {
     const review = readJson(FLOW); inject(review);
     const r = checkReviewObj(review, '--root', root);
     assert.equal(r.status, 1, r.stdout);
-    assert.match(r.stdout, new RegExp(`✗ ${name}:`), r.stdout);
+    assert.match(r.stdout, new RegExp(`✗ ${check}:`), r.stdout);
     assert.match(r.stdout, advice, `the message must say what to do\n${r.stdout}`);
   });
 }
@@ -516,6 +520,7 @@ test('an inline screenshot never trips the secret check', () => {
   const review = readJson(FLOW);
   review.flow.screens[0].image = { src: 'data:image/png;base64,' + 'AKIA' + 'Q'.repeat(16) + 'AAAA', alt: 'Time list' };
   review.flow.screens[0].hotspots = [{ id: 'time-list-area', x: 10, y: 20, w: 80, h: 50 }];
+  review.items[0].step.on = 'time-list-area';
   const r = checkReviewObj(review, '--root', root);
   assert.equal(r.status, 0, r.stdout);
 });

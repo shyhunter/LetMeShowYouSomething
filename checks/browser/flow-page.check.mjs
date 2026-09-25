@@ -30,12 +30,15 @@ await withChrome('flow-hostile', async ({ dir, say, ev, load, sleep }) => {
   const KEEP = new Set(['id', 'type', 'mode', 'tone', 'status', 'kind', 'change', 'start', 'from', 'on', 'to', 'part', 'parent', 'active', 'selected', 'value', 'src', 'protocol', 'default']);
   const evil = JSON.parse(readFileSync(FLOW, 'utf8'), function (k, v) { return typeof v === 'string' && !KEEP.has(k) && isNaN(Number(k)) ? bad : v; });
   evil.id = 'evil-flow';
+  // #33 — a screenshot too: a src that is not an inline picture draws no image, and the alt stays text.
+  evil.flow.screens[0].image = { src: '" onerror="window.__pwned=1', alt: bad };
+  evil.flow.screens[0].hotspots = [{ id: evil.items[0].step.on, x: 10, y: 10, w: 20, h: 10 }];
   const evilPath = join(dir, 'evil-flow.json'); writeFileSync(evilPath, JSON.stringify(evil));
   await load(render(evilPath, dir));
   await ev(start); await sleep(100);
   for (let i = 0; i < 12; i++) await ev(`document.querySelector('#next') && document.querySelector('#next').click()`);
   await ev(`document.querySelector('[data-act="expand"]') && document.querySelector('[data-act="expand"]').click()`); await sleep(150);
-  say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')), 'hostile flow: no img elements, no script ran, in every step, every screen and every diagram');
+  say(await ev(`document.querySelectorAll('img').length`) === 0 && !(await ev('window.__pwned === 1')), 'hostile flow: no img elements, no script ran, in every step, every screen, the screenshot and every diagram');
 });
 
 await withChrome('brief-hostile', async ({ dir, say, ev, load, width, sleep }) => {
