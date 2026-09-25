@@ -214,6 +214,7 @@ test('an approval: the exact action as a dry run, approve or decline, and the ch
   await expect(page.locator('#slot-proto .console')).toContainText('will run: Drop the database checkout_v1_staging');
   await expect(page.locator('#slot-proto .console')).toContainText('DROP DATABASE checkout_v1_staging;');
   await expect(page.locator('input[name="v-drop-db"]')).toHaveCount(2);
+  await expect(page.locator('#detail')).toContainText('This records what you want. I still ask for permission right before I act, and this file is unsigned.');
   await page.locator('input[name="v-drop-db"][value="decline"]').check();
   await showPlace(page, 'build');
   await expect(page.locator('#slot-build')).toContainText('I still ask for permission');

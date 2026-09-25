@@ -746,8 +746,8 @@ order**, each with a number, a symbol and a − button that folds it to its titl
    an approval's preview and how long a yes counts; a file reference; a choice's option cards, each
    with what it assumes and risks, the recommended one marked.
 
-A place with nothing for this question keeps its spot and says so. **Prototype only** folds the other
-three; **Show all** opens them again. **Expand** opens the map (with zoom), every screen in order (the
+A place with nothing for this question is left out; the others keep their order (#115). **Prototype only** folds the
+other places; **Show all** opens them again. **Expand** opens the map (with zoom), every screen in order (the
 current one marked) and every other diagram of the review. On a phone the tour fits one screen: the
 places are tabs (Map, Screen, Should happen, Build), and the note and "Why I ask" open as sheets.
 

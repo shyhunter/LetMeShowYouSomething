@@ -84,7 +84,7 @@ test('usage: outside a Claude Code session it is unavailable, with the reason, a
   assert.equal(r.status, 0, r.stderr);
   const m = JSON.parse(r.stdout);
   assert.equal(m.status, 'unavailable');
-  assert.match(m.reason, /no CLAUDE_CODE_SESSION_ID/);
+  assert.equal(m.reason, 'this agent does not report it; only Claude Code does so far');
   assert.equal(run([join(ROOT, 'bin/usage.mjs'), '--claude-code']).status, 2, 'without --since it refuses');
 });
 

@@ -70,7 +70,7 @@ function main() {
   // the log holding this very command (with this --since) is the one. None, or more than one: unavailable.
   function findLog() {
     const id = process.env.CLAUDE_CODE_SESSION_ID;
-    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return [null, 'this is not running inside a Claude Code session that says which one it is (no CLAUDE_CODE_SESSION_ID)'];
+    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return [null, 'this agent does not report it; only Claude Code does so far'];
     const projects = join(process.env.CLAUDE_CONFIG_DIR || join(homedir(), '.claude'), 'projects');
     let dirs = [];
     try { dirs = readdirSync(projects); } catch { return [null, 'Claude Code keeps no session logs where they are expected']; }
