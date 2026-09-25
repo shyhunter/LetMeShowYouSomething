@@ -63,3 +63,32 @@ test('rounds: tags and settled answers come from the files, never invented', () 
   assert.equal(roundsView(fresh, [{ review: read(R1), feedback: read(F1) }]).tags['brand-new'], 'new');
   assert.equal(roundsView(read(R2), null), null);
 });
+
+// A flow round that continues another carries only its open steps; the flow is whole across the rounds.
+const FR1 = ['examples/flow-booking.review.json', 'examples/flow-booking.feedback.json'].map(at);
+const FR2 = ['examples/flow-booking-round2.review.json', 'examples/flow-booking-round2.feedback.json'].map(at);
+test('rounds: the booking flow chains over three rounds, each carrying only what is still open', () => {
+  const two = node(at('bin/check.mjs'), 'rounds', FR2[0], ...FR1, '--root', ROOT);
+  assert.equal(two.status, 0, two.stdout);
+  const three = node(at('bin/check.mjs'), 'rounds', at('examples/flow-booking-round3.review.json'), ...FR1, ...FR2, '--root', ROOT);
+  assert.equal(three.status, 0, three.stdout);
+  const alone = node(at('bin/check.mjs'), 'review', FR2[0], '--root', ROOT);
+  assert.equal(alone.status, 0, alone.stdout);
+  assert.match(alone.stdout, /flow is whole only with the rounds before/);
+});
+
+test('rounds: a wrong or missing link, and a screen no round reaches, are refused', () => {
+  const change = (fn) => { const dir = mkdtempSync(join(tmpdir(), 'rounds-flow-')), p = join(dir, 'r3.json'), r = JSON.parse(readFileSync(at('examples/flow-booking-round3.review.json'), 'utf8')); fn(r); writeFileSync(p, JSON.stringify(r)); return p; };
+  const cases = {
+    'each round continues the one before': (r) => { r.continues = 'booking-flow-2026-09'; },
+    'flow is whole across the rounds': (r) => { r.flow.screens.push({ id: 'island', title: 'Nobody gets here', blocks: [{ type: 'text', text: 'Alone' }] }); },
+  };
+  for (const [check, fn] of Object.entries(cases)) {
+    const r = node(at('bin/check.mjs'), 'rounds', change(fn), ...FR1, ...FR2, '--root', ROOT);
+    assert.equal(r.status, 1, `${check} should fail`);
+    assert.match(r.stdout, new RegExp(`✗ .*${check}`), r.stdout);
+  }
+  const reordered = node(at('bin/check.mjs'), 'rounds', at('examples/flow-booking-round3.review.json'), ...FR2, ...FR1, '--root', ROOT);
+  assert.equal(reordered.status, 1);
+  assert.match(reordered.stdout, /each round continues the one before/);
+});

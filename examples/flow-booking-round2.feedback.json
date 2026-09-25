@@ -1,0 +1,100 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": {
+    "id": "booking-flow-2026-09-r2",
+    "title": "Booking and cancelling a slot · round 2",
+    "schemaVersion": 1
+  },
+  "respondedAt": "2026-09-25T08:00:00Z",
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      },
+      {
+        "value": "changed-mind",
+        "label": "Changed my mind",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "responses": [
+    {
+      "itemId": "confirm",
+      "title": "Confirms Cancel and get €20.00 credit",
+      "verdict": "agree",
+      "note": null,
+      "affects": [
+        {
+          "decision": {
+            "review": "booking-rules-2026-09",
+            "itemId": "no-refunds",
+            "title": "Customers never get money back after booking",
+            "verdict": "agree"
+          },
+          "effect": "extends",
+          "why": "Store credit is not money back, so the rule still holds."
+        }
+      ]
+    },
+    {
+      "itemId": "join-waitlist",
+      "title": "Taps Join the waiting list for 10:00",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "ask",
+      "title": "Taps Ask a question",
+      "verdict": "partly-agree",
+      "note": "Say who answers the question: the venue, not us."
+    },
+    {
+      "itemId": "send-question",
+      "title": "Taps Send",
+      "verdict": "agree",
+      "note": null
+    },
+    {
+      "itemId": "added-1",
+      "title": "Show the cancellation deadline on the booking",
+      "verdict": "agree",
+      "note": null
+    }
+  ],
+  "summary": {
+    "total": 5,
+    "answered": 5,
+    "unset": 0,
+    "added": 0,
+    "byVerdict": {
+      "unset": 0,
+      "agree": 4,
+      "partly-agree": 1,
+      "disagree": 0,
+      "revisit": 0,
+      "changed-mind": 0
+    }
+  },
+  "gaps": []
+}

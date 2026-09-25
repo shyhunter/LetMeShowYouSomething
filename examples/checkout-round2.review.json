@@ -6,6 +6,7 @@
   "subtitle": "Three open points from round 1, and the one you added",
   "intro": "In round 2 I changed what did not work, and I ask again where your answer left it open. Guest checkout, which works, is settled.",
   "createdAt": "2026-09-24T09:00:00Z",
+  "continues": "checkout-uat-2026-09",
   "createdBy": {
     "agent": "claude-code",
     "note": "Derived from the acceptance criteria in issue #218."

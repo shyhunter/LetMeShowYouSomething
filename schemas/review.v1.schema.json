@@ -18,6 +18,7 @@
     "subtitle": {"type": "string", "maxLength": 400},
     "intro": {"type": "string", "description": "Markdown. What the reviewer is being asked to do and why."},
     "createdAt": {"type": "string", "format": "date-time"},
+    "continues": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,63}$", "description": "#82 — in a continuing review, the id of the round this one follows. `check rounds` holds it against the round before, so a missing, reordered or wrong round is refused. A flow review that continues another may carry only the steps still open: the flow must then be whole with the rounds before (`check rounds`)."},
     "ask": {
       "type": "string",
       "maxLength": 600,

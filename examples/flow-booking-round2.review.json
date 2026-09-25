@@ -1,0 +1,953 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "booking-flow-2026-09-r2",
+  "continues": "booking-flow-2026-09",
+  "title": "Booking and cancelling a slot · round 2",
+  "audience": "Product owner and one developer",
+  "ask": "Round 2: I changed what you asked for and explained one step again. Only what is still open needs an answer.",
+  "afterwards": "Steps you agree with are built as shown. Anything else I change and send back as round 3.",
+  "addNoun": "step",
+  "focus": "user-flow",
+  "brief": {
+    "question": "Is each change what you meant?",
+    "explains": "Seven steps are settled from round 1. Four stayed open, and you added one.",
+    "recommendation": "Look at the two changed screens first: the cancel button and the waiting list."
+  },
+  "createdAt": "2026-09-24T09:00:00Z",
+  "createdBy": {
+    "agent": "claude-code"
+  },
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      },
+      {
+        "value": "changed-mind",
+        "label": "Changed my mind",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "flow": {
+    "start": "slot-list",
+    "layers": {
+      "default": [
+        "ui",
+        "flow"
+      ]
+    },
+    "parts": [
+      {
+        "id": "booking",
+        "title": "Booking"
+      },
+      {
+        "id": "book-slot",
+        "title": "Book a slot",
+        "parent": "booking",
+        "status": "exists",
+        "basis": {
+          "kind": "code",
+          "ref": "test/fixtures/booking-app/src/booking.mjs:6"
+        }
+      },
+      {
+        "id": "cancel-booking",
+        "title": "Cancel a booking",
+        "parent": "booking",
+        "status": "exists",
+        "basis": {
+          "kind": "code",
+          "ref": "test/fixtures/booking-app/src/booking.mjs:10"
+        }
+      },
+      {
+        "id": "another-day",
+        "title": "Pick another day",
+        "parent": "booking",
+        "status": "proposed",
+        "basis": {
+          "kind": "prd",
+          "ref": "Booking PRD v2, section \"Rebooking\""
+        }
+      },
+      {
+        "id": "waiting-list",
+        "title": "Join the waiting list",
+        "parent": "booking",
+        "status": "suggested",
+        "basis": {
+          "kind": "conversation",
+          "note": "Product owner, booking flow review: \"reserve, if possible, with conditions\""
+        }
+      },
+      {
+        "id": "ask-question",
+        "title": "Ask a question",
+        "parent": "booking",
+        "status": "suggested",
+        "basis": {
+          "kind": "assumption",
+          "note": "Customers email the venue with questions today; nothing in the app handles it"
+        }
+      }
+    ],
+    "screens": [
+      {
+        "id": "slot-list",
+        "title": "Pick a time",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Book a studio",
+            "actions": [
+              {
+                "id": "help",
+                "label": "Ask a question"
+              }
+            ]
+          },
+          {
+            "type": "date-time",
+            "id": "day",
+            "label": "Day",
+            "mode": "date",
+            "value": "2026-10-03"
+          },
+          {
+            "type": "stepper",
+            "id": "guests",
+            "label": "Guests",
+            "value": 2,
+            "min": 1,
+            "max": 8
+          },
+          {
+            "type": "card",
+            "id": "slot-10",
+            "title": "10:00 · Studio A",
+            "text": "2 places left",
+            "actions": [
+              {
+                "id": "book",
+                "label": "Book 10:00"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "slot-11",
+            "title": "11:00 · Studio A",
+            "text": "Fully booked"
+          }
+        ]
+      },
+      {
+        "id": "booked",
+        "title": "Booked",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Your booking"
+          },
+          {
+            "type": "chip",
+            "text": "Confirmed",
+            "tone": "positive"
+          },
+          {
+            "type": "card",
+            "id": "booking",
+            "title": "Saturday 3 October, 10:00 · Studio A",
+            "text": "2 guests · free cancellation until Friday 10:00",
+            "actions": [
+              {
+                "id": "cancel",
+                "label": "Cancel booking"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "slot-taken",
+        "title": "Slot taken",
+        "blocks": [
+          {
+            "type": "banner",
+            "tone": "caution",
+            "text": "Someone just took 10:00.",
+            "because": "Another person booked a moment earlier",
+            "canNow": "Pick another time, another day, or join the waiting list"
+          },
+          {
+            "type": "button",
+            "id": "back",
+            "label": "Pick another time"
+          },
+          {
+            "type": "button",
+            "id": "another-day",
+            "label": "Pick another day"
+          },
+          {
+            "type": "button",
+            "id": "join-waitlist",
+            "label": "Join the waiting list for 10:00"
+          }
+        ]
+      },
+      {
+        "id": "confirm-cancel",
+        "title": "Confirm cancelling",
+        "blocks": [
+          {
+            "type": "dialog",
+            "id": "cancel-dialog",
+            "title": "Cancel this booking?",
+            "text": "You get €20.00 store credit.",
+            "actions": [
+              {
+                "id": "confirm",
+                "label": "Cancel and get €20.00 credit"
+              },
+              {
+                "id": "keep",
+                "label": "Keep it"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "cancelled",
+        "title": "Cancelled",
+        "end": true,
+        "blocks": [
+          {
+            "type": "toast",
+            "text": "Booking cancelled"
+          },
+          {
+            "type": "chip",
+            "text": "€20.00 credit",
+            "tone": "neutral"
+          },
+          {
+            "type": "empty-state",
+            "text": "No upcoming bookings.",
+            "action": {
+              "id": "find-time",
+              "label": "Find a time"
+            }
+          }
+        ]
+      },
+      {
+        "id": "too-late",
+        "title": "Too late to cancel",
+        "end": true,
+        "blocks": [
+          {
+            "type": "banner",
+            "tone": "negative",
+            "text": "This booking can't be cancelled online any more.",
+            "because": "Less than 24 hours to go",
+            "canNow": "Call the venue: +49 30 0000 0000"
+          }
+        ]
+      },
+      {
+        "id": "pick-day",
+        "title": "Pick another day",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Pick another day"
+          },
+          {
+            "type": "date-time",
+            "id": "other-day",
+            "label": "Day",
+            "mode": "date",
+            "value": "2026-10-04"
+          },
+          {
+            "type": "button",
+            "id": "show-times",
+            "label": "Show times"
+          }
+        ]
+      },
+      {
+        "id": "waitlisted",
+        "title": "On the waiting list",
+        "end": true,
+        "blocks": [
+          {
+            "type": "chip",
+            "text": "Waiting list · position 1",
+            "tone": "neutral"
+          },
+          {
+            "type": "text",
+            "text": "If 10:00 frees up, you get an email and 2 hours to book it."
+          }
+        ]
+      },
+      {
+        "id": "question",
+        "title": "Ask the venue",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Ask the venue"
+          },
+          {
+            "type": "input",
+            "id": "question-text",
+            "label": "Your question",
+            "placeholder": "Is there parking nearby?"
+          },
+          {
+            "type": "button",
+            "id": "send",
+            "label": "Send"
+          }
+        ]
+      },
+      {
+        "id": "question-sent",
+        "title": "Question sent",
+        "end": true,
+        "blocks": [
+          {
+            "type": "toast",
+            "text": "Question sent"
+          },
+          {
+            "type": "text",
+            "text": "The venue replies by email, usually within a day."
+          }
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "confirm",
+      "title": "Confirms Cancel and get €20.00 credit",
+      "step": {
+        "goal": "to get store credit instead of the slot",
+        "part": "cancel-booking",
+        "status": "exists",
+        "basis": {
+          "kind": "code",
+          "ref": "test/fixtures/booking-app/src/booking.mjs:12"
+        },
+        "from": "confirm-cancel",
+        "on": "confirm",
+        "outcomes": [
+          {
+            "label": "24 hours or more before",
+            "effect": "Cancels the booking and adds €20.00 store credit",
+            "to": "cancelled",
+            "system": [
+              {
+                "id": "cancel-rule",
+                "kind": "component",
+                "name": "cancel()",
+                "status": "exists",
+                "ref": "test/fixtures/booking-app/src/booking.mjs:12"
+              }
+            ],
+            "data": [
+              {
+                "id": "booking-status",
+                "entity": "bookings",
+                "change": "update",
+                "status": "proposed",
+                "fields": [
+                  {
+                    "name": "status",
+                    "before": "confirmed",
+                    "after": "cancelled"
+                  }
+                ]
+              },
+              {
+                "id": "credit-row",
+                "entity": "credits",
+                "change": "insert",
+                "status": "proposed",
+                "fields": [
+                  {
+                    "name": "amount",
+                    "after": "20.00"
+                  },
+                  {
+                    "name": "expires_at",
+                    "after": "2027-10-03T08:00:00Z"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Less than 24 hours before",
+            "effect": "Nothing changes",
+            "to": "too-late",
+            "because": "Cancelling this late leaves the slot empty for others",
+            "canNow": "Call the venue"
+          }
+        ]
+      },
+      "affects": [
+        {
+          "decision": {
+            "review": "booking-rules-2026-09",
+            "itemId": "no-refunds",
+            "title": "Customers never get money back after booking",
+            "verdict": "agree"
+          },
+          "effect": "extends",
+          "why": "Store credit is not money back, so the rule still holds."
+        }
+      ],
+      "summary": "The button says what the person gets before they tap it.",
+      "reply": "Changed: the button itself now says \"Cancel and get €20.00 credit\", as you asked."
+    },
+    {
+      "id": "join-waitlist",
+      "title": "Taps Join the waiting list for 10:00",
+      "step": {
+        "goal": "to get the slot if it frees up",
+        "part": "waiting-list",
+        "status": "suggested",
+        "basis": {
+          "kind": "conversation",
+          "note": "Product owner, booking flow review: \"reserve, if possible, with conditions\""
+        },
+        "from": "slot-taken",
+        "on": "join-waitlist",
+        "outcomes": [
+          {
+            "effect": "Adds the customer to the waiting list for 10:00; a freed place is held for 2 hours",
+            "to": "waitlisted",
+            "system": [
+              {
+                "id": "waitlist-email",
+                "kind": "external",
+                "name": "Email when the slot frees up",
+                "status": "proposed"
+              }
+            ],
+            "data": [
+              {
+                "id": "waitlist-row",
+                "entity": "waitlist",
+                "change": "insert",
+                "status": "proposed",
+                "fields": [
+                  {
+                    "name": "slot_starts_at",
+                    "after": "2026-10-03T08:00:00Z"
+                  },
+                  {
+                    "name": "position",
+                    "after": "1"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "summary": "A place that frees up is offered by email and held for 2 hours.",
+      "reply": "Changed: the offer now stays open for 2 hours instead of 30 minutes, so an email that arrives at night can still be used."
+    },
+    {
+      "id": "ask",
+      "title": "Taps Ask a question",
+      "step": {
+        "goal": "to get an answer before booking",
+        "part": "ask-question",
+        "status": "suggested",
+        "basis": {
+          "kind": "assumption",
+          "note": "Customers email the venue with questions today; nothing in the app handles it"
+        },
+        "from": "slot-list",
+        "on": "help",
+        "outcomes": [
+          {
+            "effect": "Opens a question form",
+            "to": "question",
+            "canNow": "Type the question and send it"
+          }
+        ]
+      },
+      "summary": "Today customers email the venue when something is unclear. This link lets them ask from the time list and get the answer by email, without an account.",
+      "reply": "You asked me to explain this one. Here it is again, in other words."
+    },
+    {
+      "id": "send-question",
+      "title": "Taps Send",
+      "step": {
+        "goal": "to get a reply by email",
+        "part": "ask-question",
+        "status": "suggested",
+        "basis": {
+          "kind": "assumption",
+          "note": "Customers email the venue with questions today; nothing in the app handles it"
+        },
+        "from": "question",
+        "on": "send",
+        "outcomes": [
+          {
+            "effect": "Sends the question to the venue",
+            "to": "question-sent",
+            "system": [
+              {
+                "id": "venue-email",
+                "kind": "external",
+                "name": "Email to the venue",
+                "status": "proposed"
+              }
+            ]
+          }
+        ]
+      },
+      "summary": "The question goes to the venue; the reply comes to the email address given.",
+      "reply": "You did not get to this one last time, so I ask again."
+    },
+    {
+      "id": "added-1",
+      "title": "Show the cancellation deadline on the booking",
+      "summary": "The booking now says \"free cancellation until Friday 10:00\", so people see the deadline before they try.",
+      "reply": "Added, as you suggested: the deadline is on the booking itself."
+    }
+  ],
+  "diagrams": [
+    {
+      "id": "booking-behind",
+      "kind": "flowchart",
+      "title": "What happens behind booking",
+      "lanes": [
+        {
+          "id": "customer",
+          "title": "Customer"
+        },
+        {
+          "id": "app",
+          "title": "Booking system"
+        },
+        {
+          "id": "email",
+          "title": "Email provider"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "start",
+          "kind": "start",
+          "lane": "customer",
+          "label": "Wants a class"
+        },
+        {
+          "id": "tap-book",
+          "kind": "user-action",
+          "lane": "customer",
+          "label": "Taps Book 10:00"
+        },
+        {
+          "id": "free",
+          "kind": "decision",
+          "lane": "app",
+          "label": "Slot still free?"
+        },
+        {
+          "id": "reserve",
+          "kind": "system-action",
+          "lane": "app",
+          "label": "Reserve the slot",
+          "icon": "calendar",
+          "part": "book-slot"
+        },
+        {
+          "id": "send-mail",
+          "kind": "send",
+          "lane": "app",
+          "label": "Send confirmation"
+        },
+        {
+          "id": "provider",
+          "kind": "receive",
+          "lane": "email",
+          "label": "Provider takes the email",
+          "icon": "cloud"
+        },
+        {
+          "id": "delivered",
+          "kind": "decision",
+          "lane": "email",
+          "label": "Delivered?"
+        },
+        {
+          "id": "retry",
+          "kind": "retry",
+          "lane": "app",
+          "label": "Retry in 5 minutes",
+          "icon": "clock"
+        },
+        {
+          "id": "booked",
+          "kind": "end",
+          "lane": "customer",
+          "label": "Booked",
+          "component": {
+            "type": "toast",
+            "text": "Booking saved"
+          }
+        },
+        {
+          "id": "taken",
+          "kind": "process",
+          "lane": "customer",
+          "label": "Sees \"slot taken\"",
+          "icon": "warning"
+        },
+        {
+          "id": "join",
+          "kind": "user-action",
+          "lane": "customer",
+          "label": "Joins the waiting list"
+        },
+        {
+          "id": "waitlist",
+          "kind": "data-store",
+          "lane": "app",
+          "label": "Waiting list"
+        },
+        {
+          "id": "wait-free",
+          "kind": "timer",
+          "lane": "app",
+          "label": "Waits until a place frees up"
+        },
+        {
+          "id": "offer",
+          "kind": "send",
+          "lane": "app",
+          "label": "Offer the place by email"
+        },
+        {
+          "id": "offered",
+          "kind": "end",
+          "lane": "customer",
+          "label": "Has 30 minutes to book",
+          "icon": "clock"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "tap-book"
+        },
+        {
+          "from": "tap-book",
+          "to": "free"
+        },
+        {
+          "from": "free",
+          "to": "reserve",
+          "kind": "conditional",
+          "label": "yes"
+        },
+        {
+          "from": "free",
+          "to": "taken",
+          "kind": "conditional",
+          "label": "no"
+        },
+        {
+          "from": "reserve",
+          "to": "send-mail"
+        },
+        {
+          "from": "send-mail",
+          "to": "provider",
+          "kind": "message"
+        },
+        {
+          "from": "provider",
+          "to": "delivered"
+        },
+        {
+          "from": "delivered",
+          "to": "booked",
+          "kind": "conditional",
+          "label": "yes"
+        },
+        {
+          "from": "delivered",
+          "to": "retry",
+          "kind": "conditional",
+          "label": "no"
+        },
+        {
+          "from": "retry",
+          "to": "send-mail"
+        },
+        {
+          "from": "taken",
+          "to": "join"
+        },
+        {
+          "from": "join",
+          "to": "waitlist"
+        },
+        {
+          "from": "waitlist",
+          "to": "wait-free"
+        },
+        {
+          "from": "wait-free",
+          "to": "offer"
+        },
+        {
+          "from": "offer",
+          "to": "offered",
+          "kind": "message"
+        }
+      ]
+    },
+    {
+      "id": "booking-system",
+      "kind": "system",
+      "title": "What the booking system runs on",
+      "lanes": [
+        {
+          "id": "people",
+          "title": "Who uses it"
+        },
+        {
+          "id": "ours",
+          "title": "What we run"
+        },
+        {
+          "id": "outside",
+          "title": "Someone else's"
+        }
+      ],
+      "nodes": [
+        {
+          "id": "member",
+          "kind": "client",
+          "lane": "people",
+          "label": "The member's phone"
+        },
+        {
+          "id": "venue-staff",
+          "kind": "client",
+          "lane": "people",
+          "label": "The venue's tablet"
+        },
+        {
+          "id": "signin",
+          "kind": "guard",
+          "lane": "ours",
+          "label": "Signed in as a member?"
+        },
+        {
+          "id": "booking-api",
+          "kind": "service",
+          "lane": "ours",
+          "label": "Booking service",
+          "icon": "gear"
+        },
+        {
+          "id": "slots",
+          "kind": "data-store",
+          "lane": "ours",
+          "label": "Slots and bookings"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "lane": "ours",
+          "label": "Emails waiting to go"
+        },
+        {
+          "id": "mailer",
+          "kind": "external",
+          "lane": "outside",
+          "label": "Email provider",
+          "icon": "envelope"
+        },
+        {
+          "id": "calendar",
+          "kind": "external",
+          "lane": "outside",
+          "label": "The venue's calendar",
+          "icon": "calendar"
+        },
+        {
+          "id": "note-retry",
+          "kind": "note",
+          "lane": "outside",
+          "label": "A failed email is tried again for an hour, then the member sees it in the app"
+        }
+      ],
+      "edges": [
+        {
+          "from": "member",
+          "to": "signin",
+          "label": "books a slot"
+        },
+        {
+          "from": "venue-staff",
+          "to": "signin",
+          "label": "cancels for a member"
+        },
+        {
+          "from": "signin",
+          "to": "booking-api"
+        },
+        {
+          "from": "booking-api",
+          "to": "slots",
+          "label": "holds the slot"
+        },
+        {
+          "from": "booking-api",
+          "to": "outbox",
+          "kind": "async",
+          "label": "confirmation"
+        },
+        {
+          "from": "outbox",
+          "to": "mailer",
+          "kind": "async"
+        },
+        {
+          "from": "booking-api",
+          "to": "calendar",
+          "kind": "message",
+          "label": "writes the booking"
+        },
+        {
+          "from": "mailer",
+          "to": "note-retry",
+          "kind": "association"
+        }
+      ]
+    },
+    {
+      "id": "booking-calls",
+      "kind": "sequence",
+      "title": "Booking a slot, call by call",
+      "nodes": [
+        {
+          "id": "app",
+          "kind": "client",
+          "label": "The member's phone"
+        },
+        {
+          "id": "booking",
+          "kind": "service",
+          "label": "Booking service"
+        },
+        {
+          "id": "slots",
+          "kind": "data-store",
+          "label": "Slots and bookings"
+        },
+        {
+          "id": "outbox",
+          "kind": "queue",
+          "label": "Emails waiting to go"
+        },
+        {
+          "id": "mailer",
+          "kind": "external",
+          "label": "Email provider"
+        }
+      ],
+      "edges": [
+        {
+          "from": "app",
+          "to": "booking",
+          "label": "book 10:00 on Saturday"
+        },
+        {
+          "from": "booking",
+          "to": "slots",
+          "label": "is 10:00 still free?"
+        },
+        {
+          "from": "slots",
+          "to": "booking",
+          "kind": "return",
+          "label": "free"
+        },
+        {
+          "from": "booking",
+          "to": "slots",
+          "label": "hold it for this member"
+        },
+        {
+          "from": "slots",
+          "to": "booking",
+          "kind": "return",
+          "label": "held"
+        },
+        {
+          "from": "booking",
+          "to": "outbox",
+          "kind": "async",
+          "label": "confirmation email"
+        },
+        {
+          "from": "booking",
+          "to": "app",
+          "kind": "return",
+          "label": "booked, with the cancel window"
+        },
+        {
+          "from": "outbox",
+          "to": "mailer",
+          "kind": "async",
+          "label": "send it"
+        },
+        {
+          "from": "mailer",
+          "to": "outbox",
+          "kind": "return",
+          "label": "accepted, or try again in five minutes"
+        }
+      ]
+    }
+  ]
+}

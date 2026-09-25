@@ -67,6 +67,8 @@ jobs:
           node bin/check.mjs history examples/decision-review.example.json examples/earlier-decisions.feedback.json
           node bin/check.mjs history examples/flow-booking.review.json examples/booking-earlier.feedback.json
           node bin/check.mjs rounds examples/checkout-round2.review.json examples/review.example.json examples/checkout-uat.feedback.json
+          node bin/check.mjs pair examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json --root .
+          node bin/check.mjs rounds examples/flow-booking-round3.review.json examples/flow-booking.review.json examples/flow-booking.feedback.json examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json --root .
 
       # The example pages are what people open first: they must be what the renderer makes today.
       - name: Example pages are up to date
@@ -77,6 +79,13 @@ jobs:
             cmp -s "$out/${pair##*:}.html" "examples/${pair##*:}.html" \
               || { echo "::error file=examples/${pair##*:}.html::out of date; run: node bin/render.mjs examples/${pair%%:*} examples/${pair##*:}.html"; exit 1; }
           done
-          node bin/render.mjs examples/checkout-round2.review.json "$out/checkout-round2.html" --earlier examples/review.example.json examples/checkout-uat.feedback.json > /dev/null
-          cmp -s "$out/checkout-round2.html" examples/checkout-round2.html \
-            || { echo "::error file=examples/checkout-round2.html::out of date; run: node bin/render.mjs examples/checkout-round2.review.json examples/checkout-round2.html --earlier examples/review.example.json examples/checkout-uat.feedback.json"; exit 1; }
+          # #82 — the continuing examples, each rendered with its earlier rounds.
+          F1="examples/flow-booking.review.json examples/flow-booking.feedback.json"; F2="examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json"
+          while read -r name earlier; do
+            node bin/render.mjs "examples/$name.review.json" "$out/$name.html" $earlier > /dev/null
+            cmp -s "$out/$name.html" "examples/$name.html" || { echo "::error file=examples/$name.html::out of date; run: node bin/render.mjs examples/$name.review.json examples/$name.html $earlier"; exit 1; }
+          done <<EOF
+          checkout-round2 --earlier examples/review.example.json examples/checkout-uat.feedback.json
+          flow-booking-round2 --earlier $F1
+          flow-booking-round3 --earlier $F1 --earlier $F2
+          EOF

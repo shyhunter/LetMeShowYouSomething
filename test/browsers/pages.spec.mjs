@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -471,7 +471,7 @@ test('a hostile earlier round stays text in the tags, the replies and History', 
   const r1 = readReview('review.example.json'), f1 = JSON.parse(readFileSync(join(ROOT, 'examples/checkout-uat.feedback.json'), 'utf8'));
   f1.responses.find((x) => x.itemId === 'declined-card').note = bad; f1.addedItems[0].title = bad;
   const r2 = readReview('checkout-round2.review.json');
-  r1.id = f1.review.id = 'hostile-round-1'; r2.id = 'hostile-round-2';          // examples' ids are theirs alone (#38)
+  r1.id = f1.review.id = r2.continues = 'hostile-round-1'; r2.id = 'hostile-round-2';   // examples' ids are theirs alone (#38)
   r2.items.find((i) => i.id === 'declined-card').reply = bad; r2.items.find((i) => i.id === 'added-1').title = bad;
   const dir = tmp('pw-hostile-rounds-');
   const w = (name, o) => { const p = join(dir, name); writeFileSync(p, JSON.stringify(o)); return p; };
@@ -486,4 +486,21 @@ test('a hostile earlier round stays text in the tags, the replies and History', 
   await expect(page.getByRole('dialog', { name: 'History' })).toContainText(bad);
   expect(await page.locator('img').count()).toBe(0);
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
+});
+
+// A flow in its third round: only the open step is asked, the map keeps every step, History has both rounds.
+test('a flow in round 3: one question, the whole flow on the map, both earlier rounds in History', async ({ page }) => {
+  await page.goto(example('flow-booking-round3'));
+  await expect(page.locator('#start-cards')).toContainText('Round 3: 1 changed after your notes, 11 settled.');
+  await start(page);
+  await expect(page.locator('#stepno')).toHaveText('Step 2 of 3');
+  await expect(page.locator('.t-head .earlier')).toContainText('"Say who answers the question: the venue, not us."');
+  await showPlace(page, 'map');
+  await expect(page.locator('#slot-map [data-step="book"]')).toContainText('ANSWERED');
+  await expect(page.locator('#slot-map [data-step="ask"]')).toContainText('YOU ARE HERE');
+  await showPlace(page, 'proto');
+  await expect(page.locator('#slot-proto .app .bar')).toContainText('Book a studio');
+  if (await page.locator('[data-act="history"]:visible').count() === 0) await page.locator('[data-act="why"]').first().click();
+  await page.locator('[data-act="history"]:visible').first().click();
+  await expect(page.getByRole('dialog', { name: 'History' }).locator('.hround')).toHaveCount(3);
 });

@@ -85,7 +85,7 @@ node <skill>/bin/check.mjs followup docs/<name>-2.review.json docs/<name>.review
 node <skill>/bin/render.mjs docs/<name>-2.review.json docs/<name>-2.html --earlier docs/<name>.review.json <returned>.feedback.json
 ```
 
-The renderer checks the whole chain first and writes nothing if a round drops what the one before left open. A flow review must still reach every screen through its steps, so carry the steps that lead to the open ones.
+Set `continues` to the id of the round before. A flow review that continues another may carry only the steps still open: the flow must be whole with the rounds before. The renderer checks the whole chain first and writes nothing if a round drops what the one before left open, or if the rounds do not link up.
 
 **A verdict is never permission.** "Agree" on an item that deletes, sends, pays, publishes or contacts someone means the reviewer thinks it is right, not that you may do it now: the file is unsigned, it gets forwarded, and it proves nothing about who answered. Before such an action, ask the user in your host (its permission prompt, or a direct question), naming the exact action and what it affects, and wait. Carry on with what is agreed and reversible. An **Approve** on an `approval` item is the reviewer's intent for that exact action until `expiresAt`: still ask in your host, quoting the action, right before you do it. A **Decline** means you don't. After `expiresAt`, ask again in a new review.
 
