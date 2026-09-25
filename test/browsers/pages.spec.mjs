@@ -407,7 +407,7 @@ for (const [kind, shape] of Object.entries(KINDS)) {
     }
     await expect(page.locator('#q-title')).toHaveText('Take your answers back');
     await page.locator('#mode-overview').click();
-    await expect(page.locator('#main .c-item')).toHaveCount(n - 2);
+    await expect(page.locator('#main [data-card]')).toHaveCount(n - 2);
   });
 }
 
@@ -623,4 +623,40 @@ test('the style: pressable things carry a hard shadow, information none, the cur
   for (const sel of ['#slot-expected .exp']) expect(await shadow(sel), sel).toBe('none');
   expect(await shadow('#main .t-ans'), 'the question you are on').toMatch(hard);
   expect(await page.locator('#main .tile').first().evaluate((el) => getComputedStyle(el).borderTopWidth)).toBe('2px');
+});
+
+// #130 — a flow's Overview is a storyboard: one band per question holds what I suggest, the step in the flow and
+// what you tap; the line starts at Start; a diagram tab re-keys the rows; the checker's own results close it.
+test('the storyboard: a band per question, the line from Start, tabs re-key the rows, whole screens, checked', async ({ page }, info) => {
+  await page.goto(example('flow-booking'));
+  await start(page); await overview(page);
+  const bands = page.locator('#main .sb-band');
+  const first = bands.first();
+  await expect(first.locator('.sb-card[data-card]')).toHaveCount(1);
+  await expect(first.locator('.sb-lane')).toHaveCount(1);
+  await expect(first.locator('[data-shot]')).toHaveCount(1);
+  const band = await first.boundingBox();
+  for (const part of ['.sb-card[data-card]', '.sb-lane', '[data-shot]']) {
+    const b = await first.locator(part).first().boundingBox();
+    expect(b.y >= band.y && b.y + b.height <= band.y + band.height + 1, `${part} stays inside its band`).toBe(true);
+  }
+  await expect(first.locator('.sb-lane .sb-node.pill').first()).toHaveText('Start');
+  const noLineBeforeStart = await first.locator('.sb-lane').evaluate((el) => {
+    const line = getComputedStyle(el, '::before');
+    return line.display === 'none' || parseFloat(line.top) >= 0;
+  });
+  expect(noLineBeforeStart, 'no line above Start').toBe(true);
+  if (!info.project.use.hasTouch || info.project.use.viewport.width > 900) {
+    const [c, l] = [await first.locator('.sb-card[data-card]').boundingBox(), await first.locator('.sb-lane').boundingBox()];
+    expect(l.x, 'the flow sits right of the suggestion').toBeGreaterThan(c.x + c.width - 1);
+  }
+  await expect(page.locator('#main .sb-check')).toContainText('Checked before you see it');
+  await expect(page.locator('#main .sb-check .chk').first()).toBeVisible();
+  await first.locator('[data-shot]').click();
+  await expect(page.getByRole('dialog', { name: 'The whole screen' }).locator('.app')).toBeVisible();
+  await page.locator('[data-act="close-layer"]').click();
+  await page.locator('#main [data-sbtab="booking-system"]').click();
+  await expect(page.locator('#main [data-sbtab="booking-system"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#main .sb-band.quiet').first()).toContainText('No question is about');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
 });

@@ -125,6 +125,19 @@ try {
 // #74 — the Let me explain cards are written into the page itself: a phone's file preview runs no
 // script and must still show them.
 const startCards = startCardsHtml(review, reviewParts(review), I, view);
+// #130 — for a flow, what the checker proved about it, in the reviewer's words: only checks that ran and passed.
+const checked = (() => {
+  if (!review.flow) return [];
+  const run = spawnSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'check.mjs'), 'review', inPath, '--format', 'json'], { encoding: 'utf8' });
+  let out; try { out = JSON.parse(run.stdout); } catch { return []; }
+  const passed = (code) => out.checks.some((c) => c.code === code && c.ok) && !out.problems.some((x) => x.code === code);
+  return [
+    passed('flow-has-no-orphans-or-dead-ends') && 'Every screen can be reached from the start',
+    passed('flow-has-no-orphans-or-dead-ends') && 'No dead end: every screen has a way on, or is marked as an end',
+    !out.problems.some((x) => x.code === 'flow-explains-itself') && 'Every problem says what you can do next',
+    passed('flow-resolves') && 'Every step leads to a real screen, and every branch is labelled',
+  ].filter(Boolean);
+})();
 // #84 — what making this review used, in one line under it: as the host reported it, never an estimate or a price.
 const usageLine = (() => {
   const u = review.usage; if (!u || typeof u !== 'object') return '';
@@ -492,9 +505,9 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 .c-top{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap}
 .c-top h3{font-size:16px}
 .c-top p{font-size:13.5px;color:var(--mut)}
-.c-item details>summary{cursor:pointer;color:var(--ac);font-weight:600;font-size:13.5px;min-height:28px;display:inline-flex;align-items:center;gap:6px}
-@media (pointer:coarse){.c-item details>summary{min-height:44px}}
-.c-item details[open]>summary{margin-bottom:10px}
+.c-item details>summary,.sb-card details>summary{cursor:pointer;color:var(--ac);font-weight:600;font-size:13.5px;min-height:28px;display:inline-flex;align-items:center;gap:6px}
+@media (pointer:coarse){.c-item details>summary,.sb-card details>summary{min-height:44px}}
+.c-item details[open]>summary,.sb-card details[open]>summary{margin-bottom:10px}
 .pair{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;align-items:start}
 @container (max-width:620px){.pair{grid-template-columns:1fr}.pair .proto-wrap{justify-content:flex-start}}
 
@@ -577,10 +590,63 @@ h1,h2,.t-head h2,.brief h2,#start h1{font-weight:800;letter-spacing:-.022em}
 .dg .dg-label{font-weight:600}
 .legend i{border:2px solid var(--edge)}
 .no-script,#save-warning,.conflict{border-width:2px}
-.start-more>summary,details.more>summary,.c-item details>summary{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px;font-weight:700}
+.start-more>summary,details.more>summary,.c-item details>summary,.sb-card details>summary{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px;font-weight:700}
 @container (max-width:700px){.t-head{box-shadow:none}.t-ans{box-shadow:4px 4px 0 var(--lift)}
   .ptabs{border:2px solid var(--edge);background:var(--surf);box-shadow:2px 2px 0 var(--edge)}
   .ptabs button[aria-pressed="true"]{background:var(--ac);color:var(--on-ac)}}
+/* #130 — the storyboard: every band holds its three parts; nothing leaves it. */
+.ov.sb{max-width:1320px}
+.sb-head,.sb-band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr) minmax(0,5fr);gap:16px}
+.sb-head{align-items:center;padding:0 16px}
+.sb-head .dtabs{justify-self:center}
+.sb-rows{display:grid;gap:16px}
+.sb-band{padding:14px;border:2px solid var(--edge);border-radius:16px;background:color-mix(in srgb,var(--sc) 13%,var(--bg));align-items:stretch}
+.sb-band.now{box-shadow:6px 6px 0 var(--lift)}
+.sb-band.quiet{padding:8px 14px;background:var(--sunk);align-items:center}
+.sb-card{background:var(--surf);border:2px solid var(--edge);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0;overflow-wrap:anywhere}
+.sb-card h3{font-size:17px;font-weight:800;letter-spacing:-.01em}
+.sb-top{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.sb-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ac);color:var(--on-ac);border:2px solid var(--edge);margin-right:8px;font-size:11px}
+.sb-lane{position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-width:0;padding:6px 0}
+.sb-lane::before{content:"";position:absolute;left:50%;top:-18px;bottom:-18px;width:2.5px;margin-left:-1px;background:var(--edge)}
+.sb-lane.first{justify-content:flex-start}
+.sb-lane.last{justify-content:flex-end}
+.sb-lane.first.last{justify-content:space-between}
+.sb-lane.first::before{top:20px}
+.sb-lane.last::before{bottom:20px}
+.sb-quiet-list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.sb-band.quiet .sb-lane::before,.sb-band .sb-lane:only-child::before{display:none}
+.sb-node{position:relative;border:2px solid var(--edge);border-radius:10px;padding:7px 12px;background:var(--surf);font-weight:700;font-size:13.5px;text-align:center;max-width:100%;overflow-wrap:anywhere}
+.sb-node small{display:block;font-size:10px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--mut)}
+.sb-node.scr{background:var(--sunk);font-weight:500}
+.sb-node.bad{background:var(--bad-bg);color:var(--bad)}
+.sb-node.now{background:var(--ac-bg);box-shadow:4px 4px 0 var(--lift)}
+.sb-node.now small{color:var(--ac)}
+.sb-node.done{background:var(--ok-bg)}
+.sb-node.done small{color:var(--ok)}
+.sb-node.pill{border-radius:99px;padding:4px 16px}
+.sb-outs{position:relative;display:flex;gap:12px;flex-wrap:wrap;justify-content:center;max-width:100%}
+.sb-out{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.sb-when{font-size:11px;font-weight:700;background:var(--surf);border:2px solid var(--edge);border-radius:99px;padding:0 8px}
+.app.bare{border:1.5px solid var(--line);border-radius:12px;min-height:0;box-shadow:none;display:block;max-width:none;padding:12px;background:#F7F8FA}
+.piece-shot img{display:block;width:100%;height:200px;object-fit:cover;border-radius:10px;border:1.5px solid var(--line)}
+.sb-table{position:relative;background:var(--surf);border:2px solid var(--edge);border-radius:10px;width:100%;max-width:320px;font:12.5px var(--mono);overflow:hidden}
+.sb-table b{display:block;padding:7px 12px;border-bottom:2px solid var(--edge);font-family:var(--sans)}
+.sb-table>span{display:flex;justify-content:space-between;gap:8px;padding:4px 12px;border-bottom:1px solid var(--line)}
+.sb-table>span.hit{background:var(--ac-bg);color:var(--ac);font-weight:700}
+.sb-chg{display:flex;flex-direction:column;gap:3px;font:12.5px var(--mono);border-bottom:1px dashed var(--line);padding-bottom:6px}
+.sb-chg s{color:var(--mut)}.sb-chg .a{color:var(--ok)}
+.sb-chg .lbl{font:800 10.5px var(--sans);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.sb-check .chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.sb-check .chk .ic{color:var(--ok)}
+@container (max-width:900px){
+  .sb-head{grid-template-columns:1fr;justify-items:start;gap:8px}.sb-head>.eyebrow{display:none}.sb-head .dtabs{justify-self:stretch;overflow-x:auto}
+  .sb-band{grid-template-columns:minmax(0,1fr)}
+  .sb-lane{order:-1;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:0}
+  .sb-lane::before{display:none}
+  .sb-outs{justify-content:flex-start}
+  .sb-node{font-size:12.5px;padding:5px 9px}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head><body class="at-start">
@@ -617,6 +683,7 @@ document.documentElement.classList.add('js');
 const REVIEW = ${embed(review)};
 const SEED = null;
 const HISTORY = ${embed(history)};
+const CHECKED = ${embed(checked)};
 ${builder}
 ${drawer}
 ${partsLib}
@@ -742,7 +809,7 @@ if (REVIEW.focus) { const k = DIAGRAMS.findIndex(d => d.id === REVIEW.focus); if
 const mapFor = (s) => (s && DIAGRAMS.find(d => (d.nodes || []).some(n => stepItems(s).some(it => n.step === it.id)))) || DIAGRAMS[0] || null;
 
 // ── the view: where you are lives in memory only (D003); the view and minimised places in this browser ──
-const st = { mode: 'tour', phase: 'start', cur: 0, min: new Set(), ptab: 'map', layer: null, zoom: 1, mapZoom: 1, mapTab: null, preview: null, marking: null, missing: false, lmin: new Set() };
+const st = { mode: 'tour', phase: 'start', cur: 0, min: new Set(), ptab: 'map', layer: null, zoom: 1, mapZoom: 1, mapTab: null, sbTab: null, shot: null, preview: null, marking: null, missing: false, lmin: new Set() };
 try { const v = JSON.parse(localStorage.getItem(LS + ':view') || '{}'); if (v.mode === 'overview') { st.mode = 'overview'; st.phase = 'q'; } if (v.min) st.min = new Set(v.min); if (v.ptab) st.ptab = v.ptab; } catch {}
 const saveView = () => { try { localStorage.setItem(LS + ':view', JSON.stringify({ mode: st.mode, min: [...st.min], ptab: st.ptab })); } catch {} };
 
@@ -1121,20 +1188,97 @@ function renderTour(){
     + '<div class="t-vis">' + slots({ map: mapPlace(s), proto: protoFor(s), expected: expectedFor(s), build: buildFor(s) }, { map: 'you are here', proto: s.kind === 'item' && s.it.approval ? 'dry run' : s.kind === 'choose' ? 'each option' : '', build: s.kind === 'choose' ? 'each option' : '' }) + '</div>'
     + navHtml(false, st.cur === n - 1 ? 'Finish' : v ? 'Next' : 'Skip for now') + '</div>';
 }
+const cardKey = s => s.kind === 'choose' ? s.sec.id : s.it.id;
+function ovDetail(s){
+  const p = protoFor(s), e = expectedFor(s), bu = buildFor(s), key = cardKey(s);
+  return p || e || bu ? '<details data-ovd="' + esc(key) + '"' + (ovOpen.has(key) ? ' open' : '') + '><summary>' + I('phone', 'sm') + 'Show the prototype and what should happen</summary><div class="pair">' + (p || '') + '<div style="display:grid;gap:10px">' + e + bu + '</div></div></details>' : '';
+}
 function renderOverview(){
   const b = REVIEW.brief || {}, about = b.question || b.explains || REVIEW.intro || REVIEW.subtitle || '';
   const body = SEGS.map(g => '<p class="c-sec" style="--sc:' + g.color + '">' + I(g.icon, 'sm') + esc(g.label) + '</p><ol class="c-list">' + g.steps.map(s => {
-    const p = protoFor(s), e = expectedFor(s), bu = buildFor(s), key = s.kind === 'choose' ? s.sec.id : s.it.id;
-    const detail = p || e || bu ? '<details data-ovd="' + esc(key) + '"' + (ovOpen.has(key) ? ' open' : '') + '><summary>' + I('phone', 'sm') + 'Show the prototype and what should happen</summary><div class="pair">' + (p || '') + '<div style="display:grid;gap:10px">' + e + bu + '</div></div></details>' : '';
+    const key = cardKey(s), detail = ovDetail(s);
     return '<li class="c-item" style="--sc:' + g.color + '" data-card="' + esc(key) + '"><div class="c-top"><div><h3>' + esc(stepTitle(s)) + '</h3><p>' + (subFor(s) || sayFor(s)) + '</p></div>' + chipsHtml(s) + '</div>'
       + earlierHtml(s) + tilesHtml(s, false) + explainHtml(s) + detail + '<button type="button" class="btn quiet" data-open="' + STEPS.indexOf(s) + '">' + I('flag', 'sm') + 'Open in the tour</button></li>'; }).join('') + '</ol>').join('');
-  return '<div class="ov"><div class="brief"><div class="m-head"><p class="eyebrow">' + I('flag', 'sm') + 'A review for you' + (VIEW ? ' · round ' + VIEW.round : '') + '</p><div class="rowgap">' + (VIEW ? '<button type="button" class="btn small" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn small" data-act="expand">' + I('expand', 'sm') + 'Expand</button></div></div>'
+  return '<div class="ov' + (FLOW ? ' sb' : '') + '"><div class="brief"><div class="m-head"><p class="eyebrow">' + I('flag', 'sm') + 'A review for you' + (VIEW ? ' · round ' + VIEW.round : '') + '</p><div class="rowgap">' + (VIEW ? '<button type="button" class="btn small" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn small" data-act="expand">' + I('expand', 'sm') + 'Expand</button></div></div>'
     + '<h2>' + esc(REVIEW.title) + '</h2>' + (about ? '<p class="task">' + esc(plain(about)) + '</p>' : '')
     + '<div class="facts"><span class="fact">' + I('list', 'sm') + STEPS.length + (STEPS.length === 1 ? ' question' : ' questions') + '</span><span class="fact">' + I('layers', 'sm') + SEGS.length + (SEGS.length === 1 ? ' part' : ' parts') + '</span></div>'
     + (REVIEW.afterwards ? '<p class="after"><b>What happens next:</b> ' + esc(REVIEW.afterwards) + '</p>' : '')
     + '<button type="button" class="btn quiet" data-mode="tour" style="justify-self:start">' + I('flag', 'sm') + 'Take the guided tour instead</button></div>'
-    + progressHtml(null) + (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapPlace(null), 'the whole review') : '') + body + settledHtml() + missingHtml()
+    + progressHtml(null) + (FLOW ? storyboardHtml() : (DIAGRAMS.length ? slotHtml('map', 'Map', 'map', 0, mapPlace(null), 'the whole review') : '') + body) + settledHtml() + missingHtml()
     + '<div class="brief"><p class="eyebrow">' + I('send', 'sm') + 'Return</p><div class="expected">' + summaryRows() + '</div>' + downloadsHtml() + '</div></div>';
+}
+// #130 — for a flow, the Overview is a storyboard: one band per step, holding what I suggest (and your answer),
+// where it sits in the flow, and what you tap. The middle can show any diagram; the rows then follow its boxes.
+function pieceOf(screenId, on){
+  const s = screenOf(screenId); if (!s) return '';
+  const mine = (store.pictures || []).find(p => p.screen === screenId);
+  if (mine || s.image) {
+    const src = mine ? picSrc(mine) : s.image.src, h = (s.hotspots || []).find(x => x.id === on), y = h ? (+h.y + h.h / 2) : 50;
+    return SHOT.test(src) ? '<div class="piece-shot"><img src="' + esc(src) + '" alt="' + esc(mine ? 'Your screenshot of ' + s.title : s.image.alt) + '" style="object-position:50% ' + y + '%"></div>' : '';
+  }
+  const ids = (b) => [b.id, b.back && b.back.id, b.action && b.action.id].concat(['actions', 'items', 'options'].flatMap(k => Array.isArray(b[k]) ? b[k].map(x => x && x.id) : []));
+  const blk = (s.blocks || []).find(b => ids(b).includes(on));
+  return blk ? '<div class="app bare">' + drawBlock(blk, { targets: new Set([on]), still: true }) + '</div>' : '';
+}
+function sbCard(s){
+  const k = STEPS.indexOf(s);
+  return '<div class="sb-card" data-card="' + esc(cardKey(s)) + '"><div class="sb-top"><span class="sec-name" style="--sc:' + s.seg.color + '"><span class="sb-num">' + (k + 1) + '</span>' + esc(s.seg.label) + ' · ' + (s.seg.steps.indexOf(s) + 1) + ' of ' + s.seg.steps.length + '</span>' + chipsHtml(s) + '</div>'
+    + '<h3>' + esc(stepTitle(s)) + '</h3><p class="say">' + sayFor(s) + '</p>' + earlierHtml(s) + tilesHtml(s, true) + explainHtml(s)
+    + '<button type="button" class="btn quiet" data-open="' + k + '">' + I('flag', 'sm') + 'Open in the tour</button></div>';
+}
+const sbNode = (cls, small, text) => '<span class="sb-node ' + cls + '">' + (small ? '<small>' + esc(small) + '</small>' : '') + esc(text) + '</span>';
+function sbLane(s, first, last){
+  const x = s.it.step, k = STEPS.indexOf(s), v = stepAnswer(s), here = k === st.cur;
+  const ends = FLOW.screens.some(sc => sc.end);
+  const outs = x.outcomes.map(o => '<span class="sb-out">' + (x.outcomes.length > 1 ? '<span class="sb-when">' + esc(o.label || '') + '</span>' : '') + sbNode('scr' + (o.because ? ' bad' : ''), '', screenTitle(o.to)) + '</span>').join('');
+  return '<div class="sb-lane' + (first ? ' first' : '') + (last ? ' last' : '') + '">' + (first ? sbNode('pill', '', 'Start') : '') + sbNode('scr', '', screenTitle(x.from))
+    + sbNode(here ? 'now' : v ? 'done' : '', here ? 'You are here' : v ? 'Answered · ' + answerLabel(s) : '', s.it.title) + '<span class="sb-outs">' + outs + '</span>' + (last && ends ? sbNode('pill', '', 'End') : '') + '</div>';
+}
+function sbTap(s){
+  const x = s.it.step;
+  return '<div class="sb-card"><div class="sb-top"><span class="sec-name">On “' + esc(screenTitle(x.from)) + '”</span><button type="button" class="btn small" data-shot="' + esc(x.from) + '" data-for="' + esc(x.on) + '">' + I('expand', 'sm') + 'Whole screen</button></div>' + pieceOf(x.from, x.on) + '</div>';
+}
+// A box of another diagram: its label, and for a table its columns, the ones this step touches marked.
+function sbBox(d, n, touched){
+  if (d.kind === 'database') return '<div class="sb-table"><b>' + esc(n.label || n.id) + '</b>' + (n.columns || []).map(c => '<span' + (touched.has(c.label) || touched.has(c.id) ? ' class="hit"' : '') + '><span>' + esc(c.label) + '</span><span>' + esc(c.type || '') + '</span></span>').join('') + '</div>';
+  return sbNode('', n.kind || '', n.label || n.id);
+}
+// What changes in that box under this step: its data or system entries, else what should happen.
+function sbChanges(s, n){
+  const name = String(n.label || n.id).toLowerCase(), rows = [];
+  for (const o of (s.it.step ? s.it.step.outcomes : [])) {
+    for (const e of o.data || []) if (String(e.entity).toLowerCase() === name || String(e.id) === n.id)
+      rows.push('<div class="sb-chg"><span class="lbl">' + esc(o.label || CHANGE[e.change] || e.change) + '</span>' + ((e.fields || []).map(f => '<span><b>' + esc(f.name) + '</b> <s>' + esc(f.before ?? '—') + '</s> → <b class="a">' + esc(f.after ?? '—') + '</b></span>').join('') || '<span>' + esc(CHANGE[e.change] || e.change) + ' a row</span>') + '</div>');
+    for (const e of o.system || []) if (String(e.name).toLowerCase() === name || e.id === n.id) rows.push('<div class="sb-chg"><span class="lbl">' + esc(o.label || 'Result') + '</span><span>' + esc(KIND[e.kind] || e.kind) + ' ' + esc(e.name) + ' · ' + esc(e.status) + '</span></div>');
+  }
+  return rows.length ? '<div class="sb-card"><span class="sec-name">What changes in it</span>' + rows.join('') + '</div>' : (expectedFor(s) ? '<div class="sb-card">' + expectedFor(s) + '</div>' : '<div></div>');
+}
+function storyboardHtml(){
+  const d = DIAGRAMS.find(x => x.id === st.sbTab) || DIAGRAMS[0], flowTab = d.id === 'user-flow';
+  const tabs = DIAGRAMS.length > 1 ? '<div class="seg dtabs" role="group" aria-label="Diagrams">' + DIAGRAMS.map(x => '<button type="button" data-sbtab="' + esc(x.id) + '" aria-pressed="' + (x === d) + '">' + I(x.kind === 'database' ? 'db' : 'map', 'sm') + esc(x.title || x.id) + '</button>').join('') + '</div>' : '';
+  const band = (s, mid, right, extra) => '<section class="sb-band' + (s && STEPS.indexOf(s) === st.cur ? ' now' : '') + (extra || '') + '" style="--sc:' + (s ? s.seg.color : 'var(--s0)') + '">' + (s ? sbCard(s) : '') + mid + right + '</section>';
+  let rows;
+  if (flowTab) {
+    const flowSteps = STEPS.filter(s => s.kind === 'item' && s.it.step);
+    rows = STEPS.map(s => s.kind === 'item' && s.it.step ? band(s, sbLane(s, flowSteps[0] === s, flowSteps[flowSteps.length - 1] === s), sbTap(s))
+      : band(s, '<div></div>', ovDetail(s) ? '<div class="sb-card">' + ovDetail(s) + '</div>' : '<div></div>')).join('');
+  } else {
+    // Boxes no question is about fold into one quiet row between the questions, so the diagram stays whole.
+    const out = [], quiet = [];
+    const flush = () => { if (quiet.length) out.push('<section class="sb-band quiet"><p class="say">No question is about ' + (quiet.length === 1 ? 'this' : 'these ' + quiet.length) + '</p><div class="sb-quiet-list">' + quiet.map(n => sbBox(d, n, new Set())).join('') + '</div><p class="say">Nothing to judge here</p></section>'); quiet.length = 0; };
+    for (const n of d.nodes || []) {
+      const s = n.step !== undefined && STEPS.find(x => stepItems(x).some(i => i.id === n.step));
+      if (!s) { quiet.push(n); continue; }
+      flush();
+      const touched = new Set(s.kind === 'item' && s.it.step ? s.it.step.outcomes.flatMap(o => (o.data || []).flatMap(e => (e.fields || []).map(f => f.name))) : []);
+      out.push(band(s, '<div class="sb-lane">' + sbBox(d, n, touched) + '</div>', sbChanges(s, n)));
+    }
+    flush();
+    rows = out.join('');
+  }
+  const checked = CHECKED.length ? '<div class="brief sb-check"><p class="eyebrow">' + I('shield', 'sm') + 'Checked before you see it</p>' + CHECKED.map(c => '<p class="chk">' + I('check', 'sm') + esc(c) + '</p>').join('') + '<p class="after">From the results of the checker for this review.</p></div>' : '';
+  return '<div class="sb-head"><span class="eyebrow">' + I('bulb', 'sm') + (flowTab ? 'What I suggest · you answer' : 'Questions about it') + '</span>' + (tabs || '<span></span>') + '<span class="eyebrow">' + I('phone', 'sm') + (flowTab ? 'What you tap' : 'What changes in it') + '</span></div>'
+    + '<div class="sb-rows">' + rows + '</div>' + checked;
 }
 const ovOpen = new Set();
 document.addEventListener('toggle', e => { const d = e.target; if (d.dataset && d.dataset.ovd) ovOpen[d.open ? 'add' : 'delete'](d.dataset.ovd); }, true);
@@ -1166,6 +1310,7 @@ function layerHtml(){
       + (answerLabel(x) ? '<span class="r">' + I('user', 'sm') + ' You: ' + esc(answerLabel(x)) + '</span>' : '') + '</div>').join('') + '</section>';
     return '<div class="layer" role="dialog" aria-modal="true" aria-label="History"><div class="layer-head"><h3>' + I('history') + 'History · every round in one document</h3><button type="button" class="btn small pri" data-act="close-layer">' + I('x', 'sm') + 'Close</button></div><div class="layer-body"><div class="hist">' + lines + now + '</div></div></div>';
   }
+  if (st.layer === 'screen' && st.shot) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="The whole screen"><div class="sh"><h3>' + I('phone') + esc(screenTitle(st.shot.id)) + '</h3><div class="proto-wrap">' + appHtml(st.shot.id, st.shot.on) + '</div><button type="button" class="btn pri" data-act="close-layer">Close</button></div></div>';
   if (st.layer === 'note' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Add a note"><div class="sh"><h3>' + I('edit') + esc(stepTitle(s)) + '</h3>' + explainHtml(s) + '<button type="button" class="btn pri" data-act="close-layer">Done</button></div></div>';
   if (st.layer === 'why' && s) return '<div class="sheet-layer" role="dialog" aria-modal="true" aria-label="Why I ask"><div class="sh"><h3>' + I('info') + esc(stepTitle(s)) + '</h3><p class="say">' + sayFor(s) + '</p>' + earlierHtml(s) + '<div class="rowgap">' + (VIEW ? '<button type="button" class="btn" data-act="history">' + I('history', 'sm') + 'History</button>' : '') + '<button type="button" class="btn pri" data-act="close-layer">Got it</button></div></div></div>';
   return '';
@@ -1176,7 +1321,7 @@ function keyOf(el){
   if (!el || el === document.body) return null;
   if (el.id && el.id !== 'q-title') return '#' + CSS.escape(el.id);
   if (el.name && el.type === 'radio') return 'input[name="' + CSS.escape(el.name) + '"][value="' + CSS.escape(el.value) + '"]';
-  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-mzoom', 'data-dtab', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
+  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-mzoom', 'data-dtab', 'data-sbtab', 'data-shot', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
     const f = el.getAttribute('data-for'); return '[' + a + '="' + CSS.escape(el.getAttribute(a)) + '"]' + (f ? '[data-for="' + CSS.escape(f) + '"]' : ''); }
   if (el.dataset && el.dataset.ask) return '[data-ask="' + el.dataset.ask + '"][data-for="' + CSS.escape(el.dataset.for) + '"]';
   if (el.dataset && el.dataset.opt) return '[data-opt="' + CSS.escape(el.dataset.opt) + '"]';
@@ -1230,6 +1375,8 @@ document.addEventListener('click', e => {
   if (d.lmin) { st.lmin.has(d.lmin) ? st.lmin.delete(d.lmin) : st.lmin.add(d.lmin); return render(); }
   if (d.ptab) { st.ptab = d.ptab; return render(); }
   if (d.dtab) { st.mapTab = d.dtab; return render(); }
+  if (d.sbtab) { st.sbTab = d.sbtab; return render(); }
+  if (d.shot) { st.shot = { id: d.shot, on: d.for }; st.layer = 'screen'; render(null); return $('[data-act="close-layer"]').focus(); }
   if (d.mzoom) { st.mapZoom = d.mzoom === 'fit' ? 1 : Math.min(3, Math.max(0.5, st.mapZoom + (d.mzoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.zoom) { st.zoom = Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
   if (d.preview !== undefined) { st.preview = d.preview || null; return render(); }
