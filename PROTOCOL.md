@@ -768,6 +768,16 @@ answerable in place, each with "Show the prototype and what should happen", the 
 at the end. Where you are and which view stay in memory or in the reviewer's own browser, and never
 leave it.
 
+**A flow's Overview is a storyboard (#130).** One shaded band per question holds three parts that belong
+together: on the left what I suggest and your answer, in the middle the step in the user flow (the line
+starts at Start and ends at End, never before or after), on the right the piece of the screen you tap,
+with **Whole screen** for all of it. The question you are on is lifted. With more than one diagram, tabs
+re-key the rows: on a database tab each row is a table, its touched columns marked, with what changes in
+it on the right; boxes no question is about fold into one quiet row. A question outside the flow keeps
+its prototype and what should happen on the right. The page ends with **Checked before you see it**,
+taken from the checker's own results for this review, never written by hand. On a phone each band is
+one card: the flow as chips, then the question, then the screen.
+
 **Return** lists every question with its answer or "Stays open", takes **Something missing? Add it**
 (D072), and holds the downloads. Each can be previewed and copied first, and each holds everything:
 **HTML**, this page with the answers written into it (D076), so whoever opens it sees everything, not a
