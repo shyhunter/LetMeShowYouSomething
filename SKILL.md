@@ -16,7 +16,7 @@ The agent writes a `review.json`. It becomes one offline HTML page, the only fil
 
 ## 1. Write and check the review
 
-Start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
+Start with `node <skill>/bin/init.mjs <decision|plan|test|explain|flow|backlog> docs/<name>.review.json --title "…"`: the smallest valid review of that kind, with its own id, where every place that needs your words says `[[fill in: …]]` (the checker refuses any left). Or start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
 
 - `ask` and `afterwards`: what you need, and what you will do with the answer. For anything that deletes, sends, pays, publishes or contacts someone, `afterwards` says you will ask before doing it, never that you will do whatever they agree with.
 - An action that deletes, sends, pays, publishes or contacts someone: make it an `approval` item in a section of its own (`action` exactly, `scope`, `risk`, a `preview` of the command or message, and `expiresAt`). It is answered Approve or Decline, never agreed with.
