@@ -660,3 +660,27 @@ test('the storyboard: a band per question, the line from Start, tabs re-key the 
   await expect(page.locator('#main .sb-band.quiet').first()).toContainText('No question is about');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
 });
+
+// #131 — a later round's storyboard shows the flow before and after, from the two rounds' files alone.
+test('a later round: the flow before and after, changed boxes outlined, the old words struck, screens side by side', async ({ page }) => {
+  await page.goto(example('flow-booking')); await overview(page);
+  await expect(page.locator('#main .ba')).toHaveCount(0);
+  await page.goto(example('flow-booking-round2')); await overview(page);
+  const ba = page.locator('#main .ba');
+  await expect(ba.locator('.eyebrow')).toHaveText('Since round 1: before and after');
+  await expect(ba.locator('.ba-gone').first()).toHaveText('Confirms Cancel booking');
+  await expect(ba.locator('.ba-changed').first()).toContainText('Changed after your note');
+  await expect(ba.locator('.ba-changed').first()).toContainText('Confirms Cancel and get €20.00 credit');
+  await expect(ba).toContainText('a freed place is held for 2 hours');
+  await expect(ba.locator('[data-before]')).toHaveCount(3);
+  await ba.locator('[data-before]').first().click();
+  const sheet = page.getByRole('dialog', { name: 'The whole screen' });
+  await expect(sheet.locator('figcaption')).toHaveText(['Round 1', 'Now']);
+  await expect(sheet.locator('figure').nth(0)).not.toContainText('free cancellation until');
+  await expect(sheet.locator('figure').nth(1)).toContainText('free cancellation until');
+  await page.locator('[data-act="close-layer"]').click();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
+  await page.goto(example('flow-booking-round3')); await overview(page);
+  await expect(page.locator('#main .ba .eyebrow')).toHaveText('Since round 2: before and after');
+  await expect(page.locator('#main .ba [data-before]')).toHaveCount(1);
+});

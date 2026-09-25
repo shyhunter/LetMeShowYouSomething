@@ -778,6 +778,12 @@ its prototype and what should happen on the right. The page ends with **Checked 
 taken from the checker's own results for this review, never written by hand. On a phone each band is
 one card: the flow as chips, then the question, then the screen.
 
+**In a later round, before and after (#131).** Above the storyboard, the flow as it was in the round
+before next to the flow as it is now: a changed box outlined ("Changed after your note" when it was
+answered), its old words struck through, or, when only what it does changed, the old and new effect;
+removed boxes struck through; new ones marked New. A changed screen opens as **Before and now**, both
+drawn side by side. Derived from the two rounds' files only; what stayed the same is left out.
+
 **Return** lists every question with its answer or "Stays open", takes **Something missing? Add it**
 (D072), and holds the downloads. Each can be previewed and copied first, and each holds everything:
 **HTML**, this page with the answers written into it (D076), so whoever opens it sees everything, not a
