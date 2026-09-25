@@ -74,6 +74,9 @@ function checkReview(r, rep) {
   rep.check('protocol', r?.protocol === 'letmeshowyousomething/review', `expected "letmeshowyousomething/review", got ${JSON.stringify(r?.protocol)}`);
   rep.check('schemaVersion', r?.schemaVersion === 1, `only version 1 exists; got ${JSON.stringify(r?.schemaVersion)}`);
   checkSchema('review', r, rep);
+  // bin/init.mjs marks every place that needs the agent's own words; none may reach a person.
+  const unfilled = JSON.stringify(r ?? {}).split('[[fill in:').length - 1;
+  rep.check('nothing left to fill in', unfilled === 0, `${unfilled} place${unfilled === 1 ? '' : 's'} still say${unfilled === 1 ? 's' : ''} [[fill in: …]]. Write each one in your own words, or remove what you do not need; a person would read the placeholder`);
   rep.check('review id', ID.test(r?.id ?? ''), `"${r?.id}" is not a valid id`);
   const example = EXAMPLE_IDS[r?.id];
   rep.check('own id', !example || example.text === JSON.stringify(r),

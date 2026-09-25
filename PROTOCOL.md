@@ -651,6 +651,9 @@ node bin/check.mjs followup <next-review.json> <review.json> <feedback.json>
 node bin/check.mjs review   examples/flow-booking.review.json --root .   # a flow, with every file:line proven
 ```
 
+**Nothing left to fill in.** `bin/init.mjs` starts a review of each kind with every place that needs the
+agent's own words marked `[[fill in: …]]`; the checker refuses a review that still has one.
+
 **The schema first** (`matches the schema`). Every review and every answers file is held to
 `schemas/review.v1.schema.json` or `schemas/feedback.v1.schema.json` by the checker itself, with no
 dependency: a field the protocol does not have, a missing one, a value of the wrong kind or out of
