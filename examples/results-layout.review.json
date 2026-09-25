@@ -1,0 +1,261 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "results-layout-2026-09",
+  "title": "How should search results look?",
+  "audience": "The client, who decides; no AI account needed",
+  "ask": "Look at the three layouts and pick one. Say what you would change in the note.",
+  "afterwards": "Your pick is the one we design and build. If none fits, I draw new ones from your note and send them back.",
+  "focus": "user-flow",
+  "brief": {
+    "question": "Which layout should the results page use: cards, a list or a table?",
+    "explains": "The same three lamps, shown three ways. Each layout suits a different way of choosing.",
+    "recommendation": "A simple list: it reads the same on a phone and a computer, and shows the most results at once.",
+    "risks": [
+      "If people choose by the picture, cards will serve them better than a list."
+    ]
+  },
+  "createdAt": "2026-09-25T12:00:00Z",
+  "createdBy": {
+    "agent": "claude-code"
+  },
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      },
+      {
+        "value": "changed-mind",
+        "label": "Changed my mind",
+        "tone": "neutral"
+      }
+    ]
+  },
+  "fields": [
+    {
+      "key": "best_for",
+      "label": "Best for"
+    },
+    {
+      "key": "cost",
+      "label": "Costs",
+      "tone": "caution"
+    }
+  ],
+  "sections": [
+    {
+      "id": "layout",
+      "label": "The results page",
+      "mode": "choose-one",
+      "recommended": {
+        "itemId": "opt-list",
+        "why": "It reads the same on a phone and a computer, and shows the most results at once."
+      }
+    }
+  ],
+  "flow": {
+    "start": "search",
+    "screens": [
+      {
+        "id": "search",
+        "title": "Search",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Find a lamp"
+          },
+          {
+            "type": "search",
+            "id": "query",
+            "placeholder": "Search lamps",
+            "value": "lamp"
+          },
+          {
+            "type": "button",
+            "id": "go",
+            "label": "Search"
+          }
+        ]
+      },
+      {
+        "id": "results-cards",
+        "title": "Results as cards",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Cards",
+            "back": {
+              "id": "back-cards"
+            }
+          },
+          {
+            "type": "card",
+            "title": "Desk lamp, brass",
+            "text": "€49 · ★ 4.6"
+          },
+          {
+            "type": "card",
+            "title": "Clip-on lamp",
+            "text": "€19 · ★ 4.1"
+          },
+          {
+            "type": "card",
+            "title": "Floor lamp, oak",
+            "text": "€129 · ★ 4.8"
+          }
+        ]
+      },
+      {
+        "id": "results-list",
+        "title": "Results as a list",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "List",
+            "back": {
+              "id": "back-list"
+            }
+          },
+          {
+            "type": "list",
+            "items": [
+              "Desk lamp, brass · €49 · ★ 4.6",
+              "Clip-on lamp · €19 · ★ 4.1",
+              "Floor lamp, oak · €129 · ★ 4.8"
+            ]
+          }
+        ]
+      },
+      {
+        "id": "results-table",
+        "title": "Results as a table",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Table",
+            "back": {
+              "id": "back-table"
+            }
+          },
+          {
+            "type": "table",
+            "columns": [
+              "Lamp",
+              "Price",
+              "Rating"
+            ],
+            "rows": [
+              [
+                "Desk lamp, brass",
+                "€49",
+                "4.6"
+              ],
+              [
+                "Clip-on lamp",
+                "€19",
+                "4.1"
+              ],
+              [
+                "Floor lamp, oak",
+                "€129",
+                "4.8"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "opt-cards",
+      "sectionId": "layout",
+      "title": "Cards in a grid",
+      "summary": "Each lamp in a box with its name, price and rating.",
+      "fields": {
+        "best_for": "Choosing by the picture",
+        "cost": "Needs a photo for every lamp"
+      },
+      "step": {
+        "goal": "to find the right lamp quickly",
+        "from": "search",
+        "on": "go",
+        "status": "proposed",
+        "outcomes": [
+          {
+            "effect": "Shows the results cards in a grid",
+            "to": "results-cards",
+            "canNow": "Open a lamp, or search again"
+          }
+        ]
+      }
+    },
+    {
+      "id": "opt-list",
+      "sectionId": "layout",
+      "title": "A simple list",
+      "summary": "One lamp per line: name, price and rating.",
+      "fields": {
+        "best_for": "Reading quickly, on any screen"
+      },
+      "step": {
+        "goal": "to find the right lamp quickly",
+        "from": "search",
+        "on": "go",
+        "status": "proposed",
+        "outcomes": [
+          {
+            "effect": "Shows the results a simple list",
+            "to": "results-list",
+            "canNow": "Open a lamp, or search again"
+          }
+        ]
+      }
+    },
+    {
+      "id": "opt-table",
+      "sectionId": "layout",
+      "title": "A table you can sort",
+      "summary": "Rows and columns; tap a heading to sort by it.",
+      "fields": {
+        "best_for": "Comparing prices and ratings",
+        "cost": "Cramped on a phone"
+      },
+      "step": {
+        "goal": "to find the right lamp quickly",
+        "from": "search",
+        "on": "go",
+        "status": "proposed",
+        "outcomes": [
+          {
+            "effect": "Shows the results a table you can sort",
+            "to": "results-table",
+            "canNow": "Open a lamp, or search again"
+          }
+        ]
+      }
+    }
+  ]
+}

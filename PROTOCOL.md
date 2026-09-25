@@ -216,6 +216,10 @@ expressible. The pick comes back in `choices`: one entry per choose-one section,
 (`itemId: null`), with the chosen option's title echoed and `followedRecommendation` derived. Across
 many files, that is how often reviewers overrule the agent.
 
+**Options that look different** (#33): in a review with a flow, an option may be a step whose one
+outcome leads to its own screen, drawn or a screenshot. The pick then shows every option's screen side
+by side, each with its own button. Worked example: `examples/results-layout.review.json`.
+
 ## Decisions have memory
 
 An item can declare what it does to an earlier decision:
