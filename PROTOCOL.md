@@ -617,6 +617,12 @@ node bin/check.mjs followup <next-review.json> <review.json> <feedback.json>
 node bin/check.mjs review   examples/flow-booking.review.json --root .   # a flow, with every file:line proven
 ```
 
+**The schema first** (`matches the schema`). Every review and every answers file is held to
+`schemas/review.v1.schema.json` or `schemas/feedback.v1.schema.json` by the checker itself, with no
+dependency: a field the protocol does not have, a missing one, a value of the wrong kind or out of
+its list is refused, each named with where it is. A field the page does not know would otherwise be
+ignored in silence, and what the agent meant would never reach the reviewer.
+
 **The next round drops nothing** (`followup`, #52). A follow-up review must carry everything the
 reviewer left open: every gap, every item they added, every request, and every answer that settles
 nothing — a verdict whose tone is `caution` or `neutral`, such as "Partially works", "Couldn't test it"
