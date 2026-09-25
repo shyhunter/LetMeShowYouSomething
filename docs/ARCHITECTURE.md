@@ -53,23 +53,31 @@ When a file in the last column disagrees with the one that answers the question,
 
 ## What ships and what does not
 
-Shipped, and documented in PROTOCOL.md: reviews and feedback v1 · flows, screens and diagrams
-(flowchart, system, sequence, database, AI) · comments on a diagram and pictures · proposed changes (checked; the page no longer makes them) ·
+Shipped, and documented in PROTOCOL.md: reviews and feedback v1, each checked against its schema by
+the checker itself (#116) · flows, screens and diagrams (flowchart, system, sequence, database, AI) ·
+comments on a diagram and pictures · proposed changes (checked; the page no longer makes them) ·
 choices, requests, approvals · answers given in chat · the answered page read back as data (#78) ·
 unique answer ids (#77) · answers that settle nothing carried forward (#88) · what became of each
 proposal, checked against the diagrams (#87) · conformance fixtures (#89) · the review page as the
-approved design: Let me explain, the tour with four places, the Overview, Return with HTML, Markdown
-and JSON, a phone layout on one screen (#74, #100–#103, #105). · every round of a review in
-one page: tags, replies, History, the chain checked (#82). · a flow's screens as screenshots with
-clickable areas, checked; the reviewer's own screenshot of a screen, sent back; a choice between mockups, side by side (#33). · what making a review used, as Claude Code logged it, or unavailable with the reason (#84).
+approved design: Let me explain, the tour with its places in a fixed order and none left empty, the
+Overview, Return with HTML, Markdown and JSON, a phone layout (#74, #100–#103, #105, #115) · the map's
+other diagrams as tabs, and zoom in place (#119) · every round of a review in one page: tags,
+replies, History, the chain checked, two answers files for one round compared and never merged
+(#82) · a flow's screens as screenshots with clickable areas; the reviewer's own screenshot of a
+screen; a choice between mockups, side by side (#33) · saving the answered page into a file the
+reviewer chooses, where the browser allows (#83) · what making a review used, as Claude Code logged
+it, or unavailable with the reason (#84) · the fifteen use cases played over rounds to the end
+(test/scenarios.test.mjs).
 
-Proposed or in progress, **not** shipped, whatever an issue says:
+Decided against for now (closed as not planned; reopen the issue to change that):
 
 | Issue | What |
 |---|---|
 | [#94](https://github.com/shyhunter/LetMeShowYouSomething/issues/94) | the page shows what became of each proposal (the check exists; the display does not) |
-| [#83](https://github.com/shyhunter/LetMeShowYouSomething/issues/83) | saving back to the same file, where the browser allows |
 | [#66](https://github.com/shyhunter/LetMeShowYouSomething/issues/66) | proposing changes to a flow's steps, outcomes and screens |
+
+Not built, and not proposed: ranking a backlog in order (the `priority` verdict set sorts into
+now · next · later), and a history shortened for a new reader (every round travels whole).
 
 ## Why it is this way
 
