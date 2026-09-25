@@ -96,7 +96,7 @@ const ICONS = {
   pin: '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
   battery: '<rect x="2" y="8" width="18" height="9" rx="2"/><path d="M22 11v3"/><rect x="4" y="10" width="11" height="5" fill="currentColor" stroke="none"/>',
   wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01"/>', dots: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>',
-  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>', db: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>', undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', db: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
 };
 const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${Object.entries(ICONS).map(([k, v]) =>
   `<symbol id="i-${k}" viewBox="0 0 24 24">${v}</symbol>`).join('')}</svg>`;
@@ -558,6 +558,16 @@ const OPTS = REVIEW.verdictSet.options;
 const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' }, { value: 'decline', label: 'Decline', tone: 'negative' }];
 const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
 const TILE = { positive: ['t-ok', 'check'], caution: ['t-warn', 'half'], negative: ['t-bad', 'x'], neutral: ['t-neut', 'help'] };
+// Each answer its own symbol: a word that says "later" turns back; two answers of one tone never share one.
+const SPARE_ICONS = ['undo', 'clock', 'flag', 'pin', 'star', 'info'];
+function tileIcons(opts){
+  const used = new Set();
+  return opts.map(o => {
+    let icon = /revisit|later|again|back|postpone|defer/i.test(o.value + ' ' + o.label) ? 'undo' : (TILE[o.tone] || TILE.neutral)[1];
+    if (used.has(icon)) icon = SPARE_ICONS.find(x => !used.has(x)) || icon;
+    used.add(icon); return icon;
+  });
+}
 
 // #60 — pictures on a note. The page redraws each one, at most 1600 px, and saves it again: hidden
 // details such as a photo's location are gone, and the size stays small enough to send.
@@ -688,7 +698,7 @@ function tilesHtml(s, compact){
   }
   const it = s.it, v = store.verdicts[it.id];
   return '<p class="qprompt">' + I(it.approval ? 'shield' : 'help', 'sm') + (it.approval ? 'Do you approve this?' : 'Your answer') + '</p><div class="tiles' + (compact ? ' compact' : '') + '" role="radiogroup" aria-label="' + (it.approval ? 'Approve or decline' : 'Verdict for') + ': ' + esc(it.title) + '">'
-    + optsFor(it).map(o => { const [k, icon] = TILE[o.tone] || TILE.neutral;
+    + optsFor(it).map((o, n, all) => { const k = (TILE[o.tone] || TILE.neutral)[0], icon = tileIcons(all)[n];
       return '<label class="tile ' + k + '"><input type="radio" name="v-' + esc(it.id) + '" value="' + esc(o.value) + '" data-item="' + esc(it.id) + '"' + (v === o.value ? ' checked' : '')
         + '><span class="dot">' + I(it.approval && o.value === 'approve' ? 'shield' : icon, 'sm') + '</span>' + esc(o.label) + '</label>'; }).join('') + '</div>';
 }

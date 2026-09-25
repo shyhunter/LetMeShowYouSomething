@@ -504,3 +504,13 @@ test('a flow in round 3: one question, the whole flow on the map, both earlier r
   await page.locator('[data-act="history"]:visible').first().click();
   await expect(page.getByRole('dialog', { name: 'History' }).locator('.hround')).toHaveCount(3);
 });
+
+// Every answer has its own symbol: Revisit turns back, and no two answers share one.
+test('each answer tile has its own symbol; Revisit turns back', async ({ page }) => {
+  await page.goto(example('flow-booking'));
+  await start(page);
+  const icons = await page.locator('.tile .dot use').evaluateAll((l) => l.map((u) => u.getAttribute('href')));
+  expect(new Set(icons).size).toBe(icons.length);
+  await expect(page.locator('.tile:has(input[value="revisit"]) .dot use')).toHaveAttribute('href', '#i-undo');
+  await expect(page.locator('.tile:has(input[value="partly-agree"]) .dot use')).toHaveAttribute('href', '#i-half');
+});
