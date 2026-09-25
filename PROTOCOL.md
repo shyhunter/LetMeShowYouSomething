@@ -747,6 +747,17 @@ page keeps its own answers in the browser, apart from the original's. Downloadin
 reviewer returns the file themselves. A partial review is allowed; nothing unanswered is ever treated
 as agreement. Storage-failure warnings stay visible.
 
+**Save to a file** (#83), where the browser allows it (Chrome and Edge on a computer; elsewhere the page
+says so and offers Download, never switching on its own). The reviewer chooses one file; the page asks
+for no more than that file and keeps the choice in the open tab only, never in the answers or the
+export. Before it replaces anything, the file must be empty or a page of this same review; a file that
+holds other answers, or changed since this page last saved it, is replaced only when the reviewer says
+so, or saved as a new file. The browser writes the new file whole before it replaces the old one, so a
+failed or cancelled save leaves the file and the answers as they were; "Saved" is shown only after the
+write has finished. Kept in the browser, saved to a file and sent back are three different things, and
+the page says which one happened. On the agent's side nothing is replaced either: `render.mjs` writes
+only the path it is given, and `answer.mjs` refuses to overwrite an existing file.
+
 **Reading an answered page** (#78). The page holds the review and the answers each on one line of its
 script, as JSON: `const REVIEW = {…};` and `const SEED = {…};` (the answers as the page keeps them, plus
 `exportedAt`). Both are written with `<`, U+2028 and U+2029 escaped, so neither can close the script

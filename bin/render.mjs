@@ -252,6 +252,8 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 .pic{margin:0;display:grid;gap:4px;justify-items:start}
 .pic img{display:block;max-width:180px;max-height:140px;width:auto;height:auto;border:1px solid var(--line);border-radius:6px;background:var(--surf)}
 .pic-msg{flex-basis:100%;font-size:12.5px;color:var(--mut)}
+.savefile{display:grid;gap:8px;border:1px dashed var(--line2);border-radius:12px;padding:10px 12px;background:var(--surf)}
+.conflict{border:1px solid var(--warn);background:var(--warn-bg);border-radius:10px;padding:10px 12px;display:grid;gap:8px;font-size:13.5px}
 
 /* the four places: the same, in the same order, on every question */
 .slot{background:var(--surf);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;min-width:0}
@@ -538,7 +540,7 @@ ${SPRITE}
 </div>
 <p id="save-warning" role="alert" hidden></p>
 <main id="main"></main>
-<p class="note" id="footnote">Answers save in this browser as you go. Downloading saves a file; nothing is sent from this page.</p>
+<p class="note" id="footnote">Answers are kept in this browser as you go, not in a file. Downloading or saving writes a file; nothing is sent from this page.</p>
 <p class="made">${mark ? `<svg viewBox="0 0 64 64" aria-hidden="true">${mark}</svg>` : ''}Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
 <div id="layer-root"></div>
@@ -979,7 +981,60 @@ function downloadsHtml(){
   return '<div class="included" aria-label="Included in every download">' + inc.map(x => '<span>' + I('check', 'sm') + esc(x) + '</span>').join('') + '</div>'
     + '<div class="dl">' + f('HTML', 'globe', 'This page, answered', 'Opens in any browser. Best to send back.', true) + f('MD', 'list', 'A readable report', 'For notes, a wiki or an email.') + f('JSON', 'code', 'For the agent', 'The same answers as data.') + '</div>'
     + (p ? '<div class="preview"><div class="preview-head"><span>' + I('eye', 'sm') + ' Preview · ' + p.toUpperCase() + '</span><span class="rowgap"><button type="button" class="btn small" data-act="copy">' + I('copy', 'sm') + 'Copy</button><button type="button" class="btn small" data-preview="">' + I('x', 'sm') + 'Close</button></span></div><pre id="pv">' + esc(txt) + '</pre></div>' : '')
+    + saveFileHtml()
     + '<p class="sendnote" id="download-status" role="status">Every format holds everything: each answer, each note, what is still open and what you added. Downloading sends nothing; send the file back to whoever asked.</p>';
+}
+
+// #83 — saving into a file the reviewer chooses, where the browser allows it (Chrome and Edge on a computer). Opt-in,
+// one file at a time, chosen by the reviewer; the file is checked to be this review before it is replaced, a
+// file changed since the last save is never overwritten without asking, and a failed write leaves the file and
+// the answers as they were. The chosen file stays in this tab only: it is never kept, exported or sent.
+const CAN_SAVE = typeof window.showSaveFilePicker === 'function';
+const REVIEW_LINE = PAGE.split('\\n').find(l => l.startsWith('const REVIEW = ')) || '';
+const saving = { handle: null, stamp: null, conflict: null, busy: false };
+function saveFileHtml(){
+  if (!CAN_SAVE) return '<div class="savefile"><p class="sendnote">' + I('info', 'sm') + ' Saving straight into a file works in Chrome and Edge on a computer. Here, use Download: the file goes to your downloads folder.</p></div>';
+  const c = saving.conflict;
+  return '<div class="savefile"><div class="rowgap"><button type="button" class="btn small" data-act="save-file">' + I('download', 'sm') + 'Save to a file…</button>'
+    + (saving.handle ? '<button type="button" class="btn small" data-act="save-again">' + I('check', 'sm') + 'Save again to ' + esc(saving.handle.name) + '</button>' : '') + '</div>'
+    + (c ? '<div class="conflict" role="alert"><p>' + I('alert', 'sm') + ' ' + esc(c.why) + '</p><div class="rowgap"><button type="button" class="btn small" data-act="save-replace">Replace it with the answers on this page</button><button type="button" class="btn small" data-act="save-file">Save as a new file</button><button type="button" class="btn small quiet" data-act="save-cancel">Cancel</button></div></div>' : '')
+    + '<p class="sendnote" id="save-status" role="status">' + esc(saving.said || 'Saves this page, answered, into a file you choose on this computer. Saving is not sending: return the file yourself.') + '</p></div>';
+}
+function saySaved(t){ saving.said = t; const s = $('#save-status'); if (s) s.textContent = t; $('#footnote').textContent = t; }
+async function saveToFile(again, replace){
+  if (saving.busy) return; saving.busy = true;
+  try {
+    let h = (again || replace) ? (replace ? saving.conflict.handle : saving.handle) : null;
+    saving.conflict = null;
+    if (!h) {
+      try { h = await window.showSaveFilePicker({ suggestedName: REVIEW.id + '.feedback.html', types: [{ description: 'Web page', accept: { 'text/html': ['.html'] } }] }); }
+      catch (e) { return saySaved(e && e.name === 'AbortError' ? 'Nothing was saved: the file picker was closed.' : 'This browser did not let the page choose a file. Nothing was saved; use Download instead.'); }
+    }
+    if (h.queryPermission && await h.queryPermission({ mode: 'readwrite' }) !== 'granted' && await h.requestPermission({ mode: 'readwrite' }) !== 'granted')
+      return saySaved('The browser did not give permission to write ' + h.name + '. Nothing was saved; your answers are still here.');
+    let now;
+    try { now = await h.getFile(); } catch { return saySaved('The page could not read ' + h.name + ' to check it. Nothing was saved; use Download instead.'); }
+    const text = now.size ? await now.text() : '';
+    if (text && !text.split('\\n').includes(REVIEW_LINE))
+      return saySaved(h.name + ' is another review, or not a review page. Nothing was saved: choose this review\\'s file, or a new name.');
+    if (!replace) {
+      const seedLine = text.split('\\n').find(l => l.startsWith('const SEED = {'));
+      const at = seedLine ? (seedLine.split('"exportedAt":"')[1] || '').split('"')[0] : '';
+      // The answers this page was opened with are not someone else's: that is the file itself, saved back.
+      const changed = h === saving.handle ? now.lastModified !== saving.stamp : !!seedLine && !(SEED && at === SEED.exportedAt);
+      if (changed) {
+        saving.conflict = { handle: h, why: h === saving.handle ? h.name + ' changed since you saved it here, perhaps in another window. Replace what is in it, or keep it and save as a new file?' : h.name + ' already holds answers' + (at ? ' saved ' + at.slice(0, 16).replace('T', ' ') : '') + '. Replace them with the answers on this page, or save as a new file?' };
+        saySaved('Nothing was saved yet: ' + h.name + ' already holds other answers.');
+        return render();
+      }
+    }
+    let w;
+    try { w = await h.createWritable(); await w.write(htmlSeed()); await w.close(); }
+    catch (e) { try { if (w) await w.abort(); } catch {} return saySaved('Saving to ' + h.name + ' failed' + (e && e.name === 'NotAllowedError' ? ': the browser took away permission' : '') + '. The file is as it was, and your answers are still here: try again, or use Download.'); }
+    saving.handle = h; saving.stamp = (await h.getFile()).lastModified;
+    saySaved('Saved to ' + h.name + ' at ' + new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + '. It is on this computer only; nothing was sent: return the file yourself.');
+    render();
+  } finally { saving.busy = false; }
 }
 
 // ── the tour ──
@@ -1144,6 +1199,10 @@ document.addEventListener('click', e => {
     case 'focus-all': st.min = new Set(); return render();
     case 'mark': st.marking = st.marking === d.for ? null : d.for; st.layer = null; render(); { const m = $('.map-scroll.marking'); if (m) m.scrollIntoView({ block: 'nearest' }); } return;
     case 'missing': st.missing = !st.missing; render(null); return ($('#at') || $('[data-act="missing"]')).focus();
+    case 'save-file': return saveToFile(false);
+    case 'save-again': return saveToFile(true);
+    case 'save-replace': return saveToFile(false, true);
+    case 'save-cancel': saving.conflict = null; saySaved('Nothing was saved.'); return render();
     case 'copy': { const pv = $('#pv'); if (pv && navigator.clipboard) navigator.clipboard.writeText(pv.textContent).catch(() => {}); return; }
   }
 });
