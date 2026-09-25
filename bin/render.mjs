@@ -335,11 +335,14 @@ body.at-start :is(#topbar,#main,#footnote),body:not(.at-start) #start{display:no
 /* progress in coloured parts */
 .prog{display:grid;gap:6px}
 .segs{display:flex;gap:4px;align-items:flex-end}
-.pseg{flex:var(--w) 1 0;min-width:0;border:0;background:none;padding:0;cursor:pointer;text-align:left;display:grid;gap:4px;color:var(--sc)}
+.pseg{flex:var(--w) 1 0;min-width:0;align-self:stretch;align-content:start;border:0;background:none;padding:0;cursor:pointer;text-align:left;display:grid;gap:4px;color:var(--sc)}
 .pseg .track{height:8px;border-radius:99px;background:color-mix(in srgb,var(--sc) 20%,var(--line));overflow:hidden;position:relative}
 .pseg .track i{position:absolute;inset:0 auto 0 0;background:var(--sc);border-radius:99px}
 .pseg.now .track{outline:2px solid var(--sc);outline-offset:2px}
-.pseg .pl{font:600 10.5px/1.2 var(--mono);letter-spacing:.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;gap:4px;align-items:center}
+/* Let me explain and Return take the room their names need; the questions share the rest. */
+.pseg[data-jump="start"],.pseg[data-jump="return"]{flex:0 0 auto;min-width:44px}
+.pseg .pl{font:600 10.5px/1.3 var(--mono);letter-spacing:.03em;display:block;overflow-wrap:break-word}
+.pseg .pl .ic{margin-right:4px}
 .pseg .pl small{color:var(--mut);font-weight:500}
 @media (pointer:coarse){.pseg{min-height:44px;min-width:44px;align-content:end}}
 .prog-sum{font:600 12px var(--mono);color:var(--mut);display:inline-flex;gap:6px;align-items:center}

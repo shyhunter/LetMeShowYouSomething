@@ -397,3 +397,15 @@ for (const [kind, shape] of Object.entries(KINDS)) {
     await expect(page.locator('#main .c-item')).toHaveCount(n - 2);
   });
 }
+
+// Every part of the progress bar says its whole name: none is cut, however narrow its share.
+test('the progress bar names every part in full', async ({ page }) => {
+  for (const name of Object.keys(PAGES)) {
+    await page.goto(example(name));
+    await start(page);
+    const cut = await page.evaluate(() => [...document.querySelectorAll('.pseg .pl')].filter((e) => e.getClientRects().length
+      && (e.scrollWidth > e.clientWidth + 1 || e.getBoundingClientRect().right > e.closest('.pseg').getBoundingClientRect().right + 1)).map((e) => e.textContent.trim()));
+    expect(cut, `${name}: labels cut`).toEqual([]);
+  }
+  await expect(page.locator('.pseg[data-jump="start"]')).toContainText('Let me explain');
+});
