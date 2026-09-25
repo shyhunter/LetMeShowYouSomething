@@ -511,6 +511,20 @@ Reusable understanding reviews, all synthetic and fully offline:
 Each has a generated HTML page and item links. Copy a review with a new id and adapt its assumptions;
 these are drawings, not a retry engine, reservation implementation or live AI integration.
 
+## What making it used
+
+A review may say what making it used (#84): `usage`, written by `bin/usage.mjs`, never by hand. In
+Claude Code it reads the session's own log (found by `CLAUDE_CODE_SESSION_ID`, never guessed) and
+adds up what the model API reported for each call since `source.since`, each call once: `input`,
+`output`, `cacheRead` and `cacheWrite` tokens, kept apart. It copies numbers and model names, never a
+prompt or an answer. `status` is `measured`, or `partial` with the `reason` (work handed to sub-agents,
+unreadable lines, a call counted two ways), or `unavailable` with the `reason` (no session log, nothing
+in it to count). A zero is only a zero the log reports; nothing is ever estimated, and no price is
+shown: the page says "Cost: not measured". The numbers are what the host reported, not an audited or
+verified bill, and the page says that too. The checker refuses numbers on an unavailable record, a
+partial one without its reason, any other method, and a count that ends before it starts or in the
+future (`usage is honest`).
+
 ## No secrets
 
 Reviews get emailed and forwarded. The checker refuses **any** review containing something shaped
