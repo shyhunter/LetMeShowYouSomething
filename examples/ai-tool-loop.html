@@ -15,6 +15,7 @@
   --blue:#2D5DA8; --blue-bg:#E3ECF8;
   --s0:#6B6480; --s1:#1F7A74; --s2:#A63D63; --s3:#4056A6; --s4:#9A6B12; --s5:#5B3E8C; --s6:#2F6B45;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,monospace; --r:12px;
+  --edge:#1B1726; --lift:#5B3E8C;
 }
 @media (prefers-color-scheme:dark){:root:not([data-theme]){
   --bg:#131019; --surf:#1B1723; --sunk:#221D2D; --line:#322B40; --line2:#4A4160;
@@ -24,6 +25,7 @@
   --ok:#6CBF8D; --ok-bg:#1C2E23; --warn:#D9A441; --warn-bg:#2E2616; --bad:#E08272; --bad-bg:#35201D; --neut:#A3ACBB; --neut-bg:#23272E;
   --blue:#7FA6E6; --blue-bg:#1B2536;
   --s0:#9A92AE; --s1:#4DB8AF; --s2:#E27FA3; --s3:#8FA2EA; --s4:#DDAA4E; --s5:#B39BE0; --s6:#6CBF8D;
+  --edge:#D9D2E6; --lift:#B39BE0;
 }}
 :root[data-theme="dark"]{
   --bg:#131019; --surf:#1B1723; --sunk:#221D2D; --line:#322B40; --line2:#4A4160;
@@ -33,6 +35,7 @@
   --ok:#6CBF8D; --ok-bg:#1C2E23; --warn:#D9A441; --warn-bg:#2E2616; --bad:#E08272; --bad-bg:#35201D; --neut:#A3ACBB; --neut-bg:#23272E;
   --blue:#7FA6E6; --blue-bg:#1B2536;
   --s0:#9A92AE; --s1:#4DB8AF; --s2:#E27FA3; --s3:#8FA2EA; --s4:#DDAA4E; --s5:#B39BE0; --s6:#6CBF8D;
+  --edge:#D9D2E6; --lift:#B39BE0;
 }
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 var(--sans);-webkit-font-smoothing:antialiased}
@@ -399,6 +402,48 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 .made svg{width:16px;height:16px;flex:none;color:var(--ac)}
 .made a{color:inherit;text-underline-offset:2px}
 .usage{margin:6px 0 0;font-size:12px;color:var(--mut);max-width:80ch}
+/* #129 — soft brutalist (style D): bold outlines and clearly bounded blocks; a hard shadow only on what can be pressed,
+   so the look itself says what is clickable; the current question lifted in purple; our calm colours; heavy system
+   type for headings, labels and buttons (no font file: the page fetches nothing and stays MIT-0). */
+h1,h2,.t-head h2,.brief h2,#start h1{font-weight:800;letter-spacing:-.022em}
+.eyebrow,.sec-name,.slot-head h3,.scard h3,.c-sec,.prog-sum,.pseg .pl{font-family:var(--sans);font-weight:800;letter-spacing:.07em}
+.btn,.tile,.opt,#start-mini,.seg,.variant .btn{border:2px solid var(--edge)}
+.btn:not(.quiet),.tile,.opt,#start-mini{box-shadow:2px 2px 0 var(--edge);font-weight:700}
+.btn.pri{border-color:var(--edge);box-shadow:3px 3px 0 var(--edge)}
+.btn:not(.quiet):not(:disabled):active,.tile:active,.opt:active,#start-mini:active{transform:translate(2px,2px);box-shadow:none}
+.btn.quiet{border:0;box-shadow:none;text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px}
+.btn.icon{border-color:var(--edge)}
+.seg{background:var(--surf);box-shadow:2px 2px 0 var(--edge)}
+.seg button[aria-pressed="true"]{background:var(--ac);color:var(--on-ac);box-shadow:none}
+.tile{border-radius:10px}
+.tile .dot{border:1.5px solid var(--edge)}
+.tile:has(input:checked){border-color:var(--edge);box-shadow:3px 3px 0 var(--edge)}
+.opt[aria-pressed="true"]{border-color:var(--edge);box-shadow:4px 4px 0 var(--lift)}
+.scard,.slot,.t-head,.t-ans,.c-item,.brief,.dlf,.settled,.hround,.preview,.savefile,.addmissing,.added>div,.card{border:2px solid var(--edge)}
+.exp,.sum-row{border:1.5px solid var(--edge)}
+.c-item{border-left:6px solid var(--sc,var(--edge))}
+.t-head{border-top:6px solid var(--sc,var(--ac))}
+.t-ans{border-top:0}
+.t-head{box-shadow:6px 0 0 var(--lift)}
+.t-ans{box-shadow:6px 6px 0 var(--lift)}
+.scard .num,.slot-head .num{border:2px solid var(--edge);font-family:var(--sans);font-weight:800}
+.slot-head{border-bottom:2px solid var(--edge)}
+.chip-part,.status,.tag{border:1.5px solid currentColor}
+.explain textarea,.mark textarea,.addmissing input,.addmissing textarea{border:2px solid var(--edge)}
+.pseg .track{border:1.5px solid var(--edge);height:10px}
+.pseg.now .track{outline:3px solid var(--lift);outline-offset:2px}
+.dg .dg-shape{stroke:var(--edge);stroke-width:2}
+.dg .dg-edge path{stroke:var(--edge);stroke-width:2}
+.dg marker path{fill:var(--edge)}
+.dg .dg-selected .dg-shape{stroke:var(--lift);stroke-width:3.5}
+.dg .dg-answered .dg-shape{stroke:var(--ok);stroke-width:2.5}
+.dg .dg-label{font-weight:600}
+.legend i{border:2px solid var(--edge)}
+.no-script,#save-warning,.conflict{border-width:2px}
+.start-more>summary,details.more>summary,.c-item details>summary{text-decoration:underline;text-underline-offset:3px;text-decoration-thickness:2px;font-weight:700}
+@container (max-width:700px){.t-head{box-shadow:none}.t-ans{box-shadow:4px 4px 0 var(--lift)}
+  .ptabs{border:2px solid var(--edge);background:var(--surf);box-shadow:2px 2px 0 var(--edge)}
+  .ptabs button[aria-pressed="true"]{background:var(--ac);color:var(--on-ac)}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head><body class="at-start">
