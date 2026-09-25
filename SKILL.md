@@ -39,7 +39,7 @@ node <skill>/bin/usage.mjs --claude-code --since <when you started on it> --into
 node <skill>/bin/render.mjs docs/<name>.review.json docs/<name>.html
 ```
 
-Note the time when you start on a review (`date -u +%FT%TZ`) and give it as `--since`. `usage.mjs` counts the model calls your host logged since then, each once, and writes them into the review; the page shows them as reported, never as a price. Outside Claude Code, or when it cannot count everything (work handed to sub-agents), it says so: "unavailable" or "partial", with the reason. Never write these numbers by hand, and never estimate them.
+Always run `usage.mjs` before `render.mjs`, also when you think it cannot measure: it then writes "unavailable" and why, which the page shows. Note the time when you start on a review (`date -u +%FT%TZ`) and give it as `--since`, written out, not as a variable: the tool finds its own command in the log by it. `usage.mjs` counts the model calls your host logged since then, each once, and writes them into the review; the page shows them as reported, never as a price. Outside Claude Code, or when it cannot count everything (work handed to sub-agents), it says so: "unavailable" or "partial", with the reason. Never write these numbers by hand, and never estimate them.
 
 ## 2. Hand it over
 

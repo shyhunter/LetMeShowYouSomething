@@ -12,7 +12,7 @@ import { measure } from '../bin/usage.mjs';
 const ROOT = resolve(import.meta.dirname, '..');
 const run = (args, env = {}) => spawnSync(process.execPath, args, { encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env } });
 const SINCE = '2026-09-25T09:00:00.000Z', NOW = '2026-09-25T10:00:00.000Z';
-const call = (id, at, usage, extra = {}) => JSON.stringify({ type: 'assistant', timestamp: at, message: { id, model: 'claude-test-model', content: [{ type: 'text', text: 'SYNTHETIC answer <img src=x onerror=alert(1)>' }], usage, ...extra } });
+const call = (id, at, usage, extra = {}) => JSON.stringify({ type: 'assistant', timestamp: at, message: { id, model: 'claude-test-model', stop_reason: 'end_turn', content: [{ type: 'text', text: 'SYNTHETIC answer <img src=x onerror=alert(1)>' }], usage, ...extra } });
 const u = (input, output, cacheRead = 0, cacheWrite = 0) => ({ input_tokens: input, output_tokens: output, cache_read_input_tokens: cacheRead, cache_creation_input_tokens: cacheWrite });
 
 test('usage: each call counted once, only inside the window, the four kinds kept apart', () => {
@@ -26,6 +26,14 @@ test('usage: each call counted once, only inside the window, the four kinds kept
   const m = measure(lines, SINCE, NOW);
   assert.deepEqual(m, { status: 'measured', models: ['claude-test-model'], calls: 2, tokens: { input: 14, output: 250, cacheRead: 11000, cacheWrite: 300 } });
   assert.doesNotMatch(JSON.stringify(m), /SYNTHETIC|onerror/, 'numbers and model names only, never a prompt or an answer');
+});
+
+test('usage: a call logged while it streams counts once, with its finished count', () => {
+  const lines = [call('s1', '2026-09-25T09:10:00Z', u(2, 8, 100, 10), { stop_reason: null }), call('s1', '2026-09-25T09:10:03Z', u(2, 235, 100, 10))];
+  assert.deepEqual(measure(lines, SINCE, NOW).tokens, { input: 2, output: 235, cacheRead: 100, cacheWrite: 10 });
+  assert.equal(measure(lines, SINCE, NOW).status, 'measured');
+  const cut = measure([call('s2', '2026-09-25T09:10:00Z', u(2, 8), { stop_reason: null })], SINCE, NOW);
+  assert.deepEqual([cut.status, cut.reason], ['partial', '1 call has no final count in the log (cut off, or still running)']);
 });
 
 test('usage: nothing to count is unavailable, never a measured zero', () => {
@@ -108,4 +116,29 @@ test('usage: markup in the host or the reason stays text on the page', () => {
   assert.equal(run([join(ROOT, 'bin/render.mjs'), p, out]).status, 0);
   const line = readFileSync(out, 'utf8').match(/<p class="usage">.*?<\/p>/)[0];
   assert.equal(line, '<p class="usage">Making this review: usage unavailable (&lt;img src=x onerror=alert(1)&gt;).</p>');
+});
+
+// A sub-agent's commands see the main conversation's session id: the log that holds this very command is the one
+// counted, and when none or several do, it is unavailable.
+test('usage: the log that ran the command is the one counted, never the whole session by its id', async () => {
+  const { mkdirSync } = await import('node:fs');
+  const id = '11111111-2222-3333-4444-555555555555', since = '2026-09-25T09:00:00Z';
+  const home = mkdtempSync(join(tmpdir(), 'usage-home-')), dir = join(home, 'projects', 'p');
+  mkdirSync(join(dir, id, 'subagents'), { recursive: true });
+  const ran = (at) => JSON.stringify({ type: 'assistant', timestamp: at, message: { id: 'run-' + at, stop_reason: 'tool_use', usage: u(1, 5),
+    content: [{ type: 'tool_use', name: 'Bash', input: { command: `node usage.mjs --claude-code --since ${since}` } }] } });
+  const recent = new Date(Date.now() - 60000).toISOString();
+  writeFileSync(join(dir, `${id}.jsonl`), [call('main-1', recent, u(9, 900))].join('\n'));                        // the parent's own calls
+  writeFileSync(join(dir, id, 'subagents', 'agent-a.jsonl'), [call('a-1', recent, u(3, 30)), ran(recent)].join('\n'));
+  writeFileSync(join(dir, id, 'subagents', 'agent-b.jsonl'), [call('b-1', recent, u(7, 70))].join('\n'));
+  const measureHere = () => JSON.parse(run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
+  const a = measureHere();
+  assert.deepEqual([a.status, a.calls, a.tokens.output], ['measured', 2, 35], 'agent a counts its own two calls, not the parent\'s or agent b\'s');
+  writeFileSync(join(dir, id, 'subagents', 'agent-b.jsonl'), [call('b-1', recent, u(7, 70)), ran(recent)].join('\n'));
+  assert.match(measureHere().reason, /this command is in more than one log of the session/);
+  writeFileSync(join(dir, id, 'subagents', 'agent-a.jsonl'), call('a-1', recent, u(3, 30)));
+  writeFileSync(join(dir, id, 'subagents', 'agent-b.jsonl'), call('b-1', recent, u(7, 70)));
+  const none = measureHere();
+  assert.deepEqual([none.status, none.tokens], ['unavailable', undefined]);
+  assert.match(none.reason, /this command was not found in the session's logs/);
 });
