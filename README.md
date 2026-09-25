@@ -44,7 +44,7 @@ Here the answer is data:
   guardrail, not a scanner for every kind of sensitive data. A review gets forwarded: keep
   customer data and private notes out of it.
 - **Every agent, proven.** The format is open, so any agent or tool can use it. The skill itself needs
-  an agent that can write files and run Node. So far it is tested with Claude Code and Codex.
+  an agent that can write files and run Node. So far it has been run with Claude Code and Codex; the recorded conformance runs ([conformance/RESULTS.md](conformance/RESULTS.md)) cover Claude Code only.
 
 ## What it can ask
 
@@ -98,7 +98,7 @@ npx skills add shyhunter/LetMeShowYouSomething -g
 ```
 
 That installs it for every agent on your machine that reads skills, through the
-[skills](https://github.com/vercel-labs/skills) installer (it needs Node.js 22.20 or newer). Tested
+[skills](https://github.com/vercel-labs/skills) installer (it needs Node.js 22.20 or newer). Run
 with Claude Code and Codex. In Claude Code it lands in `~/.claude/skills/letmeshowyousomething/`. The installer also
 supports many other agents; we have not tried each one.
 

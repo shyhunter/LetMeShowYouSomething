@@ -737,7 +737,7 @@ function tilesHtml(s, compact){
       + '><span class="dot">' + I(it.id === rec ? 'star' : 'branch', 'sm') + '</span>' + esc(it.title) + '</label>').join('') + '</div>';
   }
   const it = s.it, v = store.verdicts[it.id];
-  return '<p class="qprompt">' + I(it.approval ? 'shield' : 'help', 'sm') + (it.approval ? 'Do you approve this?' : 'Your answer') + '</p><div class="tiles' + (compact ? ' compact' : '') + '" role="radiogroup" aria-label="' + (it.approval ? 'Approve or decline' : 'Verdict for') + ': ' + esc(it.title) + '">'
+  return '<p class="qprompt">' + I(it.approval ? 'shield' : 'help', 'sm') + (it.approval ? 'Do you approve this?' : 'Your answer') + '</p>' + (it.approval ? '<p class="sendnote">' + I('info', 'sm') + ' This records what you want. I still ask for permission right before I act, and this file is unsigned.</p>' : '') + '<div class="tiles' + (compact ? ' compact' : '') + '" role="radiogroup" aria-label="' + (it.approval ? 'Approve or decline' : 'Verdict for') + ': ' + esc(it.title) + '">'
     + optsFor(it).map((o, n, all) => { const k = (TILE[o.tone] || TILE.neutral)[0], icon = tileIcons(all)[n];
       return '<label class="tile ' + k + '"><input type="radio" name="v-' + esc(it.id) + '" value="' + esc(o.value) + '" data-item="' + esc(it.id) + '"' + (v === o.value ? ' checked' : '')
         + '><span class="dot">' + I(it.approval && o.value === 'approve' ? 'shield' : icon, 'sm') + '</span>' + esc(o.label) + '</label>'; }).join('') + '</div>';

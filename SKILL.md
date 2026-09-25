@@ -5,7 +5,7 @@ description: Use when a human's judgement is needed on several things at once (o
 
 # Let me show you something
 
-The agent writes a `review.json`. It becomes one offline HTML page, the only file the human gets. The human judges each item and sends the answered page (or a `feedback.json`) back. The agent checks it and acts on it. The format is in `PROTOCOL.md`; the checker is what makes the answers trustworthy.
+The agent writes a `review.json`. It becomes one offline HTML page, the only file the human gets. The human judges each item and sends the answered page (or a `feedback.json`) back. The agent checks it and acts on it. The format is in `PROTOCOL.md`; the checker proves a file is well-formed, complete and belongs to your review. It does not prove who answered or that they may decide: the files are unsigned.
 
 `<skill>` below is this skill's folder.
 
