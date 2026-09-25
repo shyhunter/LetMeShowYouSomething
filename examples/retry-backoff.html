@@ -768,6 +768,8 @@ function drawBlock(block, ctx) {
 function partsEsc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
+// Only a web address becomes a link: anything else (a note, a javascript: URL) is shown as unverified.
+function isWebSource(u) { return /^https?:\/\/[^\s"<>]+$/i.test(String(u || '')); }
 // Text without its Markdown marks, for a sentence shown as plain words.
 function plain(t) { return String(t || '').split('**').join('').split(String.fromCharCode(96)).join('').trim(); }
 function firstSentence(t) { const s = plain(t), m = s.match(/^.+?[.!?](?=\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
@@ -810,7 +812,7 @@ function startCardsHtml(review, parts, icon, view) {
   const about = b.question || b.explains || review.intro || review.subtitle || review.title;
   const aboutMore = [b.question && b.explains, about !== review.intro && review.intro].filter(Boolean).map((t) => '<p>' + partsEsc(plain(t)) + '</p>').join('');
   const exRows = (b.examples || []).map((x) => '<li><b>' + partsEsc(x.name) + '</b> ' + partsEsc(x.what || '') + (x.shows ? ' What people see: ' + partsEsc(x.shows) : '') + ' '
-    + (x.source ? '<a href="' + partsEsc(x.source) + '" target="_blank" rel="noopener noreferrer">' + partsEsc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
+    + (isWebSource(x.source) ? '<a href="' + partsEsc(x.source) + '" target="_blank" rel="noopener noreferrer">' + partsEsc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
   const cards = [
     card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
     b.recommendation && card('star', 'My recommendation', b.recommendation),
@@ -1381,7 +1383,7 @@ const APPROVAL_OPTS = [{ value: 'approve', label: 'Approve', tone: 'positive' },
 const optsFor = (it) => (it.approval ? APPROVAL_OPTS : OPTS);
 const TILE = { positive: ['t-ok', 'check'], caution: ['t-warn', 'half'], negative: ['t-bad', 'x'], neutral: ['t-neut', 'help'] };
 // Each answer its own symbol: a word that says "later" turns back; two answers of one tone never share one.
-const SPARE_ICONS = ['undo', 'clock', 'flag', 'pin', 'star', 'info'];
+const SPARE_ICONS = ['alert', 'clock', 'flag', 'pin', 'star', 'info'];
 function tileIcons(opts){
   const used = new Set();
   return opts.map(o => {
@@ -1612,7 +1614,7 @@ function consoleHtml(a){
 const exp = (tone, icon, head, text) => '<div class="exp ' + tone + '"><span class="ei">' + I(icon, 'sm') + '</span><b>' + head + '</b><span>' + text + '</span></div>';
 function examplesRows(list){
   return (list || []).map(x => exp('info', 'globe', 'Done before · ' + esc(x.name), esc(x.what || '') + (x.shows ? ' What people see: ' + esc(x.shows) + '.' : '')
-    + ' ' + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>'))).join('');
+    + ' ' + (isWebSource(x.source) ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>'))).join('');
 }
 // #33 — the reviewer can show the screen as it really is: their screenshot replaces it and goes back in the file.
 function shotTools(it){
@@ -1668,20 +1670,24 @@ function progressHtml(nowStep){
     + '<p class="prog-sum" id="overview">' + (nowStep ? esc(nowStep.seg.label) + ' · ' : '') + a + ' of ' + n + ' answered' + (n - a ? ' · ' + (n - a) + ' open' : '') + '</p></div>';
 }
 const SLOTS = [['map', 'Map', 'map'], ['proto', 'Prototype', 'phone'], ['expected', 'What should happen', 'list'], ['build', "How I'd build it", 'code']];
-function slotHtml(id, label, icon, i, body, sub){
-  const min = st.min.has(id), shown = st.ptab === id;
+function slotHtml(id, label, icon, i, body, sub, tab){
+  const min = st.min.has(id), shown = (tab || st.ptab) === id;
   return '<section class="slot' + (min ? ' min' : '') + (shown ? ' shown' : '') + '" id="slot-' + id + '" data-slot="' + id + '"><div class="slot-head"><span class="num">' + (i + 1) + '</span><h3>' + I(icon, 'sm') + label + (sub ? ' <small>· ' + esc(sub) + '</small>' : '') + '</h3>'
     + (id === 'map' || id === 'proto' ? '<button type="button" class="btn icon small" data-act="expand" aria-label="Expand">' + I('expand', 'sm') + '</button>' : '')
     + '<button type="button" class="btn icon small minbtn" data-min="' + id + '" aria-label="' + (min ? 'Show' : 'Minimize') + ' ' + label + '" aria-expanded="' + !min + '">' + I(min ? 'plus' : 'minus', 'sm') + '</button></div>'
     + '<div class="slot-body">' + (body || '<p class="empty">' + I('info', 'sm') + 'Nothing here for this question</p>') + '</div></section>';
 }
+// Only the places this question has something in are shown: no empty places.
 function slots(bodies, subs){
   subs = subs || {};
-  const onlyProto = ['map', 'expected', 'build'].every(x => st.min.has(x)) && !st.min.has('proto');
-  return '<div class="right-head"><span class="prog-sum">' + I('layers', 'sm') + ' The same four places on every question</span><div class="rowgap">'
-    + '<button type="button" class="btn small' + (onlyProto ? ' pri' : '') + '" data-act="focus-proto" aria-pressed="' + onlyProto + '">' + I('eye', 'sm') + 'Prototype only</button><button type="button" class="btn small" data-act="focus-all">Show all</button></div></div>'
-    + '<div class="ptabs" role="group" aria-label="What to show">' + SLOTS.map(([id, label, icon]) => '<button type="button" data-ptab="' + id + '" aria-pressed="' + (st.ptab === id) + '">' + I(icon, 'sm') + (id === 'expected' ? 'Should happen' : id === 'build' ? 'Build' : id === 'proto' ? 'Screen' : label) + '</button>').join('') + '</div>'
-    + '<div class="slots">' + SLOTS.map(([id, label, icon], i) => slotHtml(id, label, icon, i, bodies[id], subs[id])).join('') + '</div>';
+  const list = SLOTS.filter(([id]) => bodies[id]);
+  if (!list.length) return '';
+  const tab = list.some(([id]) => id === st.ptab) ? st.ptab : list[0][0];
+  const onlyProto = list.some(([id]) => id === 'proto') && list.every(([id]) => id === 'proto' || st.min.has(id)) && !st.min.has('proto');
+  return (list.length > 1 ? '<div class="right-head"><span class="prog-sum">' + I('layers', 'sm') + ' ' + (list.length === 4 ? 'The same four places on every question' : 'What there is to see') + '</span><div class="rowgap">'
+    + (list.some(([id]) => id === 'proto') ? '<button type="button" class="btn small' + (onlyProto ? ' pri' : '') + '" data-act="focus-proto" aria-pressed="' + onlyProto + '">' + I('eye', 'sm') + 'Prototype only</button>' : '') + '<button type="button" class="btn small" data-act="focus-all">Show all</button></div></div>'
+    + '<div class="ptabs" role="group" aria-label="What to show">' + list.map(([id, label, icon]) => '<button type="button" data-ptab="' + id + '" aria-pressed="' + (tab === id) + '">' + I(icon, 'sm') + (id === 'expected' ? 'Should happen' : id === 'build' ? 'Build' : id === 'proto' ? 'Screen' : label) + '</button>').join('') + '</div>' : '')
+    + '<div class="slots">' + list.map(([id, label, icon], i) => slotHtml(id, label, icon, i, bodies[id], subs[id], tab)).join('') + '</div>';
 }
 function summaryRows(){
   return STEPS.map(s => { const v = answerLabel(s);
@@ -1753,16 +1759,16 @@ function downloadsHtml(){
 }
 
 // ── the tour ──
-function navHtml(prevOff, nextLabel){
+function navHtml(prevOff, nextLabel, nextIcon){
   const n = STEPS.length + 2, now = st.phase === 'return' ? n : st.cur + 2;
-  return '<div class="t-nav"><button type="button" class="btn" id="back" data-act="prev"' + (prevOff ? ' disabled' : '') + '>' + I('left', 'sm') + 'Back</button><span class="prog-sum" id="stepno">Step ' + now + ' of ' + n + '</span><button type="button" class="btn pri" id="next" data-act="next">' + nextLabel + I('right', 'sm') + '</button></div>';
+  return '<div class="t-nav"><button type="button" class="btn" id="back" data-act="prev"' + (prevOff ? ' disabled' : '') + '>' + I('left', 'sm') + 'Back</button><span class="prog-sum" id="stepno">Step ' + now + ' of ' + n + '</span><button type="button" class="btn pri" id="next" data-act="next">' + (nextIcon ? I(nextIcon, 'sm') + nextLabel : nextLabel + I('right', 'sm')) + '</button></div>';
 }
 function renderTour(){
   if (st.phase === 'return') return '<div class="tour">' + progressHtml(null)
     + '<header class="t-head" style="--sc:var(--s0)"><p class="sec-name">' + I('send', 'sm') + 'Return</p><h2 id="q-title" tabindex="-1">Take your answers back</h2><p class="say">' + answeredCount() + ' of ' + STEPS.length + ' answered. Anything unanswered stays open: I will ask again and never assume a yes.</p></header>'
     + '<div class="t-ans">' + missingHtml() + '</div>'
     + '<div class="t-vis">' + slots({ map: mapHtml(null), proto: galleryHtml(''), expected: '<div class="expected">' + summaryRows() + '</div>' + settledHtml(), build: downloadsHtml() }, { proto: FLOW ? 'every screen' : '', expected: 'your answers', build: 'downloads' }) + '</div>'
-    + navHtml(false, 'Done') + '</div>';
+    + navHtml(false, 'Download answers', 'download') + '</div>';
   const s = STEPS[st.cur], n = STEPS.length, v = stepAnswer(s);
   return '<div class="tour">' + progressHtml(s)
     + '<header class="t-head" style="--sc:' + s.seg.color + '"><p class="sec-name" id="t-where">' + I(s.seg.icon, 'sm') + esc(s.seg.label) + ' · ' + (s.seg.steps.indexOf(s) + 1) + ' of ' + s.seg.steps.length + '</p><h2 id="q-title" tabindex="-1">' + esc(stepTitle(s)) + '</h2>' + chipsHtml(s)
@@ -1853,8 +1859,16 @@ function go(phase, cur){
   render(null); scrollTo(0, 0);
   const t = phase === 'start' ? $('#start-review') : $('#q-title'); if (t) t.focus({ preventScroll: true });
 }
-const next = () => st.phase === 'return' ? (document.querySelector('[data-export="html"]') || {}).focus?.() : st.cur < STEPS.length - 1 ? go('q', st.cur + 1) : go('return');
+const next = () => st.phase === 'return' ? exportAs('html') : st.cur < STEPS.length - 1 ? go('q', st.cur + 1) : go('return');
 const prev = () => st.phase === 'return' ? go('q', STEPS.length - 1) : st.cur > 0 ? go('q', st.cur - 1) : go('start');
+function exportAs(fmt){
+  const out = buildFeedback(REVIEW, store);
+  if (fmt === 'json') saveAs(JSON.stringify(out, null, 2), 'application/json', REVIEW.id + '.feedback.json');
+  else if (fmt === 'md') saveAs(toMarkdown(), 'text/markdown', REVIEW.id + '.feedback.md');
+  else saveAs(htmlSeed(), 'text/html', REVIEW.id + '.feedback.html');
+  const msg = 'Downloaded ' + fmt.toUpperCase() + ': ' + out.summary.answered + '/' + out.summary.total + ' answered · ' + out.summary.added + ' added · ' + out.gaps.length + ' gaps. Nothing was sent: return the file yourself.';
+  $('#footnote').textContent = msg; const s = $('#download-status'); if (s) s.textContent = msg;
+}
 function markOn(nodeId){
   const itemId = st.marking, s = STEPS.find(x => stepItems(x).some(i => i.id === itemId)), d = mapFor(s); if (!d || !itemId) return;
   const label = partLabel(d, { node: nodeId }); if (label === null) return;
@@ -1883,14 +1897,7 @@ document.addEventListener('click', e => {
   if (d.ask) { const r = store.requests[d.for] || (store.requests[d.for] = {}); r[d.ask] = !r[d.ask]; if (!r.example && !r.explain && !r.note) delete store.requests[d.for]; save(); return render(); }
   if (d.choose) { store.choices[d.choose] = d.opt; save(); return render(); }
   if (d.del !== undefined) { const removed = store.added.splice(+d.del, 1)[0]; if (removed) dropPictures(removed.id); save(); render(null); const b = $('[data-act="missing"]') || $('#at'); if (b) b.focus(); return; }
-  if (d.export) {
-    const out = buildFeedback(REVIEW, store);
-    if (d.export === 'json') saveAs(JSON.stringify(out, null, 2), 'application/json', REVIEW.id + '.feedback.json');
-    else if (d.export === 'md') saveAs(toMarkdown(), 'text/markdown', REVIEW.id + '.feedback.md');
-    else saveAs(htmlSeed(), 'text/html', REVIEW.id + '.feedback.html');
-    const msg = 'Downloaded ' + d.export.toUpperCase() + ': ' + out.summary.answered + '/' + out.summary.total + ' answered · ' + out.summary.added + ' added · ' + out.gaps.length + ' gaps. Nothing was sent: return the file yourself.';
-    $('#footnote').textContent = msg; const s = $('#download-status'); if (s) s.textContent = msg; return;
-  }
+  if (d.export) return exportAs(d.export);
   if (t.id === 'addbtn') {
     const ti = $('#at').value.trim(), bo = $('#ab').value.trim(); if (!ti && !bo) return $('#at').focus();
     store.added.push({ id: freeId('added-', answerIds()), title: ti || '(untitled)', body: bo, verdict: 'unset', note: null }); save(); render(null); const a = $('#at'); if (a) a.focus(); return;

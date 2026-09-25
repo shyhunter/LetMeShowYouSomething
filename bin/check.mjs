@@ -576,6 +576,7 @@ function checkBrief(r, rep) {
     const who = e?.name ? `"${e.name}"` : `example ${i + 1}`;
     if (!e?.name) wrong.push(`example ${i + 1}${at} has no name. Say who did it, or the reviewer can't weigh it`);
     else if (!e.what) wrong.push(`example ${who}${at} says who but not what they did. Add "what", or it is a name without a lesson`);
+    if (e?.source !== undefined && !/^https?:\/\/[^\s"<>]+$/i.test(e.source)) wrong.push(`${who}${at}: source "${e.source}" is not a web address. Give the https:// link where it can be checked, or leave source out and it is shown as unverified`);
     if (e?.name && !e.source) unverified.push(`${who}${at} has no source. Add one, or the page shows it as unverified; agents invent convincing examples`);
   }
   rep.check('examples are honest', wrong.length === 0, wrong.join(' · '));

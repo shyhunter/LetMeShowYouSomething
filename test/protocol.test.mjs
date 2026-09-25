@@ -1092,6 +1092,20 @@ for (const [check, [inject, advice]] of Object.entries(briefFaults)) {
   });
 }
 
+// A source is where the example can be checked: a web address. A note or a javascript: URL is never a link.
+test('an example source that is not a web address is refused, and the page never links it', async () => {
+  for (const source of ['Real products conceptually combined', 'javascript:alert(1)']) {
+    const r = checkReviewObj(withBrief((x) => { x.brief.examples[0].source = source; }), '--root', root);
+    assert.equal(r.status, 1, r.stdout);
+    assert.match(r.stdout, /✗ examples are honest:.*"Class passes at gyms": source ".*" is not a web address\. Give the https:\/\/ link/, r.stdout);
+    const { startCardsHtml, reviewParts } = await import('../lib/review-parts.mjs');
+    const review = withBrief((x) => { x.brief.examples[0].source = source; });
+    const html = startCardsHtml(review, reviewParts(review), () => '');
+    assert.doesNotMatch(html, /href="(?!https?:)/, 'only web addresses become links');
+    assert.match(html, /unverified/);
+  }
+});
+
 test('an example without a source is a warning, not a refusal (D050)', () => {
   const r = checkReviewObj(withBrief((x) => { delete x.brief.examples[0].source; }), '--root', root);
   assert.equal(r.status, 0, r.stdout);

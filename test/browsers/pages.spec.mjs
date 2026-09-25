@@ -71,15 +71,19 @@ test('Let me explain: short cards, one action; it folds after Start and opens ag
   await expect(page.locator('#start')).toBeVisible();
 });
 
-// #74 — the same layout on every question: the question and the answer on the left, four places on the right.
-test('the tour: four places in a fixed order, Back and Next, skipping, a progress bar that jumps', async ({ page }, info) => {
+// #74 — the same layout on every question: the question and the answer on the left, the places on the right, in a fixed
+// order, only those with something in them.
+test('the tour: places in a fixed order, no empty one, Back and Next, skipping, a progress bar that jumps, Download at the end', async ({ page }, info) => {
   await page.goto(example('checkout-uat'));
   await start(page);
   await expect(page.locator('#q-title')).toHaveText('A guest can buy without creating an account');
   await expect(page.locator('#t-where')).toContainText('1 of 2');
   await expect(page.locator('#stepno')).toHaveText('Step 2 of 6');
-  expect(await page.locator('.slot').evaluateAll((l) => l.map((s) => s.dataset.slot))).toEqual(['map', 'proto', 'expected', 'build']);
-  await expect(page.locator('#slot-proto')).toContainText('Nothing here for this question');
+  const shown = await page.locator('.slot').evaluateAll((l) => l.map((s) => s.dataset.slot));
+  expect(shown[0]).toBe('map');
+  expect(shown, 'no screen in this review, so no Prototype place').not.toContain('proto');
+  expect(shown, 'in the fixed order').toEqual(['map', 'proto', 'expected', 'build'].filter((x) => shown.includes(x)));
+  await expect(page.locator('.slot .empty')).toHaveCount(0);
   if (info.project.use.viewport.width >= 900) {
     const q = await page.locator('.t-head').boundingBox(), p = await page.locator('.t-vis').boundingBox();
     expect(p.x, 'the places sit to the right of the question').toBeGreaterThan(q.x + q.width - 1);
@@ -98,6 +102,11 @@ test('the tour: four places in a fixed order, Back and Next, skipping, a progres
   await expect(page.locator('.sum-row')).toHaveCount(4);
   await expect(page.locator('.sum-row').first()).toContainText('Works');
   await expect(page.locator('.sum-row').nth(1)).toContainText('Stays open');
+  // The last button downloads the answered page: the one to send back.
+  await expect(page.locator('#next')).toHaveText('Download answers');
+  const [file] = await Promise.all([page.waitForEvent('download'), page.locator('#next').click()]);
+  expect(file.suggestedFilename()).toBe('checkout-uat-2026-09.feedback.html');
+  await expect(page.locator('#footnote')).toContainText('Downloaded HTML');
 });
 
 test('each place minimises and comes back; Prototype only; remembered in this browser', async ({ page }) => {
@@ -390,7 +399,9 @@ for (const [kind, shape] of Object.entries(KINDS)) {
     const n = Number((await page.locator('#stepno').textContent()).split(' of ')[1]);
     for (let i = 2; i < n; i++) {
       await expect(page.locator('#stepno')).toHaveText(`Step ${i} of ${n}`);
-      expect(await page.locator('.slot').evaluateAll((l) => l.map((s) => s.dataset.slot))).toEqual(['map', 'proto', 'expected', 'build']);
+      const shown = await page.locator('.slot').evaluateAll((l) => l.map((s) => s.dataset.slot));
+      expect(shown, 'the places with something in them, in the fixed order').toEqual(['map', 'proto', 'expected', 'build'].filter((x) => shown.includes(x)));
+      await expect(page.locator('.slot .empty')).toHaveCount(0);
       await page.locator('#next').click();
     }
     await expect(page.locator('#q-title')).toHaveText('Take your answers back');
@@ -513,6 +524,11 @@ test('each answer tile has its own symbol; Revisit turns back', async ({ page })
   expect(new Set(icons).size).toBe(icons.length);
   await expect(page.locator('.tile:has(input[value="revisit"]) .dot use')).toHaveAttribute('href', '#i-undo');
   await expect(page.locator('.tile:has(input[value="partly-agree"]) .dot use')).toHaveAttribute('href', '#i-half');
+  // Only a word that means "later" turns back: a second negative answer gets a warning, not an arrow back.
+  const r = readReview('review.example.json'); r.id = 'two-negatives';
+  r.verdictSet = { id: 'explanation', options: [{ value: 'clear', label: 'Clear', tone: 'positive' }, { value: 'lost-me', label: 'Lost me', tone: 'negative' }, { value: 'seems-wrong', label: 'Seems wrong', tone: 'negative' }] };
+  await page.goto(rendered(r).url); await start(page);
+  await expect(page.locator('.tile:has(input[value="seems-wrong"]) .dot use').first()).toHaveAttribute('href', '#i-alert');
 });
 
 // #33 — a screen can be a screenshot: its areas are drawn on it, visible without hover, and each opens its step.
