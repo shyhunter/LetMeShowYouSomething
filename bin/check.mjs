@@ -1023,13 +1023,38 @@ function checkRounds(current, rounds, rep) {
   });
 }
 
+// #82 — two answers files for one round: the page went to two people, or was answered twice. The same
+// answers are one answer; different ones are competing, and are never merged or picked silently.
+function checkCopies(review, copies, rep) {
+  copies.forEach((f, i) => checkFeedback(f, { check: (n, ok, d) => rep.check(`copy ${i + 1}: ${n}`, ok, d), warn: (n, c, d) => rep.warn(`copy ${i + 1}: ${n}`, c, d) }, review));
+  const who = (f, i) => `copy ${i + 1}${f?.respondent?.name ? ` (${f.respondent.name})` : ''}`;
+  const said = (x) => (x ? `${x.verdict}${x.note ? ` "${x.note}"` : ''}` : 'nothing');
+  const label = (f, v) => (f?.verdictSet?.options ?? []).find((o) => o.value === v)?.label ?? v;
+  const differs = [];
+  const answersOf = (f) => ({
+    ...Object.fromEntries((f?.responses ?? []).map((r) => [r.itemId, { title: r.title, verdict: label(f, r.verdict), note: r.note }])),
+    ...Object.fromEntries((f?.choices ?? []).map((c) => [`choice:${c.sectionId}`, { title: c.sectionLabel, verdict: c.title ?? 'no pick', note: null }])),
+  });
+  const all = copies.map(answersOf);
+  for (const id of new Set(all.flatMap((a) => Object.keys(a)))) {
+    const seen = all.map((a) => a[id]);
+    if (new Set(seen.map((x) => JSON.stringify([x?.verdict, x?.note ?? null]))).size > 1)
+      differs.push(`"${seen.find(Boolean).title}": ${seen.map((x, i) => `${who(copies[i], i)} ${said(x)}`).join(', ')}`);
+  }
+  const extras = ['addedItems', 'requests', 'comments', 'proposals', 'layerVerdicts', 'pictures']
+    .filter((k) => new Set(copies.map((f) => JSON.stringify(f?.[k] ?? []))).size > 1);
+  if (extras.length) differs.push(`they also differ in: ${extras.join(', ')}`);
+  rep.check('copies agree', differs.length === 0, `${copies.length} answers files for "${review?.title}" do not agree: ${differs.join(' · ')}. These are competing answers: never merge them or keep one yourself. Show the person who asked for the review these differences, and ask each one again in the next round, saying what each copy answered`);
+  rep.warn('copies are the same answers', differs.length === 0, `the ${copies.length} files hold the same answers: use one of them, and count them once`);
+}
+
 // ── run ─────────────────────────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const rootAt = argv.indexOf('--root');
 const ROOT = rootAt >= 0 ? resolve(argv.splice(rootAt, 2)[1] ?? '.') : null;
 const [mode, a, b] = argv;
 if (!mode || !a) {
-  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...\n       check.mjs followup <next-review.json> <review.json> <feedback.json>\n       check.mjs rounds <review.json> <round-1-review.json> <round-1-feedback.json> [<round-2-review.json> <round-2-feedback.json>]...');
+  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...\n       check.mjs followup <next-review.json> <review.json> <feedback.json>\n       check.mjs rounds <review.json> <round-1-review.json> <round-1-feedback.json> [<round-2-review.json> <round-2-feedback.json>]...\n       check.mjs copies <review.json> <feedback.json> <feedback.json>...');
   process.exit(2);
 }
 const rep = new Report();
@@ -1045,6 +1070,11 @@ else if (mode === 'followup') {
   if (!b || !c) fail('followup needs the next review, the earlier review and its feedback');
   const next = load(a), r = load(b), f = load(c);
   checkReview(next, rep); checkFeedback(f, rep, r); checkHistory(next, [f], rep); checkFollowup(next, r, f, rep);
+}
+else if (mode === 'copies') {
+  const rest = argv.slice(2);
+  if (rest.length < 2) fail('copies needs the review, then two or more answers files for it');
+  const r = load(a); checkReview(r, rep); checkCopies(r, rest.map(load), rep);
 }
 else if (mode === 'rounds') {
   const rest = argv.slice(2);
