@@ -325,7 +325,7 @@ list page the chart sits above the list, and a box with `step` naming an item op
 A picture is always drawn this way. A section `diagram` of kind `mermaid` is refused by the checker
 (`pictures are drawn`): the page loads nothing, so Mermaid would reach the reviewer as source text. One more is computed for every flow and never
 written by hand, so it can't disagree with it: **the user flow** (screens, and the steps between
-them). The parts of the process are not a chart: they are the sub-processes column beside it (D070). The user flow opens on a `start` and closes on a single `end`: every
+them). The parts of the process are not a chart: they become the parts of the tour's progress bar (D070). The user flow opens on a `start` and closes on a single `end`: every
 screen marked `end`, and every screen no step leaves, leads into it, so a reader can see where each
 journey stops. The end stands alone in the last column, as the start does in the first (D077).
 
@@ -403,11 +403,10 @@ allow 160 characters, column names/types and edge labels 80. Ids use the existin
 The schema fixes the closed shape; `diagrams resolve` refuses duplicate ids, unknown columns/tables,
 missing/multiple keys, a parent endpoint that is not a key, malformed rows, and these size limits.
 
-The reviewer can comment on tables/relationships and propose a rename, removal or edge relabel.
-Proposals are applied to a copy and checked by the same database rules. The generic add-box and
-add-arrow payloads cannot carry columns and key mappings, so the page asks for those additions in
-a comment and the checker refuses those operations. Follow-up reviews must answer these comments
-and proposals as usual. Existing diagram kinds retain their editing controls.
+The reviewer can mark a table on the map and say what about it (a comment). Proposed changes, from
+files made by earlier pages or agents, are applied to a copy and checked by the same database
+rules; the generic add-box and add-arrow payloads cannot carry columns and key mappings, so the
+checker refuses those operations. Follow-up reviews answer comments and proposals as usual.
 
 ### AI elements and explainers (#70 / #32 part 4)
 
@@ -448,8 +447,7 @@ the assumptions. The summary itself is not a new editable feedback target.
 
 Agent rename/removal/add-arrow/edge-relabel proposals use the existing format and are rechecked
 against the same rules. The generic add-box operation would create an unexplained terminal, so it
-is hidden and refused for agent flows; describe the desired insertion in a comment for the next
-review. Other diagram kinds retain their controls. A terminal human handoff satisfies an agent
+is refused for agent flows; a desired insertion is described in a comment for the next review. A terminal human handoff satisfies an agent
 flow's ending requirement.
 
 Reusable understanding reviews, all synthetic and fully offline:
@@ -476,9 +474,10 @@ in one line. A message that only names the problem is a bug.
 
 ## Comments on a diagram
 
-The reviewer can answer in the agent's own picture, not only in words (#60). With **Comment** switched
-on, a click on a box or an arrow of a drawn diagram (or Tab to it and Enter) opens a comment on that
-part. The feedback carries each one:
+The reviewer can answer in the agent's own picture, not only in words (#60). After a critical answer,
+**Mark it on the map**, then a tap on a box (or Tab to it and Enter), opens a comment on that part:
+"What about this part?". Comments on arrows come from files made by earlier pages and read the
+same. The feedback carries each one:
 
 ```json
 "comments": [{ "id": "comment-1", "diagram": "checkout-path", "node": "pay",
@@ -501,9 +500,10 @@ diagram id, or `user-flow` for the chart computed from a flow. An empty comment 
 
 ### Proposed changes
 
-The reviewer can also change the picture (#60). On a box: rename it, remove it, add a box after it,
-or add an arrow to another box. On an arrow: relabel it or remove it. Each change travels as a
-proposal, with the reviewer's words from the comment on the same part:
+A change to the picture (#60) travels as a proposal: on a box, rename it, remove it, add a box after
+it, or add an arrow to another box; on an arrow, relabel it or remove it. The page of #74 no longer
+offers these; files from earlier pages and agents still carry them, with the reviewer's words from
+the comment on the same part:
 
 ```json
 "proposals": [{ "id": "proposal-1", "diagram": "checkout-path", "op": "rename", "node": "pay",
@@ -622,66 +622,68 @@ node bin/render.mjs examples/review.example.json out.html
 ```
 
 One self-contained page that fetches nothing — a URL appears only as a source the reviewer may
-choose to click — light, dark and a few styles to pick (D080), verdicts as real radio groups
-inside real fieldsets so keyboard support is not bolted on. Answers autosave to `localStorage`;
-**Finish** opens a summary; **Download JSON for the agent** writes a file that passes `bin/check.mjs`.
+choose to click — light or dark as the system is, answers as real radio groups so keyboard support
+is not bolted on. Answers autosave to `localStorage`, and the last step, **Return**, downloads a file
+that passes `bin/check.mjs`.
 
 It inlines `lib/build-feedback.mjs` **verbatim**, so the page and the test suite run one
 implementation of the export shape — it cannot drift from what the checker expects without both
 failing at once.
 
-**Every review is a guided tour** (#100), whatever it asks: a flow, a list, a choice, doubts, an
-approval, an explanation, or a diagram. **Understand** comes first, on its own screen (#105):
-short numbered cards, each with a symbol and one sentence (what the agent needs decided or explains,
-its recommendation, what it will ask, precedents, the risks, how to answer, what happens next), the
-rest of each behind "More", never dropped, and one action: **Start**. After Start it folds to one
-**About this review** bar that opens it again. Then **one question at a time**, then **Return**: the summary, both downloads, and **Anything else?**, open to anything,
-related or not (D072). **Back** and **Next** are always visible with "Step N of M"; an unanswered
-question can be skipped and stays open. A **progress bar** runs from Understand to Return through coloured
-parts: the review's sections, a flow's journeys, or one part. Each part fills as it is answered, and a tap jumps there.
+The page is the approved design of #74, the same for every kind of review: a flow, a list, a choice,
+doubts, an approval, an explanation, or a diagram.
+
+**Let me explain** comes first, on its own screen (#105): short numbered cards, each with a symbol and
+one sentence (what the agent needs decided or explains, its recommendation, what it will ask,
+precedents, the risks, how to answer, what happens next), the rest of each behind "More", never
+dropped, and one action: **Start**. After Start it folds to one bar that opens it again.
+
+**The tour**, one question at a time, then **Return**. **Back** and **Next** are always visible with
+"Step N of M"; an unanswered question can be skipped ("Skip for now") and stays open. A **progress
+bar** runs from Let me explain to Return through coloured parts: the review's sections, a flow's
+journeys, or one part; each fills as it is answered, and a tap jumps there. A choose-one section is
+one question, its options the answers.
 
 **Every question has the same layout.** On the left: the part and position ("Book a slot · 2 of 3"),
-the question, why it is asked, and the answer as big tiles, each with a symbol, in the review's own
-words and tones (approve or decline for an approval). **Show me an example** and **Explain this** are
-checkboxes beside them, the questions that travel back as `requests`. The note and pictures come once
-answered: "What should be different?" after a critical answer, "Anything to add?" otherwise. On the right, **four places, always in this order**:
+the question, a status (in the app, planned, a suggestion, your call, a risk), why it is asked, what
+was decided earlier (`affects`), and the answer as big tiles, each with a symbol, in the review's own
+words and tones (approve or decline for an approval). After an answer come the note ("What should be
+different?" after a critical answer, "Anything to add?" otherwise), **Add a picture**, **Mark it on the
+map**, and asking back with **Show me an example** and **Explain it differently**, which travel back as
+`requests` and are read when the file reaches the agent. On the right, **four places, always in this
+order**, each with a number, a symbol and a − button that folds it to its title:
 
-1. **Map**: the diagram, with the question's boxes marked "you are here" and answered steps marked.
-   Every chart is a tab (the focus tab first); a flow has **a chip per sub-process** (a column that
-   switches off, D066), which marks its boxes, what leads into them lightly, and dims the rest.
-   Comments and proposed changes are made here.
-2. **Prototype**: a flow's screen, drawn from its components by `lib/draw-components.mjs` (also
-   inlined verbatim). Only elements a step points at are buttons; everything else is a still
-   wireframe. At a press, **every screen at once**, connected like a prototype (D067, D081). An
-   approval shows its exact action, scope, risk, preview and end here.
-3. **What should happen**: a step's outcomes side by side, each with "Show this" to play it on the
-   screen; an item's fields; precedents.
-4. **How I'd build it**: what runs and what changes under each outcome, each with its status,
-   reference and its own verdict (D098); an item's file reference.
+1. **Map**: the diagram the question is on (every kind: flowchart, system, sequence, database, AI),
+   its box marked "you are here", answered steps marked "answered".
+2. **Prototype**: a flow step's screen as the app will show it, in a phone frame: the app bar, the
+   body drawn by `lib/draw-components.mjs` (inlined verbatim), the buttons at the bottom with the main
+   one first, a dialog as a bottom sheet, and the part the step taps marked. An approval shows a dry
+   run: its exact action, preview, scope and risk.
+3. **What should happen**: ✓ / ✗ / ⓘ rows — a step's outcomes (with why, what the person can do now,
+   and where it leads), an approval's action, scope and risk, an item's fields, precedents with their
+   source or marked unverified, a choice's options.
+4. **How I'd build it**: what runs and what changes under each outcome, with status and reference;
+   an approval's preview and how long a yes counts; a file reference; a choice's option cards, each
+   with what it assumes and risks, the recommended one marked.
 
-A place with nothing for this question keeps its spot and says so. Each place can be minimised to its
-title bar with its − button, or all but the prototype with **Prototype only**; the map and the screen open **full screen** and close with Esc
-(D073). Selecting a box, an arrow or a screen names what is selected: a screen shared by several
-behaviors offers their names rather than silently choosing one, and an unlinked node or arrow has a
-precise comment target, not an unrelated item verdict. Selection itself records no answer.
+A place with nothing for this question keeps its spot and says so. **Prototype only** folds the other
+three; **Show all** opens them again. **Expand** opens the map (with zoom), every screen in order (the
+current one marked) and every other diagram of the review. On a phone the tour fits one screen: the
+places are tabs (Map, Screen, Should happen, Build), and the note and "Why I ask" open as sheets.
 
 **Overview** is the one switch away from the tour: the same review on one page, every question
-answerable in place, grouped in the same coloured parts, each with its places a tap away. Its search
-and filters (verdict, gaps only, journey, status, "only where something goes wrong") never hide
-silently: a narrowing filter says "Showing N of M" and offers "Show all". **More** holds everything
-else: style and mode, and clearing your answers. Where you are, which view, and what
-is minimised stay in the reviewer's own browser and never leave it.
+answerable in place, each with "Show the prototype and what should happen", the whole map, and Return
+at the end. Where you are and which view stay in memory or in the reviewer's own browser, and never
+leave it.
 
-**Finish** summarizes actual answers, unanswered items, choices, gaps, requests, comments,
-pictures and proposals using the same feedback builder. A partial review is allowed; finishing
-does not answer, send, grant permission or implement a proposal. Positive answers do not conceal
-outstanding requests. Ambiguous legacy target ids are not turned into guessed navigation links.
-Storage-failure warnings remain visible independently of download status.
-
-Answers leave as **Download JSON for the agent**, or as **Download answered HTML** (D076): the whole
-page — every chart, screen, step and the brief — with the answers written into it, so whoever opens
-it sees everything, not a summary. An exported copy keeps its own answers in the browser, apart
-from the original's. Downloading sends nothing: the reviewer returns either file themselves.
+**Return** lists every question with its answer or "Stays open", takes **Something missing? Add it**
+(D072), and holds the downloads. Each can be previewed and copied first, and each holds everything:
+**HTML**, this page with the answers written into it (D076), so whoever opens it sees everything, not a
+summary; **MD**, a readable report (every answer, note, request, mark and picture count, what is still
+open, what was added, what needs attention); **JSON**, the feedback file for the agent. An answered
+page keeps its own answers in the browser, apart from the original's. Downloading sends nothing: the
+reviewer returns the file themselves. A partial review is allowed; nothing unanswered is ever treated
+as agreement. Storage-failure warnings stay visible.
 
 **Reading an answered page** (#78). The page holds the review and the answers each on one line of its
 script, as JSON: `const REVIEW = {…};` and `const SEED = {…};` (the answers as the page keeps them, plus

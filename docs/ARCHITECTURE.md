@@ -54,17 +54,17 @@ When a file in the last column disagrees with the one that answers the question,
 ## What ships and what does not
 
 Shipped, and documented in PROTOCOL.md: reviews and feedback v1 · flows, screens and diagrams
-(flowchart, system, sequence, database, AI) · comments, pictures and proposed changes on a diagram ·
+(flowchart, system, sequence, database, AI) · comments on a diagram and pictures · proposed changes (checked; the page no longer makes them) ·
 choices, requests, approvals · answers given in chat · the answered page read back as data (#78) ·
 unique answer ids (#77) · answers that settle nothing carried forward (#88) · what became of each
-proposal, checked against the diagrams (#87) · conformance fixtures (#89) · the review page as a
-guided tour with an Overview, four places in a fixed order (#100).
+proposal, checked against the diagrams (#87) · conformance fixtures (#89) · the review page as the
+approved design: Let me explain, the tour with four places, the Overview, Return with HTML, Markdown
+and JSON, a phone layout on one screen (#74, #100–#103, #105).
 
 Proposed or in progress, **not** shipped, whatever an issue says:
 
 | Issue | What |
 |---|---|
-| [#74](https://github.com/shyhunter/LetMeShowYouSomething/issues/74) | the rest of the tour: app-like prototypes and a layer to expand them (#101), one phone screen without scrolling (#102), a Markdown download (#103) |
 | [#94](https://github.com/shyhunter/LetMeShowYouSomething/issues/94) | the page shows what became of each proposal (the check exists; the display does not) |
 | [#82](https://github.com/shyhunter/LetMeShowYouSomething/issues/82) | one page that keeps every round of a review |
 | [#83](https://github.com/shyhunter/LetMeShowYouSomething/issues/83) | saving back to the same file, where the browser allows |
