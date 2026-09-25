@@ -320,8 +320,11 @@ function checkFlow(r, rep) {
       else if (!byPart[it.step.part]) bad.push(`${it.id}: part "${it.step.part}" does not exist. Use one of: ${partIds.join(', ')}`);
       else for (let cur = byPart[it.step.part], hops = 0; cur && hops <= parts.length; cur = byPart[cur.parent], hops++) used.add(cur.id);
     }
-    for (const p of parts) if (!used.has(p.id) && !reported.size)
-      bad.push(`${p.id} has no steps. Give it a step, or remove it; an empty part shows the reviewer a process that isn't there`);
+    // #82 — a round that continues another carries only what is still open: a part settled earlier may be empty now.
+    for (const p of parts) if (!used.has(p.id) && !reported.size) {
+      if (r.continues) rep.warn('part settled earlier', true, `${p.id} has no steps in this round; it is whole only with the rounds before`);
+      else bad.push(`${p.id} has no steps. Give it a step, or remove it; an empty part shows the reviewer a process that isn't there`);
+    }
     rep.check('flow parts resolve', bad.length === 0, bad.join(' · '));
   }
 
@@ -334,7 +337,11 @@ function checkFlow(r, rep) {
   }
   const unreachable = ids.filter((id) => !seen.has(id));
   const deadEnds = screens.filter((s) => !next[s.id] && !s.end).map((s) => s.id);
-  rep.check('flow has no orphans or dead ends', !unreachable.length && !deadEnds.length, [
+  // #82 — a round that continues another may reach some screens only through steps settled earlier;
+  // `check rounds` then proves the flow is whole across the rounds.
+  if (r.continues) rep.warn('flow is whole only with the rounds before', unreachable.length || deadEnds.length,
+    `not reached in this round: ${[...new Set([...unreachable, ...deadEnds])].join(', ')}. check rounds proves the rounds before reach them`);
+  else rep.check('flow has no orphans or dead ends', !unreachable.length && !deadEnds.length, [
     unreachable.length && `unreachable from "${flow.start}": ${unreachable.join(', ')}. Add a step that leads there, or remove it; a reviewer can never see it`,
     deadEnds.length && `no way out and not marked end: ${deadEnds.join(', ')}. Add a step out, or set "end": true if the flow may stop there; otherwise the reviewer gets stuck`,
   ].filter(Boolean).join(' · '));
@@ -955,6 +962,26 @@ function checkRounds(current, rounds, rep) {
   const ids = [...rounds.map((x) => x.review?.id), current?.id];
   rep.check('each round has its own id', new Set(ids).size === ids.length,
     `review ids repeat across rounds (${ids.join(', ')}). Each round is a review of its own, with its own id`);
+  const chain = [...rounds.map((x) => x.review), current];
+  const broken = chain.slice(1).map((r, i) => r?.continues === chain[i]?.id ? null : `round ${i + 2} ("${r?.id}") ${r?.continues ? `continues "${r.continues}"` : 'says nothing it continues'}, but the round before is "${chain[i]?.id}"`).filter(Boolean);
+  rep.check('each round continues the one before', broken.length === 0,
+    `${broken.join(' · ')}. Set "continues" to the id of the round before, and give the rounds oldest first; a missing or reordered round would pair answers with the wrong questions`);
+  // A flow that continues another is whole when every screen is reached by a step of this round or of a
+  // round before, with no way in that leads nowhere.
+  chain.forEach((r, k) => {
+    if (!r?.flow || !r.continues) return;
+    const screens = r.flow.screens ?? [], ids = new Set(screens.map((s) => s.id)), steps = {};
+    for (const x of chain.slice(0, k + 1)) for (const it of x?.items ?? []) if (it.step) steps[it.id] = it;
+    const next = {};
+    for (const it of Object.values(steps)) if (ids.has(it.step.from)) for (const o of it.step.outcomes ?? []) if (ids.has(o.to)) (next[it.step.from] ??= new Set()).add(o.to);
+    const seen = new Set();
+    for (const queue = ids.has(r.flow.start) ? [r.flow.start] : []; queue.length;) { const id = queue.shift(); if (!seen.has(id)) { seen.add(id); queue.push(...(next[id] ?? [])); } }
+    const unreached = [...ids].filter((id) => !seen.has(id)), stuck = screens.filter((s) => !next[s.id] && !s.end).map((s) => s.id);
+    as(`round ${k + 1}`).check('flow is whole across the rounds', !unreached.length && !stuck.length, [
+      unreached.length && `no step in this round or the rounds before reaches ${unreached.join(', ')}. Carry a step that leads there, or remove the screen`,
+      stuck.length && `no way out of ${stuck.join(', ')} in any round, and not marked end. Add a step out, or set "end": true`,
+    ].filter(Boolean).join(' · '));
+  });
   rounds.forEach(({ review, feedback }, i) => {
     const here = as(`round ${i + 1}`), next = i + 1 < rounds.length ? rounds[i + 1].review : current, there = as(`round ${i + 2}`);
     checkReview(review, here); checkFeedback(feedback, here, review);

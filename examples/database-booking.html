@@ -1438,7 +1438,14 @@ const answerLabel = (s) => { const v = stepAnswer(s); if (!v) return '';
 const answeredCount = () => STEPS.filter(stepAnswer).length;
 
 // The diagrams: a flow's own chart first, then the review's, the focus one first.
-const DIAGRAMS = (FLOW ? [flowAsDiagram(REVIEW)] : []).concat(REVIEW.diagrams || []);
+// #82 — steps settled in earlier rounds stay on the map, marked answered, so a later round's flow reads whole.
+const EARLIER_STEPS = (() => {
+  if (!FLOW || !HISTORY) return [];
+  const have = new Set(REVIEW.items.map(i => i.id)), screens = new Set(FLOW.screens.map(x => x.id)), latest = {};
+  for (const r of HISTORY.rounds) for (const it of r.review.items || []) if (it.step) latest[it.id] = it;
+  return Object.values(latest).filter(it => !have.has(it.id) && screens.has(it.step.from) && it.step.outcomes.every(o => screens.has(o.to)));
+})();
+const DIAGRAMS = (FLOW ? [flowAsDiagram(EARLIER_STEPS.length ? { ...REVIEW, items: REVIEW.items.concat(EARLIER_STEPS) } : REVIEW)] : []).concat(REVIEW.diagrams || []);
 if (REVIEW.focus) { const k = DIAGRAMS.findIndex(d => d.id === REVIEW.focus); if (k > 0) DIAGRAMS.unshift(DIAGRAMS.splice(k, 1)[0]); }
 const mapFor = (s) => (s && DIAGRAMS.find(d => (d.nodes || []).some(n => stepItems(s).some(it => n.step === it.id)))) || DIAGRAMS[0] || null;
 
@@ -1521,7 +1528,7 @@ function mapHtml(s, zoom, d){
   d = d || mapFor(s); if (!d) return '';
   const on = s ? stepItems(s).map(i => i.id) : [];
   const it = s && s.kind === 'item' ? s.it : null;
-  const answered = new Set(REVIEW.items.filter(i => store.verdicts[i.id] || Object.values(store.choices).includes(i.id)).map(i => i.id));
+  const answered = new Set(REVIEW.items.filter(i => store.verdicts[i.id] || Object.values(store.choices).includes(i.id)).map(i => i.id).concat(EARLIER_STEPS.map(i => i.id)));
   const svg = drawDiagram(d, { plain: true, selected: on[0], here: it && it.step && d.id === 'user-flow' ? 'screen:' + it.step.from : undefined, answered, commentable: !!st.marking });
   let out = svg;
   if (on.length > 1) out = out.replace(/<g data-node="([^"]*)" class="dg-node([^"]*)" data-step="([^"]*)"/g, (m, n, c, stp) => on.includes(stp) && !c.includes('dg-selected') ? m.replace('class="dg-node', 'class="dg-node dg-selected') : m);
