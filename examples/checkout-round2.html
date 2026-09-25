@@ -1,131 +1,9 @@
-#!/usr/bin/env node
-// SPDX-License-Identifier: Apache-2.0
-// Everything this file WRITES into a generated page is MIT-0 (see LICENSING.md): a page someone
-// emails to a client must carry no licence obligation.
-// review.v1.json → one self-contained HTML page.
-//
-//   node bin/render.mjs <review.json> [out.html]
-//
-// The page collects verdicts and notes and exports a feedback.v1.json that passes
-// bin/check.mjs. It inlines lib/build-feedback.mjs verbatim, so the page and the test suite
-// share one implementation of the export shape.
-//
-// Fixes two gaps the old hand-edited templates had: they were dark-only with hardcoded colours, and
-// carried no aria or role attributes at all — in a tool whose entire purpose is collecting human
-// input. Verdicts are real radio groups inside real fieldsets, so keyboard support is not bolted on.
-
-import { createHash } from 'node:crypto';
-import { readFileSync, writeFileSync } from 'node:fs';
-import { dirname, join, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { reviewParts, startCardsHtml, roundsView } from '../lib/review-parts.mjs';
-import { spawnSync } from 'node:child_process';
-
-const HERE = dirname(fileURLToPath(import.meta.url));
-// #82 — a continuing review: `--earlier <review.json> <feedback.json>` once per earlier round, oldest first.
-const args = process.argv.slice(2), earlierFiles = [];
-for (let i = args.indexOf('--earlier'); i >= 0; i = args.indexOf('--earlier')) earlierFiles.push(...args.splice(i, 3).slice(1));
-const [inPath, outPathArg] = args;
-if (!inPath || earlierFiles.length % 2 || earlierFiles.some((f) => !f || f.startsWith('--'))) {
-  console.error('usage: render.mjs <review.json> [out.html] [--earlier <review.json> <feedback.json>]...'); process.exit(2);
-}
-
-const review = JSON.parse(readFileSync(inPath, 'utf8'));
-if (review.protocol !== 'letmeshowyousomething/review') {
-  console.error(`✗ not a review: protocol is ${JSON.stringify(review.protocol)}`);
-  process.exit(2);
-}
-const outPath = outPathArg || inPath.replace(/\.json$/, '') + '.html';
-
-// #82 — the earlier rounds travel in the page only after the checker has passed the whole chain: every
-// round a checked pair, every next round carrying what the round before left open. Bounded, never guessed.
-let history = null;
-if (earlierFiles.length) {
-  const run = spawnSync(process.execPath, [join(dirname(fileURLToPath(import.meta.url)), 'check.mjs'), 'rounds', inPath, ...earlierFiles], { encoding: 'utf8' });
-  if (run.status !== 0) { console.error(`✗ the rounds do not check out; nothing was written\n${run.stdout}${run.stderr}`); process.exit(1); }
-  const rounds = [];
-  for (let i = 0; i < earlierFiles.length; i += 2) rounds.push({ review: JSON.parse(readFileSync(earlierFiles[i], 'utf8')), feedback: JSON.parse(readFileSync(earlierFiles[i + 1], 'utf8')) });
-  history = { protocol: 'letmeshowyousomething/history', schemaVersion: 1, rounds };
-  const size = Buffer.byteLength(JSON.stringify(history));
-  if (rounds.length > 20 || size > 16 * 1024 * 1024) { console.error(`✗ the history is too large to carry (${rounds.length} rounds, ${(size / 1048576).toFixed(1)} MB; at most 20 rounds and 16 MB). Start a new review that quotes the open points in "affects"`); process.exit(1); }
-}
-const view = roundsView(review, history && history.rounds);
-
-const builder = readFileSync(join(HERE, '..', 'lib', 'build-feedback.mjs'), 'utf8')
-  .replace(/^export function/gm, 'function');
-// The flow page draws screens with the same code the Node tests prove (drawing + escaping).
-const drawer = readFileSync(join(HERE, '..', 'lib', 'draw-components.mjs'), 'utf8')
-  .replace(/^export function/gm, 'function');
-// Diagrams: layout and drawing, inlined the same way; their imports are dropped because the page
-// already defines everything they import.
-const inline = (file) => readFileSync(join(HERE, '..', 'lib', file), 'utf8').replace(/^export (?=function|const)/gm, '').replace(/^import .*\n/gm, '');
-const partsLib = inline('review-parts.mjs');
-const diagrams = inline('draw-ai.mjs') + '\n' + inline('layout.mjs') + '\n' + inline('draw-database.mjs') + '\n' + inline('draw-diagram.mjs');
-
-// `</script>` inside a JSON string would close the tag early; escaping `<` is enough and keeps the
-// payload valid JSON.
-// #78 — `<` could close the script, and U+2028/U+2029 end a line: an answered page is read back line
-// by line (bin/answer.mjs), and its re-export replaces the SEED line. JSON escapes change no value.
-const embed = (o) => JSON.stringify(o).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
-const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-const TONE = { positive: 'ok', caution: 'warn', negative: 'bad', neutral: 'neut' };
-
-// #74 — the symbols of the approved design, drawn inline so the page fetches nothing.
-const ICONS = {
-  check: '<path d="M5 12l5 5L20 7"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
-  help: '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/>',
-  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>', alert: '<path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/>',
-  map: '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>', phone: '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>',
-  list: '<path d="M10 6h10M10 12h10M10 18h10M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>', code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14"/>',
-  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', download: '<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
-  expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', minus: '<path d="M5 12h14"/>', plus: '<path d="M12 5v14M5 12h14"/>',
-  left: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8l-5.3 2.6 1.2-6-4.5-4.1 6-.7z"/>',
-  repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 12V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 12v3a3 3 0 0 1-3 3H3"/>',
-  open: '<circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/>', settled: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
-  shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
-  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/>',
-  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>', msg: '<path d="M4 5h16v11H9l-5 4z"/>',
-  branch: '<circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 7v2a5 5 0 0 0 5 5h1M18 7v2a5 5 0 0 1-5 5M12 14v3"/>',
-  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>', flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
-  send: '<path d="M4 12l16-8-6 16-3-7z"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
-  half: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
-  bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/>',
-  copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
-  image: '<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/>',
-  pin: '<path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/>', layers: '<path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/>',
-  battery: '<rect x="2" y="8" width="18" height="9" rx="2"/><path d="M22 11v3"/><rect x="4" y="10" width="11" height="5" fill="currentColor" stroke="none"/>',
-  wifi: '<path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01"/>', dots: '<path d="M5 12h.01M12 12h.01M19 12h.01"/>',
-  history: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>', db: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
-};
-const SPRITE = `<svg width="0" height="0" style="position:absolute" aria-hidden="true">${Object.entries(ICONS).map(([k, v]) =>
-  `<symbol id="i-${k}" viewBox="0 0 24 24">${v}</symbol>`).join('')}</svg>`;
-const I = (name, c = '') => `<svg class="ic ${c}" aria-hidden="true" focusable="false"><use href="#i-${name}"/></svg>`;
-
-// #38 — answers are kept per review, not per id: an agent that keeps an example's id (or two reviews
-// that happen to share one) must never mix answers. The key is the id plus a fingerprint of the content.
-const fingerprint = createHash('sha256').update(JSON.stringify(review) + JSON.stringify(history)).digest('hex').slice(0, 12);
-
-// The logo as the tab icon (D094), inlined so the page still fetches nothing. Base64, so no URL sits in
-// the page. A folder without site/ (only bin/ copied) simply renders without one.
-// The same mark signs the page at the bottom (D095): "Made with LetMeShowYouSomething", quiet, drawn inline.
-let favicon = '', mark = '';
-try {
-  const logo = readFileSync(new URL('../site/logo.svg', import.meta.url), 'utf8');
-  favicon = `<link rel="icon" href="data:image/svg+xml;base64,${Buffer.from(logo).toString('base64')}">`;
-  mark = (logo.match(/<g [\s\S]*<\/g>/) || [''])[0];
-} catch {}
-
-// #74 — the Let me explain cards are written into the page itself: a phone's file preview runs no
-// script and must still show them.
-const startCards = startCardsHtml(review, reviewParts(review), I, view);
-
-const html = `<!doctype html>
+<!doctype html>
 <html lang="en"><head>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(review.title)}</title>
-${favicon}
+<title>Checkout rebuild — acceptance pass · round 2</title>
+<link rel="icon" href="data:image/svg+xml;base64,PCEtLSBTUERYLUxpY2Vuc2UtSWRlbnRpZmllcjogQXBhY2hlLTIuMCAtLT4KPHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByb2xlPSJpbWciIGFyaWEtbGFiZWw9IkxldE1lU2hvd1lvdVNvbWV0aGluZyI+PHRpdGxlPkxldE1lU2hvd1lvdVNvbWV0aGluZzwvdGl0bGU+PHN0eWxlPnN2Z3tjb2xvcjojNUIzRThDfUBtZWRpYSAocHJlZmVycy1jb2xvci1zY2hlbWU6ZGFyayl7c3Zne2NvbG9yOiNBOThCRDZ9fTwvc3R5bGU+PGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSJjdXJyZW50Q29sb3IiIHN0cm9rZS13aWR0aD0iNi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPjxwYXRoIGQ9Ik01Mi42NyA0Mi4wMiBBMjIgMjIgMCAxIDEgNDYuMTQgMTcuNjUiLz48cGF0aCBkPSJNMzcuMTggMTguMjIgTDQ2LjkxIDE4LjI5IEw0NS4xNSA4LjcyIi8+PHBhdGggZD0iTTIxLjUgMzUuNTAgTDI4LjUgNDIuNTAgTDQyLjUgMjguMDAiLz48L2c+PC9zdmc+Cg==">
 <style>
 /* #74 — the page as the approved design: the guided tour, four places in a fixed order, the Overview. */
 :root{
@@ -498,25 +376,25 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head><body class="at-start">
-${SPRITE}
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol><symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.8.4-1 .9-1 1.7M12 17h.01"/></symbol><symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/></symbol><symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l10 18H2z"/><path d="M12 10v4M12 17h.01"/></symbol><symbol id="i-map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></symbol><symbol id="i-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol><symbol id="i-list" viewBox="0 0 24 24"><path d="M10 6h10M10 12h10M10 18h10M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></symbol><symbol id="i-code" viewBox="0 0 24 24"><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14"/></symbol><symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol><symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 20h16"/></symbol><symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></symbol><symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol><symbol id="i-left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol><symbol id="i-right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol><symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8l-5.3 2.6 1.2-6-4.5-4.1 6-.7z"/></symbol><symbol id="i-repeat" viewBox="0 0 24 24"><path d="M17 2l4 4-4 4"/><path d="M3 12V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 12v3a3 3 0 0 1-3 3H3"/></symbol><symbol id="i-open" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/></symbol><symbol id="i-settled" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></symbol><symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol><symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></symbol><symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/></symbol><symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol><symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 7v2a5 5 0 0 0 5 5h1M18 7v2a5 5 0 0 1-5 5M12 14v3"/></symbol><symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/></symbol><symbol id="i-flag" viewBox="0 0 24 24"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></symbol><symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z"/></symbol><symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></symbol><symbol id="i-half" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></symbol><symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol><symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M21 16l-5-5-9 9"/></symbol><symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-12a7 7 0 0 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol><symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></symbol><symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="8" width="18" height="9" rx="2"/><path d="M22 11v3"/><rect x="4" y="10" width="11" height="5" fill="currentColor" stroke="none"/></symbol><symbol id="i-wifi" viewBox="0 0 24 24"><path d="M2 9a15 15 0 0 1 20 0M5 12.5a10 10 0 0 1 14 0M8.5 16a5 5 0 0 1 7 0M12 19.5h.01"/></symbol><symbol id="i-dots" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></symbol><symbol id="i-history" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/></symbol><symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></symbol></svg>
 <a class="skip" href="#main">Skip to the question</a>
 <div class="wrap">
 <section id="start" aria-labelledby="start-h">
-  <p class="eyebrow">${I('flag', 'sm')}Let me explain${view ? ` · round ${view.round}` : ''}</p>
-  <h1 id="start-h">${esc(review.title)}</h1>
+  <p class="eyebrow"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>Let me explain · round 2</p>
+  <h1 id="start-h">Checkout rebuild — acceptance pass · round 2</h1>
   <p class="no-script">This page needs a web browser to answer. A phone's file preview shows it but cannot run it: open the file in a browser app such as Chrome or Safari, or on a computer.</p>
-  <ol id="start-cards" class="start-cards">${startCards}</ol>
+  <ol id="start-cards" class="start-cards"><li class="scard"><span class="num">1</span><div><h3 id="brief-h"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>What this is about</h3><p>In round 2 I changed what did not work, and I ask again where your answer left it open.</p><details class="start-more"><summary>More</summary><p>Guest checkout, which works, is settled.</p></details></div></li><li class="scard"><span class="num">2</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>What I&#39;ll ask</h3><p>4 questions in 2 parts.</p><p class="start-parts"><span class="chip-part" style="--sc:var(--s1)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>The path most people take</span><span class="chip-part" style="--sc:var(--s2)"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>Where it usually breaks</span></p></div></li><li class="scard"><span class="num">3</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-history"/></svg>Since last time</h3><p>Round 2: 2 changed after your notes, 1 still open, 1 you added, 1 settled.</p><details class="start-more"><summary>More</summary><ul><li>A guest can buy without creating an account: Works (round 1)</li></ul></details></div></li><li class="scard"><span class="num">4</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-help"/></svg>How to answer</h3><p>Tap the answer that fits.</p><details class="start-more"><summary>More</summary><p>Skip anything you are unsure about.</p></details></div></li><li class="scard"><span class="num">5</span><div><h3><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-send"/></svg>What happens next</h3><p>Nothing is sent until you download your answers.</p></div></li></ol>
   <div id="static-answers"></div>
-  <button class="btn pri" type="button" id="start-review">Start${I('right')}</button>
+  <button class="btn pri" type="button" id="start-review">Start<svg class="ic " aria-hidden="true" focusable="false"><use href="#i-right"/></svg></button>
 </section>
 <div id="topbar">
-  <button type="button" id="start-mini">${I('flag')}Let me explain<b>· ${esc(review.title)}</b><span class="more">Show</span></button>
-  <div class="seg" role="group" aria-label="View"><button type="button" id="mode-tour" data-mode="tour" aria-pressed="true">${I('flag', 'sm')}Tour</button><button type="button" id="mode-overview" data-mode="overview" aria-pressed="false">${I('list', 'sm')}Overview</button></div>
+  <button type="button" id="start-mini"><svg class="ic " aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>Let me explain<b>· Checkout rebuild — acceptance pass · round 2</b><span class="more">Show</span></button>
+  <div class="seg" role="group" aria-label="View"><button type="button" id="mode-tour" data-mode="tour" aria-pressed="true"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-flag"/></svg>Tour</button><button type="button" id="mode-overview" data-mode="overview" aria-pressed="false"><svg class="ic sm" aria-hidden="true" focusable="false"><use href="#i-list"/></svg>Overview</button></div>
 </div>
 <p id="save-warning" role="alert" hidden></p>
 <main id="main"></main>
 <p class="note" id="footnote">Answers save in this browser as you go. Downloading saves a file; nothing is sent from this page.</p>
-<p class="made">${mark ? `<svg viewBox="0 0 64 64" aria-hidden="true">${mark}</svg>` : ''}Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
+<p class="made"><svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"><path d="M52.67 42.02 A22 22 0 1 1 46.14 17.65"/><path d="M37.18 18.22 L46.91 18.29 L45.15 8.72"/><path d="M21.5 35.50 L28.5 42.50 L42.5 28.00"/></g></svg>Made with <a href="https://github.com/shyhunter/LetMeShowYouSomething" target="_blank" rel="noopener noreferrer">LetMeShowYouSomething</a></p>
 </div>
 <div id="layer-root"></div>
 <p id="announce" class="skip" aria-live="polite"></p>
@@ -524,19 +402,950 @@ ${SPRITE}
 <script>
 // D076 — the page as it arrived, before anything is drawn: the answered HTML download saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
-const PAGE = '<!doctype html>\\n' + document.documentElement.outerHTML;
+const PAGE = '<!doctype html>\n' + document.documentElement.outerHTML;
 // Taken after PAGE, so a downloaded copy opened without scripts still shows what needs them.
 document.documentElement.classList.add('js');
-const REVIEW = ${embed(review)};
+const REVIEW = {"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"checkout-uat-2026-09-r2","title":"Checkout rebuild — acceptance pass · round 2","subtitle":"Three open points from round 1, and the one you added","intro":"In round 2 I changed what did not work, and I ask again where your answer left it open. Guest checkout, which works, is settled.","createdAt":"2026-09-24T09:00:00Z","createdBy":{"agent":"claude-code","note":"Derived from the acceptance criteria in issue #218."},"verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"fields":[{"key":"expect","label":"Expected","tone":"positive"},{"key":"watch","label":"Watch for","tone":"caution"}],"allowAddedItems":true,"addNoun":"flow","sections":[{"id":"happy","label":"The path most people take","description":"If any of these are wrong, nothing below matters."},{"id":"edges","label":"Where it usually breaks","description":"Declines, timeouts, and the back button."}],"diagrams":[{"id":"checkout-path","kind":"flowchart","title":"The checkout, start to finish","nodes":[{"id":"cart","kind":"start","label":"Items in the cart","icon":"cart"},{"id":"signed-in","kind":"decision","label":"Signed in?"},{"id":"guest","kind":"user-action","label":"Checks out as a guest"},{"id":"saved","kind":"user-action","label":"Picks a saved card","step":"saved-card"},{"id":"pay","kind":"system-action","label":"Takes the payment","icon":"card"},{"id":"result","kind":"decision","label":"What happens?"},{"id":"confirmed","kind":"end","label":"Order confirmed"},{"id":"declined","kind":"error","label":"Says why the card was declined","step":"declined-card"},{"id":"back","kind":"end-failed","label":"Back pressed: charged once at most","step":"back-button"}],"edges":[{"from":"cart","to":"signed-in"},{"from":"signed-in","to":"guest","kind":"conditional","label":"no"},{"from":"signed-in","to":"saved","kind":"conditional","label":"yes"},{"from":"guest","to":"pay"},{"from":"saved","to":"pay"},{"from":"pay","to":"result"},{"from":"result","to":"confirmed","kind":"conditional","label":"accepted"},{"from":"result","to":"declined","kind":"conditional","label":"declined"},{"from":"result","to":"back","kind":"conditional","label":"Back pressed"},{"from":"declined","to":"pay","label":"tries another card"}]}],"items":[{"id":"saved-card","sectionId":"happy","title":"A returning customer can pay with a saved card","fields":{"expect":"Card shown masked, one tap to pay."},"ref":"src/checkout/wallet.ts:112","reply":"Changed: the saved card is now chosen by default, and a second card can be picked from the list.","summary":"The saved card is chosen by default; another card can be picked from the list."},{"id":"declined-card","sectionId":"edges","title":"A declined card explains itself","body":"Use the test card that always declines.","fields":{"expect":"Plain-language reason, cart intact, retry without re-entering the address.","watch":"A raw gateway error code reaching the customer."},"reply":"Changed: error 51 now reads \"Your bank declined this card: not enough funds\", and the cart is kept.","summary":"A declined card says why, in words, and the cart stays as it was."},{"id":"back-button","sectionId":"edges","title":"The back button mid-payment does not double-charge","fields":{"expect":"One charge, one order, whatever the customer does."},"reply":"You did not get to this one last time, so I ask again."},{"id":"added-1","sectionId":"edges","title":"Currency switches halfway through","summary":"The price now stays in the currency the customer started with, from the cart to the receipt.","reply":"Fixed, as you raised: the currency is fixed when the cart is created."}]};
 const SEED = null;
-const HISTORY = ${embed(history)};
-${builder}
-${drawer}
-${partsLib}
-${diagrams}
+const HISTORY = {"protocol":"letmeshowyousomething/history","schemaVersion":1,"rounds":[{"review":{"protocol":"letmeshowyousomething/review","schemaVersion":1,"id":"checkout-uat-2026-09","title":"Checkout rebuild — acceptance pass","subtitle":"Four flows, before we open it to real payments","intro":"Work through each flow on the staging build. **A note matters more than a verdict** — if something is off, say what you saw rather than grading it. Anything missing from this list, add it at the bottom.","createdAt":"2026-09-16T09:00:00Z","createdBy":{"agent":"claude-code","note":"Derived from the acceptance criteria in issue #218."},"verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"fields":[{"key":"expect","label":"Expected","tone":"positive"},{"key":"watch","label":"Watch for","tone":"caution"}],"allowAddedItems":true,"addNoun":"flow","sections":[{"id":"happy","label":"The path most people take","description":"If any of these are wrong, nothing below matters."},{"id":"edges","label":"Where it usually breaks","description":"Declines, timeouts, and the back button."}],"diagrams":[{"id":"checkout-path","kind":"flowchart","title":"The checkout, start to finish","nodes":[{"id":"cart","kind":"start","label":"Items in the cart","icon":"cart"},{"id":"signed-in","kind":"decision","label":"Signed in?"},{"id":"guest","kind":"user-action","label":"Checks out as a guest","step":"guest-checkout"},{"id":"saved","kind":"user-action","label":"Picks a saved card","step":"saved-card"},{"id":"pay","kind":"system-action","label":"Takes the payment","icon":"card"},{"id":"result","kind":"decision","label":"What happens?"},{"id":"confirmed","kind":"end","label":"Order confirmed"},{"id":"declined","kind":"error","label":"Says why the card was declined","step":"declined-card"},{"id":"back","kind":"end-failed","label":"Back pressed: charged once at most","step":"back-button"}],"edges":[{"from":"cart","to":"signed-in"},{"from":"signed-in","to":"guest","kind":"conditional","label":"no"},{"from":"signed-in","to":"saved","kind":"conditional","label":"yes"},{"from":"guest","to":"pay"},{"from":"saved","to":"pay"},{"from":"pay","to":"result"},{"from":"result","to":"confirmed","kind":"conditional","label":"accepted"},{"from":"result","to":"declined","kind":"conditional","label":"declined"},{"from":"result","to":"back","kind":"conditional","label":"Back pressed"},{"from":"declined","to":"pay","label":"tries another card"}]}],"items":[{"id":"guest-checkout","sectionId":"happy","title":"A guest can buy without creating an account","body":"Add one item, check out without signing in, pay with a test card.","fields":{"expect":"Order confirmed, receipt emailed, no account created.","watch":"A sign-in prompt appearing anywhere in the flow."},"ref":"src/checkout/guest.ts:44"},{"id":"saved-card","sectionId":"happy","title":"A returning customer can pay with a saved card","fields":{"expect":"Card shown masked, one tap to pay."},"ref":"src/checkout/wallet.ts:112"},{"id":"declined-card","sectionId":"edges","title":"A declined card explains itself","body":"Use the test card that always declines.","fields":{"expect":"Plain-language reason, cart intact, retry without re-entering the address.","watch":"A raw gateway error code reaching the customer."}},{"id":"back-button","sectionId":"edges","title":"The back button mid-payment does not double-charge","fields":{"expect":"One charge, one order, whatever the customer does."}}]},"feedback":{"protocol":"letmeshowyousomething/feedback","schemaVersion":1,"review":{"id":"checkout-uat-2026-09","title":"Checkout rebuild — acceptance pass","schemaVersion":1},"respondedAt":"2026-09-17T09:00:00Z","verdictSet":{"id":"test","options":[{"value":"works","label":"Works","tone":"positive"},{"value":"partial","label":"Partially works","tone":"caution","hint":"Completes, but not the way it should"},{"value":"fails","label":"Doesn't work","tone":"negative"},{"value":"blocked","label":"Couldn't test it","tone":"neutral","hint":"Something upstream stopped you"}]},"responses":[{"itemId":"guest-checkout","title":"A guest can buy without creating an account","verdict":"works","note":null,"sectionLabel":"The path most people take","ref":"src/checkout/guest.ts:44"},{"itemId":"saved-card","title":"A returning customer can pay with a saved card","verdict":"partial","note":null,"sectionLabel":"The path most people take","ref":"src/checkout/wallet.ts:112"},{"itemId":"declined-card","title":"A declined card explains itself","verdict":"fails","note":"Customer sees error 51.","sectionLabel":"Where it usually breaks"},{"itemId":"back-button","title":"The back button mid-payment does not double-charge","verdict":"unset","note":null,"sectionLabel":"Where it usually breaks"}],"summary":{"total":4,"answered":3,"unset":1,"added":1,"byVerdict":{"unset":1,"works":1,"partial":1,"fails":1,"blocked":0}},"gaps":["declined-card","back-button","added-1"],"addedItems":[{"id":"added-1","title":"Currency switches halfway through","verdict":"fails","note":null}]}}]};
+// SPDX-License-Identifier: MIT-0
+// The single source of truth for what a completed review exports.
+//
+// Pure: takes the review and the reviewer's raw input, returns a feedback.v1 object. No DOM, no
+// storage, no side effects. `render.mjs` inlines this function's source into the generated
+// page, so the page and the test suite run the SAME code — the export shape cannot drift from what
+// the checker expects without both failing together.
+//
+// Everything here exists to satisfy an invariant in PROTOCOL.md. The comments name which.
+
+// One line of text per flow layer entry. Exported so the checker compares with exactly what the page
+// wrote into the feedback (invariant 1: the verdict carries the text it judged).
+function layerEntryText(layer, e) {
+  if (layer === 'system') return `${e.kind} ${e.name} · ${e.status}${e.ref ? ` · ${e.ref}` : ''}`;
+  const fields = (e.fields || []).map((f) => `${f.name} ${f.before ?? '—'} → ${f.after ?? '—'}`).join(', ');
+  return `${e.entity} ${e.change}${fields ? `: ${fields}` : ''}`;
+}
+
+// Finds a system or data entry of a flow step by its id (D033).
+function findLayerEntry(item, entryId) {
+  for (const outcome of item?.step?.outcomes || [])
+    for (const layer of ['system', 'data'])
+      for (const entry of outcome[layer] || []) if (entry.id === entryId) return { outcome, layer, entry };
+  return null;
+}
+
+// #60 — what a comment is on, in words, so the feedback reads without the review (invariant 1).
+// null when the diagram has no such box or arrow.
+function partLabel(diagram, on) {
+  const nodes = Object.fromEntries((diagram?.nodes || []).map((n) => [n.id, n]));
+  const name = (id) => nodes[id]?.label || nodes[id]?.kind || id;
+  if (on?.node !== undefined) return nodes[on.node] ? name(on.node) : null;
+  // The same pair can be joined more than once (a sequence): `nth` says which arrow, by its place
+  // in the diagram's own list.
+  const all = diagram?.edges || [];
+  if (diagram?.kind === 'database' && on?.edge?.nth === undefined && all.filter(x => x.from === on?.edge?.from && x.to === on?.edge?.to).length > 1) return null;
+  const e = on?.edge?.nth !== undefined ? all[on.edge.nth] : all.find((x) => x.from === on?.edge?.from && x.to === on?.edge?.to);
+  if (!e || e.from !== on?.edge?.from || e.to !== on?.edge?.to) return null;
+  if (diagram.kind === 'database') return `${name(e.from)}.${e.fromColumn} (many) → ${name(e.to)}.${e.toColumn} (one)${e.label ? ` (${e.label})` : ''}`;
+  return `${name(e.from)} → ${name(e.to)}${e.label ? ` (${e.label})` : ''}`;
+}
+
+// #60 — the reviewer's proposed changes to a diagram, applied to a copy of it: what the next round
+// would draw. Used by the page to show the change and by the checker to prove it still makes sense.
+// Returns the changed diagram and the proposals that could not be applied, each with why.
+function applyProposals(diagram, proposals) {
+  const d = structuredClone(diagram);
+  d.nodes = d.nodes ?? []; d.edges = d.edges ?? [];
+  const originalEdges = [...d.edges];
+  const failed = [], added = [];
+  let n = 0;
+  for (const p of proposals) {
+    const node = d.nodes.find((x) => x.id === p.node);
+    // `nth` picks one arrow when the same pair is joined more than once (a sequence).
+    const positioned = originalEdges[p.nth];
+    const edge = p.nth !== undefined ? (d.edges.includes(positioned) && positioned?.from === p.from && positioned?.to === p.to ? positioned : undefined)
+      : d.edges.find((x) => x.from === p.from && x.to === p.to);
+    const no = (why) => failed.push({ id: p.id, why });
+    if (d.kind === 'database' && ['remove-edge', 'relabel-edge'].includes(p.op) && p.nth === undefined && originalEdges.filter(e => e.from === p.from && e.to === p.to).length > 1) {
+      no('more than one relationship joins these tables. Name its original position with nth, or the change could land on the wrong columns'); continue;
+    }
+    if (d.agent === true && p.op === 'add-node') {
+      no('agent additions need an explained continuation or stop. Describe the addition in a comment for the next review'); continue;
+    }
+    if (d.kind === 'database' && ['add-node', 'add-edge'].includes(p.op)) {
+      no('database additions need columns and key mappings. Describe the addition in a comment for the next review, or the new table or relationship would be incomplete'); continue;
+    }
+    if (p.op === 'rename') {
+      if (!node) no(`box "${p.node}" is not in this diagram`);
+      else if (!String(p.text ?? '').trim()) no('a new name is missing');
+      else node.label = p.text;
+    } else if (p.op === 'remove-node') {
+      if (!node) no(`box "${p.node}" is not in this diagram`);
+      else { d.nodes = d.nodes.filter((x) => x !== node); d.edges = d.edges.filter((e) => e.from !== p.node && e.to !== p.node); }
+    } else if (p.op === 'add-node') {
+      if (!d.nodes.some((x) => x.id === p.from)) no(`box "${p.from}" is not in this diagram`);
+      else if (!String(p.text ?? '').trim()) no('the new box has no words');
+      else { const id = `added-${++n}`; added.push(id); d.nodes.push({ id, kind: 'process', label: p.text }); d.edges.push({ from: p.from, to: id }); }
+    } else if (p.op === 'add-edge') {
+      if (!d.nodes.some((x) => x.id === p.from) || !d.nodes.some((x) => x.id === p.to)) no('an arrow needs two boxes that are in this diagram');
+      else if (edge) no('that arrow is already there');
+      else d.edges.push(String(p.text ?? '').trim() ? { from: p.from, to: p.to, kind: 'conditional', label: p.text } : { from: p.from, to: p.to });
+    } else if (p.op === 'remove-edge') {
+      if (!edge) no(`arrow ${p.from} → ${p.to} is not in this diagram`);
+      else d.edges = d.edges.filter((x) => x !== edge);
+    } else if (p.op === 'relabel-edge') {
+      if (!edge) no(`arrow ${p.from} → ${p.to} is not in this diagram`);
+      else if (!String(p.text ?? '').trim()) no('a new label is missing');
+      else { edge.label = p.text; if (d.kind !== 'database') edge.kind = edge.kind ?? 'conditional'; }
+    } else no(`"${p.op}" is not a change this format knows`);
+  }
+  return { diagram: d, failed, added };
+}
+
+// #77 — the first id with this prefix that nothing uses yet. `taken` must list every id an answer has
+// or is pointed at by: the review's items (a carried `added-1` among them), added items, comments and
+// the comments proposals name, or a new answer lands on an old one.
+function freeId(prefix, taken) {
+  const used = new Set(taken);
+  let n = 1;
+  while (used.has(prefix + n)) n++;
+  return prefix + n;
+}
+
+function buildFeedback(review, store, now = new Date().toISOString()) {
+  const sectionLabel = {};
+  const sectionKind = {};
+  for (const s of review.sections || []) { sectionLabel[s.id] = s.label; if (s.kind) sectionKind[s.id] = s.kind; }
+
+  const negative = new Set(
+    (review.verdictSet?.options || []).filter((o) => o.tone === 'negative').map((o) => o.value),
+  );
+  const positive = new Set(
+    (review.verdictSet?.options || []).filter((o) => o.tone === 'positive').map((o) => o.value),
+  );
+
+  // Invariant 2 — every item appears, including ones nobody touched. An untouched item is written
+  // as "unset", never omitted, so "no opinion" stays distinguishable from "never reached them".
+  const responses = (review.items || []).map((item) => {
+    const r = {
+      itemId: item.id,
+      // Invariant 1 — the echoed title is what makes the file readable without the review.
+      title: item.title,
+      verdict: store.verdicts?.[item.id] || 'unset',
+      note: (store.notes?.[item.id] || '').trim() || null,
+    };
+    if (item.sectionId) r.sectionId = item.sectionId;
+    if (sectionKind[item.sectionId]) r.sectionKind = sectionKind[item.sectionId];
+    if (item.sectionId && sectionLabel[item.sectionId]) r.sectionLabel = sectionLabel[item.sectionId];
+    if (item.ref) r.ref = item.ref;
+    if (item.affects?.length) r.affects = item.affects;
+    // #54 — what exactly was approved or declined travels with the answer (invariant 1).
+    if (item.approval) r.approval = item.approval;
+    return r;
+  });
+
+  // Invariant 3 — what the reviewer added. `added-` prefix so these can never be mistaken for
+  // something the agent asked about.
+  const addedItems = (store.added || []).map((a, i) => {
+    const out = {
+      id: a.id || `added-${i + 1}`,
+      title: (a.title || '').trim() || '(untitled)',
+      verdict: a.verdict || 'unset',
+      note: (a.note || '').trim() || null,
+    };
+    if ((a.body || '').trim()) out.body = a.body.trim();
+    if (a.sectionLabel) out.sectionLabel = a.sectionLabel;
+    return out;
+  });
+
+  // Invariant 4 — derived, and required to agree with the data. The checker recomputes all of this.
+  const unset = responses.filter((r) => r.verdict === 'unset').length;
+  const byVerdict = { unset };
+  for (const o of review.verdictSet?.options || []) {
+    byVerdict[o.value] = responses.filter((r) => r.verdict === o.value).length;
+  }
+
+  // Invariant 5 — gap-first: anything judged negative, plus anything nobody answered. In a choose-one
+  // section that has a pick, the pick answers the section, so unrated options are not gaps.
+  // D006 — verdicts on single flow layer entries, only the ones the reviewer judged. Each echoes the
+  // entry text. Nothing about how the reviewer navigated is recorded (D003).
+  const itemById = {};
+  for (const it of review.items || []) itemById[it.id] = it;
+  const layerVerdicts = Object.entries(store.layerVerdicts || {}).map(([id, v]) => {
+    const [stepId, entryId] = id.split('/');
+    const found = findLayerEntry(itemById[stepId], entryId);
+    if (!found || !v?.verdict) return null;
+    return { id, stepId, entryId, stepTitle: itemById[stepId].title, layer: found.layer,
+      outcome: found.outcome.label ?? null, entry: layerEntryText(found.layer, found.entry),
+      verdict: v.verdict, note: (v.note || '').trim() || null };
+  }).filter(Boolean);
+
+  // D060 — what the reviewer asks the agent for: an example, or an explanation. Answered next round.
+  const requests = [];
+  for (const [itemId, ask] of Object.entries(store.requests || {})) {
+    const item = itemById[itemId];
+    if (!item) continue;
+    for (const kind of ['example', 'explain']) if (ask && ask[kind])
+      requests.push({ itemId, title: item.title, kind, note: (ask.note || '').trim() || null });
+  }
+
+  const picked = new Set((review.sections || []).filter((s) => s.mode === 'choose-one' && store.choices?.[s.id]).map((s) => s.id));
+  const gaps = [...responses, ...addedItems, ...layerVerdicts]
+    .filter((x) => (x.verdict === 'unset' ? !picked.has(x.sectionId)
+      // D051 — in a doubts section, agree (a positive verdict) means the concern is real: that is the gap.
+      : x.sectionKind === 'challenge' ? positive.has(x.verdict) : negative.has(x.verdict)))
+    .map((x) => x.itemId || x.id);
+
+  // choose-one sections — every one is written down, chosen or not (itemId null), mirroring
+  // invariant 2. followedRecommendation is derived, so the checker can recompute it (invariant 4).
+  const titleOf = {};
+  for (const it of review.items || []) titleOf[it.id] = it.title;
+  const choices = (review.sections || []).filter((s) => s.mode === 'choose-one').map((s) => {
+    const picked = store.choices?.[s.id] || null;
+    const c = { sectionId: s.id, sectionLabel: s.label, itemId: picked, title: picked ? titleOf[picked] : null };
+    if (s.recommended) {
+      c.recommended = { itemId: s.recommended.itemId, title: titleOf[s.recommended.itemId] };
+      c.followedRecommendation = picked ? picked === s.recommended.itemId : null;
+    }
+    return c;
+  });
+
+  const out = {
+    protocol: 'letmeshowyousomething/feedback',
+    schemaVersion: 1,
+    review: { id: review.id, title: review.title, schemaVersion: review.schemaVersion },
+    respondedAt: now,
+    // Echoed so a value like "partial" still means something to a reader without the review.
+    verdictSet: review.verdictSet,
+    responses,
+    summary: {
+      total: responses.length,
+      answered: responses.length - unset,
+      unset,
+      added: addedItems.length,
+      byVerdict,
+    },
+    gaps,
+  };
+  if (addedItems.length) out.addedItems = addedItems;
+  if (choices.length) out.choices = choices;
+  if (requests.length) out.requests = requests;
+  if (layerVerdicts.length) out.layerVerdicts = layerVerdicts;
+  // #60 — the reviewer's comments on a box or an arrow of a diagram, each with what it is on. An empty
+  // comment is not an answer and is left out.
+  const comments = (store.comments || []).filter((c) => (c.note || '').trim()).map((c) => {
+    const o = { id: c.id, diagram: c.diagram };
+    if (c.node !== undefined) o.node = c.node;
+    // `nth` says which arrow, when the same pair is joined more than once (a sequence): it must travel.
+    else o.edge = c.edge.nth === undefined ? { from: c.edge.from, to: c.edge.to } : { from: c.edge.from, to: c.edge.to, nth: c.edge.nth };
+    o.label = c.label; o.note = c.note.trim();
+    return o;
+  });
+  if (comments.length) out.comments = comments;
+  // #60 — pictures the reviewer attached to a note or a comment. The page re-saves each one, so hidden
+  // details such as a photo's location are gone. Each says what it is attached to (invariant 1); a
+  // picture on something that is not in the file is left out.
+  const onTitle = Object.fromEntries([...responses.map((r) => [r.itemId, r.title]), ...addedItems.map((a) => [a.id, a.title]),
+    ...comments.map((c) => [c.id, c.label])]);
+  const pictures = (store.pictures || []).filter((p) => onTitle[p.on] !== undefined).map((p) => ({
+    id: p.id, on: p.on, onTitle: onTitle[p.on], type: p.type, width: p.width, height: p.height, data: p.data }));
+  if (pictures.length) out.pictures = pictures;
+  // #60 — changes the reviewer proposes to a diagram. `label` says what the change is on, `why` is
+  // their own words from the comment on the same part.
+  const why = Object.fromEntries((store.comments || []).map((c) => [c.id, (c.note || '').trim()]));
+  const proposals = (store.proposals || []).map((p) => {
+    const o = { id: p.id, diagram: p.diagram, op: p.op, label: p.label };
+    for (const k of ['node', 'from', 'to', 'nth', 'text']) if (p[k] !== undefined) o[k] = p[k];
+    if (why[p.comment]) o.why = why[p.comment];
+    return o;
+  });
+  if (proposals.length) out.proposals = proposals;
+  if (store.respondent && (store.respondent.name || store.respondent.role)) {
+    out.respondent = {};
+    if (store.respondent.name) out.respondent.name = store.respondent.name;
+    if (store.respondent.role) out.respondent.role = store.respondent.role;
+  }
+  return out;
+}
+
+// SPDX-License-Identifier: MIT-0
+// Draws a flow screen's components as HTML strings. Pure: no DOM, no state. The renderer inlines this
+// file verbatim, so the page and the tests run the same code.
+//
+// Every value from a review is agent-written: it goes through esc() before it reaches the page, in
+// text and in attributes alike. Only ids that a step points at become real buttons; everything else is
+// drawn as a still wireframe, because a reviewer can only act where the flow says something happens.
+
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// A tappable element when a step points at it, a still one otherwise. In a still picture (ctx.still,
+// the "All screens" cards, which are buttons themselves) it is a marked span the connections start from.
+function act(id, label, ctx, cls = 'c-button') {
+  if (id === undefined || !ctx.targets.has(id)) return `<span class="${cls}">${esc(label)}</span>`;
+  return ctx.still
+    ? `<span class="${cls} is-target" data-link="${esc(id)}">${esc(label)}</span>`
+    : `<button type="button" class="${cls} is-target" data-target="${esc(id)}">${esc(label)}</button>`;
+}
+const actions = (list, ctx) => (list?.length ? `<div class="c-actions">${list.map((a) => act(a.id, a.label, ctx)).join('')}</div>` : '');
+const initials = (name) => String(name ?? '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+
+const DRAW = {
+  heading: (b) => `<h2 class="c-heading">${esc(b.text)}</h2>`,
+  text: (b) => `<p class="c-text">${esc(b.text)}</p>`,
+  input: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? b.placeholder ?? ''}`, ctx, 'c-input')
+    : `<label class="c-field"><span>${esc(b.label)}</span><input disabled value="${esc(b.value)}" placeholder="${esc(b.placeholder)}"></label>`),
+  button: (b, ctx) => act(b.id, b.label, ctx),
+  list: (b) => `<ul class="c-list">${(b.items ?? []).map((i) => `<li>${esc(i)}</li>`).join('')}</ul>`,
+
+  header: (b, ctx) => `<div class="c-header">${b.back ? act(b.back.id, '← Back', ctx, 'c-back') : ''}<h2>${esc(b.title)}</h2>${actions(b.actions, ctx)}</div>`,
+  'tab-bar': (b, ctx) => `<nav class="c-tab-bar" aria-label="Main sections">${(b.items ?? []).map((i) => `<span class="c-tab"${i.id === b.active ? ' aria-current="page"' : ''}>${act(i.id, i.label, ctx, 'c-tab-label')}</span>`).join('')}</nav>`,
+  tabs: (b, ctx) => `<div class="c-tabs" role="tablist">${(b.items ?? []).map((i) => `<span class="c-tab" role="tab" aria-selected="${i.id === b.active}">${act(i.id, i.label, ctx, 'c-tab-label')}</span>`).join('')}</div>`,
+  'side-menu': (b, ctx) => `<nav class="c-side-menu" data-open="${b.open ? 'true' : 'false'}" aria-label="Menu">${(b.items ?? []).map((i) => `<span class="c-menu-item"${i.id === b.active ? ' aria-current="page"' : ''}>${act(i.id, i.label, ctx, 'c-menu-label')}</span>`).join('')}</nav>`,
+  breadcrumb: (b) => `<nav class="c-breadcrumb" aria-label="Breadcrumb"><ol>${(b.items ?? []).map((i) => `<li>${esc(i)}</li>`).join('')}</ol></nav>`,
+
+  checkbox: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.checked ? '☑' : '☐'} ${b.label}`, ctx, 'c-check')
+    : `<label class="c-check"><input type="checkbox" disabled${b.checked ? ' checked' : ''}> ${esc(b.label)}</label>`),
+  'radio-group': (b, ctx) => `<fieldset class="c-radio" disabled><legend>${esc(b.label)}</legend>${(b.options ?? []).map((o) => (ctx.targets.has(o.id)
+    ? act(o.id, `${o.id === b.selected ? '◉' : '○'} ${o.label}`, ctx, 'c-option')
+    : `<label><input type="radio" name="${esc(b.id)}"${o.id === b.selected ? ' checked' : ''}> ${esc(o.label)}</label>`)).join('')}</fieldset>`,
+  switch: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.on ? 'on' : 'off'}`, ctx, 'c-switch')
+    : `<span class="c-switch" role="switch" aria-checked="${b.on ? 'true' : 'false'}" aria-disabled="true">${esc(b.label)} <b>${b.on ? 'on' : 'off'}</b></span>`),
+  select: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? ''} ▾`, ctx, 'c-select')
+    : `<label class="c-field"><span>${esc(b.label)}</span><select disabled>${(b.options ?? []).map((o) => `<option${o === b.value ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></label>`),
+  'date-time': (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value ?? ''}`, ctx, 'c-date')
+    : `<div class="c-field"><span>${esc(b.label)}</span><output class="c-date" data-mode="${esc(b.mode)}">${esc(b.value)}</output></div>`),
+  search: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `⌕ ${b.value || b.placeholder || 'Search'}`, ctx, 'c-search')
+    : `<label class="c-search"><span class="c-sr">Search</span><input type="search" disabled placeholder="${esc(b.placeholder)}" value="${esc(b.value)}"></label>`),
+  stepper: (b, ctx) => `<div class="c-stepper"><span>${esc(b.label)}</span>${act(`${b.id}`, '−', { targets: new Set() }, 'c-step')}<output>${esc(b.value)}</output>${act(`${b.id}`, '+', { targets: new Set() }, 'c-step')}${ctx.targets.has(b.id) ? act(b.id, 'Change', ctx) : ''}</div>`,
+  slider: (b, ctx) => (ctx.targets.has(b.id)
+    ? act(b.id, `${b.label}: ${b.value}`, ctx, 'c-slider')
+    : `<label class="c-field"><span>${esc(b.label)}</span><input type="range" disabled min="${esc(b.min)}" max="${esc(b.max)}" value="${esc(b.value)}"><output>${esc(b.value)}</output></label>`),
+
+  card: (b, ctx) => `<article class="c-card"><h3>${esc(b.title)}</h3>${b.text ? `<p>${esc(b.text)}</p>` : ''}${actions(b.actions, ctx)}</article>`,
+  chip: (b) => `<span class="c-chip" data-tone="${esc(b.tone ?? 'neutral')}">${esc(b.text)}</span>`,
+  image: (b) => `<figure class="c-image"><div class="c-placeholder" role="img" aria-label="${esc(b.alt)}">${esc(b.alt)}</div>${b.caption ? `<figcaption>${esc(b.caption)}</figcaption>` : ''}</figure>`,
+  table: (b) => `<div class="c-table-wrap"><table class="c-table"><thead><tr>${(b.columns ?? []).map((c) => `<th scope="col">${esc(c)}</th>`).join('')}</tr></thead><tbody>${(b.rows ?? []).map((r) => `<tr>${(Array.isArray(r) ? r : []).map((c) => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`,
+  avatar: (b) => `<span class="c-avatar" role="img" aria-label="${esc(b.name)}" title="${esc(b.name)}">${esc(initials(b.name))}</span>`,
+
+  dialog: (b, ctx) => `<div class="c-dialog" role="dialog" aria-label="${esc(b.title)}"><h3>${esc(b.title)}</h3>${b.text ? `<p>${esc(b.text)}</p>` : ''}${actions(b.actions, ctx)}</div>`,
+  toast: (b) => `<div class="c-toast" role="status">${esc(b.text)}</div>`,
+  banner: (b) => `<div class="c-banner" data-tone="${esc(b.tone)}" role="${b.tone === 'negative' ? 'alert' : 'status'}"><p>${esc(b.text)}</p>${b.because ? `<p class="c-because">Why: ${esc(b.because)}</p>` : ''}${b.canNow ? `<p class="c-cannow">You can: ${esc(b.canNow)}</p>` : ''}</div>`,
+  'empty-state': (b, ctx) => `<div class="c-empty"><p>${esc(b.text)}</p>${b.action ? act(b.action.id, b.action.label, ctx) : ''}</div>`,
+  progress: (b) => `<div class="c-progress">${b.label ? `<span>${esc(b.label)}</span>` : ''}<progress max="100"${b.value !== undefined ? ` value="${esc(b.value)}"` : ''}></progress></div>`,
+};
+
+function drawBlock(block, ctx) {
+  const draw = DRAW[block?.type];
+  return draw ? draw(block, ctx) : `<p class="c-unknown">${esc(block?.type)}</p>`;
+}
+
+// SPDX-License-Identifier: MIT-0
+// The parts of a review and its "Let me explain" cards. Pure: no DOM. The renderer uses it to write the
+// cards into the page itself (#74: a phone's file preview runs no script and must still show them), and
+// inlines it verbatim so the page groups its questions the same way.
+
+function partsEsc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+// Text without its Markdown marks, for a sentence shown as plain words.
+function plain(t) { return String(t || '').split('**').join('').split(String.fromCharCode(96)).join('').trim(); }
+function firstSentence(t) { const s = plain(t), m = s.match(/^.+?[.!?](?=\s|$)/); return m ? [m[0], s.slice(m[0].length).trim()] : [s, '']; }
+
+// The review's sections, a flow's journeys, or one part. Each part keeps its items in the review's order.
+function reviewParts(review) {
+  const flow = review.flow || null, items = review.items || [], sections = review.sections || [];
+  const partsById = flow ? Object.fromEntries((flow.parts || []).map((p) => [p.id, p])) : {};
+  const top = flow ? (flow.parts || []).filter((p) => !p.parent) : [];
+  const journeys = top.length === 1 ? (flow.parts || []).filter((p) => p.parent === top[0].id) : top;
+  const journeyOf = (it) => { for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (journeys.some((j) => j.id === p.id)) return p.id; return null; };
+  const list = [], taken = new Set();
+  const iconFor = (sec, its) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : its.every((i) => i.approval) ? 'shield' : flow ? 'phone' : 'help';
+  const add = (label, sec, its) => { if (!its.length) return; its.forEach((i) => taken.add(i.id)); list.push({ label, sec, items: its, icon: iconFor(sec, its) }); };
+  for (const sec of sections) add(sec.label || sec.id, sec, items.filter((i) => i.sectionId === sec.id));
+  if (flow && !sections.length) for (const j of journeys) add(j.title || j.id, null, items.filter((i) => i.step && !taken.has(i.id) && journeyOf(i) === j.id));
+  const rest = items.filter((i) => !taken.has(i.id));
+  add(list.length ? 'Other questions' : 'Questions', null, rest);
+  list.forEach((p, i) => { p.color = 'var(--s' + (i % 6 + 1) + ')'; p.questions = p.sec && p.sec.mode === 'choose-one' ? 1 : p.items.length; });
+  return list;
+}
+
+// #82 — Since last time: what became of the round before, in one sentence, the settled answers behind More.
+function sinceCard(view, icon) {
+  const count = (t) => Object.values(view.tags).filter((x) => x === t).length;
+  const said = [['changed', 'changed after your notes'], ['again', 'asked again'], ['open', 'still open'], ['added', 'you added'], ['new', 'new']]
+    .map(([t, words]) => [count(t), words]).filter(([k]) => k).map(([k, words]) => k + ' ' + words);
+  if (view.settled.length) said.push(view.settled.length + ' settled');
+  const more = view.settled.length ? '<details class="start-more"><summary>More</summary><ul>' + view.settled.map((x) => '<li>' + partsEsc(x.title) + ': ' + partsEsc(x.label) + ' (round ' + x.round + ')</li>').join('') + '</ul></details>' : '';
+  return ['history', 'Since last time', '<p>Round ' + view.round + ': ' + partsEsc(said.join(', ')) + '.</p>' + more];
+}
+
+// #105 — Let me explain in short cards: one sentence each, the rest one tap away, never dropped.
+function startCardsHtml(review, parts, icon, view) {
+  const b = review.brief || {}, n = parts.reduce((k, p) => k + p.questions, 0);
+  const card = (ic, title, text, moreHtml) => {
+    const fs = firstSentence(text), more = (fs[1] ? '<p>' + partsEsc(fs[1]) + '</p>' : '') + (moreHtml || '');
+    return [ic, title, '<p>' + partsEsc(fs[0]) + '</p>' + (more ? '<details class="start-more"><summary>More</summary>' + more + '</details>' : '')];
+  };
+  const about = b.question || b.explains || review.intro || review.subtitle || review.title;
+  const aboutMore = [b.question && b.explains, about !== review.intro && review.intro].filter(Boolean).map((t) => '<p>' + partsEsc(plain(t)) + '</p>').join('');
+  const exRows = (b.examples || []).map((x) => '<li><b>' + partsEsc(x.name) + '</b> ' + partsEsc(x.what || '') + (x.shows ? ' What people see: ' + partsEsc(x.shows) : '') + ' '
+    + (x.source ? '<a href="' + partsEsc(x.source) + '" target="_blank" rel="noopener noreferrer">' + partsEsc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>') + '</li>').join('');
+  const cards = [
+    card('flag', b.question ? 'What I need you to decide' : 'What this is about', about, aboutMore),
+    b.recommendation && card('star', 'My recommendation', b.recommendation),
+    ['list', "What I'll ask", '<p>' + n + (n === 1 ? ' question' : ' questions') + (parts.length > 1 ? ' in ' + parts.length + ' parts.' : '.') + '</p><p class="start-parts">'
+      + parts.map((p) => '<span class="chip-part" style="--sc:' + p.color + '">' + icon(p.icon, 'sm') + partsEsc(p.label) + '</span>').join('') + '</p>'],
+    (b.examples || []).length && card('globe', 'Done before', (b.examples.length === 1 ? 'One example: ' : b.examples.length + ' examples, like ') + b.examples[0].name + '.', '<ul>' + exRows + '</ul>'),
+    (b.risks || []).length && card('alert', 'What could go wrong', b.risks[0], b.risks.length > 1 ? '<ul>' + b.risks.slice(1).map((r) => '<li>' + partsEsc(r) + '</li>').join('') + '</ul>' : ''),
+    view && sinceCard(view, icon),
+    card('help', 'How to answer', review.ask || 'Tap the answer that fits. Skip anything you are unsure about.'),
+    card('send', 'What happens next', review.afterwards || 'Nothing is sent until you download your answers.', review.afterwards ? '<p>Nothing is sent until you download your answers.</p>' : ''),
+  ].filter(Boolean);
+  return cards.map(([ic, title, h], i) => '<li class="scard"><span class="num">' + (i + 1) + '</span><div><h3' + (i === 0 ? ' id="brief-h"' : '') + '>' + icon(ic, 'sm') + partsEsc(title) + '</h3>' + h + '</div></li>').join('');
+}
+
+// #82 — what became of each question since the round before, from the files alone: never invented.
+// earlier[itemId]: the answer given to it in the round before (same id, or quoted by its `affects`).
+// tags[itemId]: new · added (the reviewer raised it) · open (left unanswered) · changed (answered, and the
+// question changed since) · again (answered, the same question asked again). settled: answers with a
+// positive tone that the next round no longer carries.
+function roundsView(review, rounds) {
+  if (!rounds || !rounds.length) return null;
+  const prev = rounds[rounds.length - 1], pr = prev.review, fb = prev.feedback;
+  const APPROVAL = { approve: { label: 'Approve', tone: 'positive' }, decline: { label: 'Decline', tone: 'negative' } };
+  const optionOf = (rv, v) => (rv.verdictSet?.options || []).find((o) => o.value === v) || APPROVAL[v] || null;
+  const known = (id) => (fb.responses || []).some((r) => r.itemId === id) || (fb.addedItems || []).some((a) => a.id === id);
+  const earlier = {}, tags = {};
+  for (const it of review.items || []) {
+    let id = it.id;
+    if (!known(id)) { const a = (it.affects || []).find((x) => x.decision && x.decision.review === pr.id && known(x.decision.itemId)); if (a) id = a.decision.itemId; else { tags[it.id] = 'new'; continue; } }
+    const response = (fb.responses || []).find((r) => r.itemId === id), added = (fb.addedItems || []).find((a) => a.id === id);
+    const before = (pr.items || []).find((i) => i.id === id), option = response && optionOf(pr, response.verdict);
+    earlier[it.id] = { id, round: rounds.length, response, added, before, label: option ? option.label : null, tone: option ? option.tone : null };
+    const text = (x) => JSON.stringify([x.title, x.summary, x.body, x.step, x.fields, x.approval]);
+    tags[it.id] = added ? 'added' : !response || response.verdict === 'unset' ? 'open' : before && text(before) === text(it) ? 'again' : 'changed';
+  }
+  const settled = [];
+  rounds.forEach(({ review: rv, feedback: f }, i) => {
+    const next = i + 1 < rounds.length ? rounds[i + 1].review : review;
+    const carried = (id) => (next.items || []).some((x) => x.id === id || (x.affects || []).some((a) => a.decision && a.decision.review === rv.id && a.decision.itemId === id));
+    for (const r of f.responses || []) { const o = optionOf(rv, r.verdict); if (o && o.tone === 'positive' && !carried(r.itemId)) settled.push({ id: r.itemId, title: r.title, label: o.label, round: i + 1 }); }
+  });
+  return { round: rounds.length + 1, prev, earlier, tags, settled };
+}
+const ROUND_TAGS = { new: ['tg-new', 'New', 'star'], changed: ['tg-changed', 'Changed after your note', 'repeat'], again: ['tg-again', 'Asked again', 'repeat'], open: ['tg-open', 'Still open', 'open'], added: ['tg-added', 'You added', 'plus'] };
+
+// SPDX-License-Identifier: MIT-0
+// Pure, bounded presentation shared by layout, static rendering and offline pages.
+const AI_CAPTIONS = { 'model-call': 'Model call', 'tool-call': 'Tool call', retrieval: 'Retrieval', guardrail: 'Guardrail', 'human-handoff': 'Human handoff' };
+function aiEscape(value) { return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function aiCaption(kind) { return Object.hasOwn(AI_CAPTIONS, kind) ? AI_CAPTIONS[kind] : ''; }
+// Conservative monospace cells, counting wide/fallback glyphs twice. Never discard text.
+function aiLines(value, max = 18) {
+  const lines = []; let line = '', cells = 0;
+  for (const char of String(value ?? '')) {
+    const size = char.codePointAt(0) > 127 ? 2 : 1;
+    if (cells + size > max) { lines.push(line); line = ''; cells = 0; }
+    line += char; cells += size;
+  }
+  if (line || !lines.length) lines.push(line);
+  return lines;
+}
+function aiContentHeight(node) {
+  if (!aiCaption(node.kind) && !node.stop) return 0;
+  let height = (aiCaption(node.kind) ? 38 : 20) + aiLines(node.label).length * 16;
+  if (node.stop) height += 48 + (aiLines(node.stop.reason).length + aiLines(node.stop.next).length) * 16;
+  return height + 12;
+}
+function aiNodeHeight(node) {
+  const height = aiContentHeight(node);
+  return height ? Math.max(64, height + (node.component ? 136 : 0)) : 0;
+}
+function aiText(value, x, y, max = 18) {
+  return `<text class="dg-ai-text" x="${x}" y="${y}" xml:space="preserve">${aiLines(value, max).map((line, i) => `<tspan x="${x}" dy="${i ? 16 : 0}">${aiEscape(line)}</tspan>`).join('')}</text>`;
+}
+function drawAiContent(node, box) {
+  const caption = aiCaption(node.kind); let y = box.y + (caption ? 44 : 26);
+  let out = caption ? `<text class="dg-ai-caption" x="${box.x + 34}" y="${box.y + 21}">${caption}</text>` : '';
+  out += aiText(node.label, box.x + 12, y);
+  y += aiLines(node.label).length * 16;
+  if (node.stop) for (const [heading, value] of [['Why', node.stop.reason], ['Next', node.stop.next]]) {
+    y += 8; out += `<text class="dg-ai-caption" x="${box.x + 12}" y="${y}">${heading}</text>`;
+    y += 16; out += aiText(value, box.x + 12, y); y += aiLines(value).length * 16;
+  }
+  return out;
+}
+function drawTokenChart(usage, y, graphWidth) {
+  if (!usage) return { markup: '', width: graphWidth, height: y };
+  const width = Math.max(360, graphWidth), x = 16, barWidth = 300;
+  let cursor = y + 32;
+  let markup = `<g class="dg-token-chart" role="group" aria-label="${usage.basis === 'reported' ? 'Reported' : 'Estimated'} tokens, author-supplied"><text class="dg-ai-caption" x="${x}" y="${cursor}">${usage.basis === 'reported' ? 'Reported' : 'Estimated'} tokens</text>`;
+  cursor += 22;
+  markup += aiText('Author-supplied; not verified usage or billing.', x, cursor, 40); cursor += 40;
+  for (const part of usage.parts) {
+    markup += aiText(part.label, x, cursor, 40); cursor += aiLines(part.label, 40).length * 16;
+    const ratio = Number(part.tokens) / Number(usage.total);
+    const bar = Number.isFinite(ratio) ? Math.max(0, Math.min(1, ratio)) * barWidth : 0;
+    markup += `<rect class="dg-token-bar" x="${x}" y="${cursor}" width="${bar}" height="10"/><text class="dg-ai-text" x="${x}" y="${cursor + 28}">${aiEscape(part.tokens)}</text>`;
+    cursor += 50;
+  }
+  markup += `<text class="dg-ai-caption" x="${x}" y="${cursor}">Total: ${aiEscape(usage.total)}</text></g>`;
+  return { markup, width, height: cursor + 20 };
+}
+
+// SPDX-License-Identifier: MIT-0
+// Lays out a flow chart (D052, D075 — each column gap as wide as its widest label): boxes in columns by their longest distance from a start, one row band
+// per lane, loops found and routed underneath. Deterministic and pure; the renderer inlines this file.
+//
+// Deliberately not a general graph-layout engine (D009). When a chart comes out awkward, a node's
+// `col` (and `row` within its lane) pins it; everything else stays automatic.
+
+const NODE_W = 168, GAP_MIN = 32, NODE_H = 64, COMPONENT_H = 170, PAD = 16, LANE_W = 110, LOOP_GAP = 14;
+
+function layout(diagram) {
+  const nodes = diagram.nodes || [];
+  // A node showing a screen component is taller; only the lane holding one gets taller rows.
+  const nodeH = n => aiNodeHeight(n) || (n.component ? COMPONENT_H : NODE_H);
+  const cellH = members => Math.max(96, ...members.map(n => nodeH(n) + 26));
+  const ids = nodes.map((n) => n.id);
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const edges = (diagram.edges || []).filter((e) => byId[e.from] && byId[e.to] && e.kind !== 'association');
+
+  // 1. Loops: a depth-first walk from every start (then from anything left) marks edges that point back
+  //    at a node still on the path. Those are drawn underneath and ignored when ranking columns.
+  const back = new Set(), state = {};
+  const outOf = (id) => edges.filter((e) => e.from === id);
+  const walk = (root) => {
+    const stack = [[root, 0]];
+    state[root] = 'open';
+    while (stack.length) {
+      const top = stack[stack.length - 1], outs = outOf(top[0]);
+      if (top[1] >= outs.length) { state[top[0]] = 'done'; stack.pop(); continue; }
+      const e = outs[top[1]++];
+      if (state[e.to] === 'open') back.add(e);
+      else if (!state[e.to]) { state[e.to] = 'open'; stack.push([e.to, 0]); }
+    }
+  };
+  for (const n of nodes) if ((n.kind === 'start' || n.kind === 'entry') && !state[n.id]) walk(n.id);
+  for (const id of ids) if (!state[id]) walk(id);
+  const forward = edges.filter((e) => !back.has(e));
+
+  // 2. Columns: longest forward distance from anything without predecessors; a pinned col wins.
+  const col = {}, indegree = Object.fromEntries(ids.map((id) => [id, 0]));
+  for (const e of forward) indegree[e.to]++;
+  const queue = ids.filter((id) => indegree[id] === 0);
+  for (const id of ids) col[id] = 0;
+  for (let i = 0; i < queue.length; i++) {
+    const id = queue[i];
+    if (Number.isInteger(byId[id].col)) col[id] = byId[id].col;
+    for (const e of forward.filter((x) => x.from === id)) {
+      col[e.to] = Math.max(col[e.to], col[id] + 1);
+      if (--indegree[e.to] === 0) queue.push(e.to);
+    }
+  }
+
+  // An end stands alone in the last column, the way a start stands alone in the first (D077).
+  const ends = ids.filter((id) => byId[id].kind === 'end' && !Number.isInteger(byId[id].col));
+  if (ends.length && ends.length < ids.length) {
+    const last = Math.max(...ids.filter((id) => !ends.includes(id)).map((id) => col[id]));
+    for (const id of ends) col[id] = last + 1;
+  }
+
+  // 3. Lanes as row bands; inside a band, boxes sharing a column stack in sub-rows (pins first).
+  const laneList = (diagram.lanes || []).map((l) => ({ id: l.id, title: l.title }));
+  if (!laneList.length || nodes.some((n) => !laneList.some((l) => l.id === n.lane))) laneList.push({ id: null, title: '' });
+  const laneOf = (n) => (laneList.some((l) => l.id === n.lane) ? n.lane : null);
+  const taken = {}, sub = {};
+  const place = (n, want) => {
+    const key = (r) => `${laneOf(n)}|${col[n.id]}|${r}`;
+    let r = want;
+    while (taken[key(r)]) r++;
+    taken[key(r)] = true;
+    sub[n.id] = r;
+  };
+  for (const n of nodes) if (Number.isInteger(n.row)) place(n, n.row);
+  for (const n of nodes) if (!Number.isInteger(n.row)) place(n, 0);
+
+  const offsetX = laneList.some((l) => l.id !== null) ? LANE_W : 0;
+  let y = 0;
+  const lanes = [];
+  for (const l of laneList) {
+    const members = nodes.filter((n) => laneOf(n) === l.id);
+    if (l.id === null && !members.length && laneList.length > 1) continue;
+    const rows = members.length ? Math.max(...members.map((n) => sub[n.id])) + 1 : 1;
+    const h = PAD + rows * cellH(members);
+    lanes.push({ id: l.id, title: l.title, y, h, cell: cellH(members) });
+    y += h;
+  }
+  const bandY = Object.fromEntries(lanes.map((l) => [l.id, l.y]));
+  const bandCell = Object.fromEntries(lanes.map((l) => [l.id, l.cell]));
+
+  // Each corridor between columns is as wide as the widest label it carries, so no label covers a box.
+  const maxCol = nodes.length ? Math.max(...Object.values(col)) : 0;
+  const gap = Array.from({ length: maxCol + 1 }, () => GAP_MIN);
+  for (const e of edges) {
+    const a = col[e.from], b = col[e.to];
+    if (e.label && !back.has(e) && b === a + 1) gap[a] = Math.max(gap[a], labelWidth(e.label) + 12);
+  }
+  const colX = [offsetX + PAD];
+  for (let c = 1; c <= maxCol; c++) colX[c] = colX[c - 1] + NODE_W + gap[c - 1];
+
+  const boxes = {};
+  for (const n of nodes) {
+    boxes[n.id] = { x: colX[col[n.id]], y: bandY[laneOf(n)] + PAD + sub[n.id] * bandCell[laneOf(n)],
+      w: NODE_W, h: nodeH(n), col: col[n.id], row: sub[n.id], lane: laneOf(n) };
+  }
+
+  // 4. Edges travel only where no box can be: the corridor between columns, the gap above a row, and
+  //    below everything for loops. Nothing crosses an unrelated box (tested on random diagrams).
+  const bottom = y;
+  let loops = 0;
+  const lines = edges.map((e) => {
+    const a = boxes[e.from], b = boxes[e.to];
+    const x1 = a.x + a.w, y1 = a.y + a.h / 2, x2 = b.x, y2 = b.y + b.h / 2;
+    const out = x1 + gap[a.col] / 2, into = x2 - gap[Math.max(0, b.col - 1)] / 2;
+    const isBack = back.has(e) || b.col <= a.col;
+    let points, labelAt;
+    if (isBack) {
+      const ly = bottom + LOOP_GAP + loops++ * LOOP_GAP;
+      points = [[x1, y1], [out, y1], [out, ly], [into, ly], [into, y2], [x2, y2]];
+      labelAt = [(out + into) / 2, ly];
+    } else if (b.col === a.col + 1) {
+      points = [[x1, y1], [out, y1], [out, y2], [x2, y2]];
+      labelAt = [out, (y1 + y2) / 2];
+    } else {
+      const gy = b.y - PAD / 2;
+      points = [[x1, y1], [out, y1], [out, gy], [into, gy], [into, y2], [x2, y2]];
+      labelAt = [(out + into) / 2, gy];
+    }
+    return { from: e.from, to: e.to, kind: e.kind || 'sequence', label: e.label, back: isBack, points, labelAt };
+  });
+
+  return { nodes: boxes, edges: lines, lanes, width: colX[maxCol] + NODE_W + gap[maxCol] + PAD, height: bottom + (loops ? LOOP_GAP * (loops + 1) : 0) };
+}
+
+// Edge labels are 600 11px sans: about 6.6px a character, plus the halo drawn around them.
+function labelWidth(text) { return Math.ceil(String(text).length * 6.6) + 10; }
+
+// #32 — a sequence: who calls whom, in the order the edges are written. Participants stand in a row,
+// each with a lifeline; every message is one row down. A message to itself gets a taller row for its
+// bracket. Deterministic and pure, like the flow layout.
+const SEQ = { w: 168, h: 56, gap: 56, pad: 16, top: 16, first: 40, row: 52, self: 34 };
+
+function layoutSequence(diagram) {
+  const nodes = diagram.nodes || [];
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const edges = (diagram.edges || []).filter((e) => byId[e.from] && byId[e.to]);
+  const boxes = {};
+  nodes.forEach((n, i) => {
+    const x = SEQ.pad + i * (SEQ.w + SEQ.gap);
+    boxes[n.id] = { x, y: SEQ.top, w: SEQ.w, h: SEQ.h, cx: x + SEQ.w / 2 };
+  });
+  let y = SEQ.top + SEQ.h + SEQ.first;
+  const lines = edges.map((e, i) => {
+    const a = boxes[e.from], b = boxes[e.to];
+    const self = e.from === e.to;
+    const at = y;
+    y += self ? SEQ.row + SEQ.self : SEQ.row;
+    const points = self
+      ? [[a.cx, at], [a.cx + 46, at], [a.cx + 46, at + SEQ.self], [a.cx + 6, at + SEQ.self]]
+      : [[a.cx, at], [b.cx, at]];
+    return { from: e.from, to: e.to, kind: e.kind || 'sequence', label: e.label, nth: i,
+      self, points, labelAt: self ? [a.cx + 52, at + SEQ.self / 2] : [(a.cx + b.cx) / 2, at - 9] };
+  });
+  const bottom = Math.max(y + 10, SEQ.top + SEQ.h + SEQ.first + 40);
+  return { nodes: boxes, edges: lines, lanes: [], lifelines: nodes.map((n) => ({ id: n.id, x: boxes[n.id].cx, from: SEQ.top + SEQ.h, to: bottom })),
+    width: SEQ.pad * 2 + nodes.length * SEQ.w + Math.max(0, nodes.length - 1) * SEQ.gap, height: bottom + SEQ.pad };
+}
+
+// SPDX-License-Identifier: MIT-0
+// #69: tables in a vertical reading order; relationships occupy dedicated corridors on the right.
+// No scaling down on phones: the existing diagram panel scrolls, keeping text and targets readable.
+function drawDatabase(diagram, opts = {}) {
+  const escape = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  // Break long unspaced values too; do not silently truncate example cells or column definitions.
+  const lines = (value, size) => String(value ?? 'null').split(/\r?\n/).flatMap(line => {
+    const result = []; let part = '', used = 0;
+    for (const char of line) {
+      // ASCII occupies one monospace cell; allow two for wide Unicode glyphs.
+      const cells = char.codePointAt(0) > 127 ? 2 : 1;
+      if (used + cells > size) { result.push(part); part = ''; used = 0; }
+      part += char; used += cells;
+    }
+    result.push(part); return result;
+  });
+  const text = (value, x, y, size = 24, cls = 'dg-label') => lines(value, size).map((line, i) => `<text class="${cls}" x="${x}" y="${y + i * 18}">${escape(line)}</text>`).join('');
+  const width = 420, left = 20, right = left + width;
+  const boxes = new Map(), parts = []; let top = 20;
+  for (const n of diagram.nodes || []) {
+    const columnY = new Map();
+    const titleHeight = Math.max(48, lines(n.label, 40).length * 18 + 20);
+    let offset = titleHeight;
+    let content = text(n.label, left + 14, top + 26, 40, 'dg-label dg-db-title');
+    for (const c of n.columns || []) {
+      const h = Math.max(44, Math.max(lines(c.label, 21).length, lines(c.type, 17).length) * 18 + 16);
+      columnY.set(c.id, top + offset + h / 2);
+      content += `<path class="dg-line" d="M${left} ${top + offset}h${width}"/>`
+        + text(c.label, left + 14, top + offset + 22, 21, 'dg-label dg-db-column-label')
+        + text(c.type, left + 192, top + offset + 22, 17, 'dg-label dg-db-column-type')
+        + (c.key ? text('Key', left + 370, top + offset + 22, 5) : '');
+      offset += h;
+    }
+    if (n.sampleRows?.length) {
+      content += `<path class="dg-line" d="M${left} ${top + offset}h${width}"/>` + text('Example data — synthetic rows', left + 14, top + offset + 26, 40, 'dg-label dg-db-title'); offset += 44;
+      for (const [i, row] of n.sampleRows.entries()) {
+        content += text(`Example row ${i + 1}`, left + 14, top + offset + 18, 40); offset += 30;
+        for (const c of n.columns) {
+          const value = `${c.label}: ${row[c.id] === null ? 'null' : String(row[c.id])}`;
+          content += text(value, left + 14, top + offset + 16, 44);
+          offset += lines(value, 44).length * 18 + 8;
+        }
+        offset += 12;
+      }
+    }
+    const selected = n.step !== undefined && n.step === opts.selected;
+    boxes.set(n.id, { n, columnY });
+    parts.push(`<g class="dg-node dg-k-table${selected ? ' dg-selected' : ''}" data-node="${escape(n.id)}"${n.step !== undefined ? ` data-step="${escape(n.step)}"` : ''}${n.step !== undefined || opts.commentable ? ' tabindex="0" role="button"' : ''} aria-current="${selected}" aria-label="${escape(n.label)}">`
+      + `<title>${escape(n.label)}</title><rect class="dg-shape" x="${left}" y="${top}" width="${width}" height="${offset}" rx="8"/>${content}</g>`);
+    top += offset + 80;
+  }
+  const edges = []; let corridor = right + 116;
+  for (const [nth, e] of (diagram.edges || []).entries()) {
+    // Comments always target the original review, even after a proposed removal/relabel.
+    const originalNth = opts.originalEdges ? opts.originalEdges.findIndex(original =>
+      ['from', 'fromColumn', 'to', 'toColumn', 'cardinality'].every(key => original[key] === e[key])) : nth;
+    const a = boxes.get(e.from), b = boxes.get(e.to);
+    if (!a || !b) continue;
+    const y1 = a.columnY.get(e.fromColumn), y2 = b.columnY.get(e.toColumn);
+    if (y1 === undefined || y2 === undefined) continue;
+    const labelLines = lines(e.label || `${e.fromColumn} → ${e.toColumn}`, 12);
+    corridor += Math.max(64, labelLines.length * 18 + 44);
+    const rail = corridor;
+    // Even self-references to the same column have a visible loop.
+    const endY = y1 === y2 ? y2 + 12 : y2;
+    const path = `M${right} ${y1}H${rail}V${endY}H${right}`;
+    const label = `${a.n.label}.${e.fromColumn} (many) → ${b.n.label}.${e.toColumn} (one)${e.label ? `: ${e.label}` : ''}`;
+    edges.push(`<g class="dg-edge dg-db-edge" data-from="${escape(e.from)}" data-to="${escape(e.to)}" data-nth="${originalNth}"${opts.commentable ? ` tabindex="0" role="button" aria-label="${escape(label)}"` : ''}><title>${escape(label)}</title>`
+      + `<path d="${path}"/>${opts.commentable ? `<path class="dg-hit" d="${path}"/>` : ''}`
+      + `<text class="dg-edge-label" x="${right + 12}" y="${y1 - 8}">Many</text><text class="dg-edge-label" x="${right + 76}" y="${endY - 8}">One</text>`
+      + labelLines.map((line, i) => `<text class="dg-edge-label" transform="translate(${rail - 8 - i * 18} ${(y1 + endY) / 2}) rotate(-90)" text-anchor="middle">${escape(line)}</text>`).join('') + '</g>');
+  }
+  return `<svg class="dg dg-database" viewBox="0 0 ${corridor + 104} ${top}" width="${corridor + 104}" height="${top}" role="group" aria-label="${escape(diagram.title)}">${parts.join('')}${edges.join('')}</svg>`;
+}
+
+// SPDX-License-Identifier: MIT-0
+// Draws a flow chart as an SVG string: our own shapes per node kind, our own icons (D041), screen
+// components inside nodes, and the selected step marked (D045). Pure; the renderer inlines this file
+// with its imports removed, so the page and the tests run the same code. Every text goes through esc().
+
+function escSvg(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Our own icon set: simple strokes on a 24-unit grid, drawn for this project (nothing copied).
+const ICON_PATHS = {
+  envelope: '<rect x="3" y="6" width="18" height="12" rx="1"/><path d="M3 7l9 6 9-6"/>',
+  phone: '<rect x="7" y="3" width="10" height="18" rx="2"/><path d="M11 18h2"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="1"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  warning: '<path d="M12 3l10 18H2z"/><path d="M12 10v5M12 18v.5"/>',
+  person: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  database: '<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/>',
+  cloud: '<path d="M7 18h10a4 4 0 0 0 0-8 6 6 0 0 0-11.5 1.5A3.3 3.3 0 0 0 7 18z"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"/>',
+  card: '<rect x="3" y="6" width="18" height="12" rx="2"/><path d="M3 10h18M7 15h4"/>',
+  calendar: '<rect x="4" y="5" width="16" height="16" rx="1"/><path d="M4 10h16M9 3v4M15 3v4"/>',
+  bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+  document: '<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+  search: '<circle cx="10" cy="10" r="6"/><path d="M15 15l6 6"/>',
+  check: '<path d="M4 12l5 5L20 6"/>',
+  cross: '<path d="M6 6l12 12M18 6L6 18"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/>',
+  cart: '<path d="M3 4h3l2 11h11l2-8H7"/><circle cx="10" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/>',
+  key: '<circle cx="8" cy="12" r="4"/><path d="M12 12h9M18 12v3M21 12v2"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+};
+// A kind without an explicit icon still gets a hint of what it is.
+// #32 — a system diagram's boxes: what runs, what it keeps, what it talks to.
+const KIND_ICON = { client: 'phone', service: 'gear', component: 'gear', guard: 'lock', queue: 'envelope', external: 'cloud',
+  'model-call': 'chat', 'tool-call': 'gear', retrieval: 'search', guardrail: 'lock', 'human-handoff': 'person',
+  'user-action': 'person', notification: 'bell', timer: 'clock', wait: 'clock', deadline: 'clock', schedule: 'calendar',
+  error: 'warning', escalate: 'person', cancel: 'cross', send: 'envelope', receive: 'envelope', callback: 'chat', 'data-store': 'database', document: 'document', screen: 'phone' };
+
+function icon(name, x, y) {
+  return ICON_PATHS[name] ? `<g class="dg-icon" data-icon="${escSvg(name)}" transform="translate(${x} ${y}) scale(.75)">${ICON_PATHS[name]}</g>` : '';
+}
+
+// One outline per kind; the box is x, y, w, h from the layout.
+function outline(kind, x, y, w, h) {
+  const r = (rx) => `<rect class="dg-shape" x="${x}" y="${y}" width="${w}" height="${h}" rx="${rx}"/>`;
+  const poly = (pts) => `<polygon class="dg-shape" points="${pts.map((p) => p.join(',')).join(' ')}"/>`;
+  const cx = x + w / 2, cy = y + h / 2;
+  switch (kind) {
+    case 'start': case 'entry': case 'end': case 'end-failed': case 'exit': return r(Math.min(h / 2, 28));
+    case 'decision': case 'event-choice': case 'merge': case 'parallel-start': case 'parallel-join':
+      return poly([[cx, y], [x + w, cy], [cx, y + h], [x, cy]]);
+    case 'input': case 'output': case 'data': return poly([[x + 14, y], [x + w, y], [x + w - 14, y + h], [x, y + h]]);
+    case 'manual': return poly([[x, y], [x + w, y], [x + w - 14, y + h], [x + 14, y + h]]);
+    case 'off-page': return poly([[x, y], [x + w, y], [x + w, y + h - 14], [cx, y + h], [x, y + h - 14]]);
+    case 'loop': return poly([[x + 14, y], [x + w - 14, y], [x + w, cy], [x + w - 14, y + h], [x + 14, y + h], [x, cy]]);
+    case 'connector': return `<circle class="dg-shape" cx="${cx}" cy="${cy}" r="${Math.min(w, h) / 2}"/>`;
+    case 'data-store': return `<path class="dg-shape" d="M${x} ${y + 8}c0-10 ${w} -10 ${w} 0v${h - 16}c0 10 -${w} 10 -${w} 0z"/><path class="dg-line" d="M${x} ${y + 8}c0 10 ${w} 10 ${w} 0"/>`;
+    case 'document': return `<path class="dg-shape" d="M${x} ${y}h${w}v${h - 8}c-${w / 4} -10 -${w / 2} 10 -${w} 0z"/>`;
+    case 'note': return `<path class="dg-shape dg-note" d="M${x} ${y}h${w - 14}l14 14v${h - 14}h-${w}z"/>`;
+    case 'subflow': case 'component': return r(6) + `<path class="dg-line" d="M${x + 8} ${y}v${h}M${x + w - 8} ${y}v${h}"/>`;
+    // A system diagram: the thing the person uses has a window bar; what we run is plain; what we call
+    // out to is drawn open-edged; a queue shows its slots; a check is a shield.
+    case 'client': return r(8) + `<path class="dg-line" d="M${x} ${y + 14}h${w}"/>`;
+    case 'service': return r(10);
+    case 'external': return `<rect class="dg-shape dg-dashed" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
+    case 'queue': return r(6) + `<path class="dg-line" d="M${x + 10} ${y}v${h}M${x + 16} ${y}v${h}"/>`;
+    case 'guard': return poly([[x + 10, y], [x + w - 10, y], [x + w, cy], [x + w - 10, y + h], [x + 10, y + h], [x, cy]]);
+    case 'group': return `<rect class="dg-shape dg-group" x="${x}" y="${y}" width="${w}" height="${h}" rx="10"/>`;
+    default: return r(8);
+  }
+}
+
+function wrap(text, max = 22, lines = 3) {
+  const out = [];
+  let line = '';
+  for (const word of String(text ?? '').split(/\s+/).filter(Boolean)) {
+    if ((line + ' ' + word).trim().length > max && line) { out.push(line); line = word; } else line = (line + ' ' + word).trim();
+  }
+  if (line) out.push(line);
+  return out.length > lines ? [...out.slice(0, lines - 1), out.slice(lines - 1).join(' ').slice(0, max - 1) + '…'] : out;
+}
+
+function drawDiagram(diagram, opts = {}) {
+  if (diagram.kind === 'database') return drawDatabase(diagram, opts);
+  if (diagram.kind === 'sequence') return drawSequence(diagram, opts);
+  const L = layout(diagram);
+  const id = escSvg(diagram.id);
+  const byId = Object.fromEntries((diagram.nodes || []).map((n) => [n.id, n]));
+  const parts = [], labels = [];
+
+  // D054 — highlight one part: its boxes strongly, what leads into them lightly, the rest dimmed.
+  const onIds = new Set(), upIds = new Set();
+  if (opts.part) {
+    for (const n of diagram.nodes || []) if (n.part === opts.part || (n.step && opts.partSteps && opts.partSteps.has(n.step))) onIds.add(n.id);
+    for (const queue = [...onIds]; queue.length;) {
+      const id = queue.shift();
+      for (const e of diagram.edges || []) if (e.to === id && !onIds.has(e.from) && !upIds.has(e.from)) { upIds.add(e.from); queue.push(e.from); }
+    }
+  }
+  const partClass = (nodeId) => (!opts.part ? '' : onIds.has(nodeId) ? ' dg-part-on' : upIds.has(nodeId) ? ' dg-part-up' : ' dg-part-off');
+
+  for (const lane of L.lanes) {
+    if (lane.id === null && L.lanes.length === 1) continue;
+    parts.push(`<g class="dg-lane"><rect x="0" y="${lane.y}" width="${L.width}" height="${lane.h}"/><text class="dg-lane-title" x="10" y="${lane.y + 22}">${escSvg(lane.title)}</text></g>`);
+  }
+
+  for (const e of L.edges) {
+    const d = e.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+    const [mx, my] = e.labelAt;
+    // #60 — commenting: every arrow can be picked, by a wider invisible line and by keyboard.
+    const pick = opts.commentable ? ` tabindex="0" role="button" aria-label="Arrow from ${escSvg(byId[e.from]?.label || e.from)} to ${escSvg(byId[e.to]?.label || e.to)}${e.label ? `: ${escSvg(e.label)}` : ''}"` : '';
+    parts.push(`<g class="dg-edge dg-e-${escSvg(e.kind)}${e.back ? ' dg-back' : ''}" data-from="${escSvg(e.from)}" data-to="${escSvg(e.to)}"${pick}>`
+      + `<path d="${d}" marker-end="url(#dg-arrow-${id})"/>${opts.commentable ? `<path class="dg-hit" d="${d}"/>` : ''}</g>`);
+    // Labels are drawn after the boxes, so a label wider than its corridor stays readable.
+    if (e.label) labels.push(`<text class="dg-edge-label" x="${mx}" y="${my}" text-anchor="middle" dominant-baseline="middle">${escSvg(e.label)}</text>`);
+  }
+
+  for (const [nodeId, box] of Object.entries(L.nodes)) {
+    const n = byId[nodeId];
+    const linked = n.step !== undefined;
+    const selected = (linked && n.step === opts.selected) || opts.here === nodeId;
+    // #74 — the plain map of the approved design: no kind icons, and a small line that says where you
+    // are and what you have answered.
+    const answered = linked && !selected && opts.answered && opts.answered.has(n.step);
+    const sub = !opts.plain ? '' : selected ? 'YOU ARE HERE' : answered ? 'ANSWERED' : '';
+    const diamond = ['decision', 'event-choice', 'merge', 'parallel-start', 'parallel-join'].includes(n.kind);
+    const rich = aiContentHeight(n);
+    const glyph = diamond || (opts.plain && !rich) ? null : n.icon || KIND_ICON[n.kind];
+    const textX = diamond ? box.x + box.w / 2 : box.x + (glyph ? 34 : 12);
+    const lines = wrap(n.label, diamond ? 14 : glyph ? 18 : 22);
+    const labelTop = box.y + (n.component ? 22 : box.h / 2 - (lines.length - 1) * 7 + 4) - (sub ? 5 : 0);
+    parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}${selected ? ' dg-selected' : ''}${answered ? ' dg-answered' : ''}${partClass(nodeId)}"`
+      + (linked ? ` data-step="${escSvg(n.step)}"` : '') + (linked || opts.commentable ? ' tabindex="0" role="button"' : '')
+      + ` aria-label="${escSvg([aiCaption(n.kind), n.label || n.kind, n.stop ? `Why: ${n.stop.reason}. Next: ${n.stop.next}` : ''].filter(Boolean).join('. '))}" aria-current="${selected}">`
+      + outline(n.kind, box.x, box.y, box.w, box.h)
+      + (glyph && (!rich || aiCaption(n.kind)) ? icon(glyph, box.x + 8, box.y + (rich || n.component ? 6 : box.h / 2 - 9)) : '')
+      + (rich ? drawAiContent(n, box) : `<text class="dg-label" x="${textX}" y="${labelTop}"${diamond ? ' text-anchor="middle"' : ''}>${lines.map((l, i) => `<tspan x="${textX}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text>`)
+      + (sub && !rich ? `<text class="dg-sub" x="${textX}" y="${labelTop + (lines.length - 1) * 14 + 13}"${diamond ? ' text-anchor="middle"' : ''}>${sub}</text>` : '')
+      + (n.component ? `<foreignObject x="${box.x + 6}" y="${box.y + (rich || 34)}" width="${box.w - 12}" height="${box.h - (rich || 34) - 6}"><div class="dg-component">${drawBlock(n.component, { targets: new Set() })}</div></foreignObject>` : '')
+      + '</g>');
+  }
+
+  const chart = drawTokenChart(diagram.tokenUsage, L.height, L.width);
+  return `<svg class="dg${diagram.agent ? ' dg-agent' : ''}" viewBox="0 0 ${chart.width} ${chart.height}" width="${chart.width}" height="${chart.height}" role="group" aria-label="${escSvg(diagram.title)}">`
+    + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
+    + parts.join('') + labels.join('') + chart.markup + '</svg>';
+}
+
+// #32 — a sequence: the participants in a row with their lifelines, one message per row underneath.
+// The same hooks as any chart, so a comment or a proposed change lands on a box or a message.
+function drawSequence(diagram, opts = {}) {
+  const L = layoutSequence(diagram);
+  const id = escSvg(diagram.id);
+  const byId = Object.fromEntries((diagram.nodes || []).map((n) => [n.id, n]));
+  const parts = [];
+  for (const l of L.lifelines) parts.push(`<path class="dg-life" d="M${l.x} ${l.from}V${l.to}"/>`);
+  for (const e of L.edges) {
+    const d = e.points.map(([x, y], i) => `${i ? 'L' : 'M'}${x} ${y}`).join(' ');
+    const pick = opts.commentable ? ` tabindex="0" role="button" aria-label="Message from ${escSvg(byId[e.from]?.label || e.from)} to ${escSvg(byId[e.to]?.label || e.to)}${e.label ? `: ${escSvg(e.label)}` : ''}"` : '';
+    parts.push(`<g class="dg-edge dg-e-${escSvg(e.kind)}" data-from="${escSvg(e.from)}" data-to="${escSvg(e.to)}" data-nth="${e.nth}"${pick}>`
+      + `<path d="${d}" marker-end="url(#dg-arrow-${id})"/>${opts.commentable ? `<path class="dg-hit" d="${d}"/>` : ''}</g>`);
+  }
+  for (const [nodeId, box] of Object.entries(L.nodes)) {
+    const n = byId[nodeId];
+    const glyph = n.icon || KIND_ICON[n.kind];
+    const lines = wrap(n.label, glyph ? 18 : 22, 2);
+    parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}"`
+      + (n.step !== undefined ? ` data-step="${escSvg(n.step)}"` : '') + (n.step !== undefined || opts.commentable ? ' tabindex="0" role="button"' : '')
+      + ` aria-label="${escSvg(n.label || n.kind)}">`
+      + outline(n.kind, box.x, box.y, box.w, box.h)
+      + (glyph ? icon(glyph, box.x + 8, box.y + box.h / 2 - 9) : '')
+      + `<text class="dg-label" x="${box.x + (glyph ? 34 : 12)}" y="${box.y + box.h / 2 - (lines.length - 1) * 7 + 4}">${lines.map((l, i) => `<tspan x="${box.x + (glyph ? 34 : 12)}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text></g>`);
+  }
+  const labels = L.edges.filter((e) => e.label).map((e) =>
+    `<text class="dg-edge-label" x="${e.labelAt[0]}" y="${e.labelAt[1]}" text-anchor="${e.self ? 'start' : 'middle'}" dominant-baseline="middle">${escSvg(e.label)}</text>`);
+  return `<svg class="dg" viewBox="0 0 ${L.width} ${L.height}" width="${L.width}" height="${L.height}" role="group" aria-label="${escSvg(diagram.title)}">`
+    + `<defs><marker id="dg-arrow-${id}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z"/></marker></defs>`
+    + parts.join('') + labels.join('') + '</svg>';
+}
+
+// The user-flow chart, computed from the flow: screens, and the steps that move between them. Never
+// written by hand, so it can't disagree with the clickable flow.
+function flowAsDiagram(review) {
+  const flow = review.flow || { screens: [] };
+  const steps = (review.items || []).filter((i) => i.step);
+  const leaves = (screenId) => steps.some((s) => s.step.from === screenId);
+  const nodes = [{ id: 'start', kind: 'start', label: 'Start' }];
+  for (const s of flow.screens) nodes.push({ id: `screen:${s.id}`, kind: 'screen', label: s.title });
+  for (const s of steps) nodes.push({ id: `step:${s.id}`, kind: 'user-action', label: s.title, step: s.id });
+  // A chart that begins with Start ends with End: every screen the journey can stop on leads there,
+  // whether it is a dead stop (nothing leaves it) or an ending the person can still act on.
+  const ends = flow.screens.filter((s) => s.end || !leaves(s.id));
+  if (ends.length) nodes.push({ id: 'end', kind: 'end', label: 'End' });
+  const edges = [{ from: 'start', to: `screen:${flow.start}` }];
+  for (const s of ends) edges.push({ from: `screen:${s.id}`, to: 'end' });
+  for (const s of steps) edges.push({ from: `screen:${s.step.from}`, to: `step:${s.id}` });
+  for (const s of steps) for (const o of s.step.outcomes)
+    edges.push(s.step.outcomes.length > 1 ? { from: `step:${s.id}`, to: `screen:${o.to}`, kind: 'conditional', label: o.label } : { from: `step:${s.id}`, to: `screen:${o.to}` });
+  return { id: 'user-flow', kind: 'flowchart', title: 'The user flow', nodes, edges };
+}
+
 
 // An exported copy keeps its own answers apart from this browser's own, so opening one overwrites nothing.
-const LS = 'letmeshowyousomething:' + REVIEW.id + ':${fingerprint}' + (SEED ? ':copy:' + SEED.exportedAt : '');
+const LS = 'letmeshowyousomething:' + REVIEW.id + ':f8e67d296ca7' + (SEED ? ':copy:' + SEED.exportedAt : '');
 let store = { verdicts:{}, notes:{}, added:[], choices:{}, requests:{}, layerVerdicts:{}, comments:[], pictures:[], proposals:[] };
 if (SEED) { const { exportedAt, ...answers } = SEED; store = Object.assign(store, answers); }
 try { const raw = localStorage.getItem(LS); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch {}
@@ -718,7 +1527,7 @@ function mapHtml(s, zoom, d){
   if (on.length > 1) out = out.replace(/<g data-node="([^"]*)" class="dg-node([^"]*)" data-step="([^"]*)"/g, (m, n, c, stp) => on.includes(stp) && !c.includes('dg-selected') ? m.replace('class="dg-node', 'class="dg-node dg-selected') : m);
   const marked = (store.comments || []).filter(c => c.diagram === d.id && c.node !== undefined).map(c => c.node);
   for (const n of marked) out = out.split('<g data-node="' + escSvg(n) + '" class="dg-node').join('<g data-node="' + escSvg(n) + '" class="dg-node dg-marked');
-  if (zoom) out = out.replace(/ width="(\\d+(?:\\.\\d+)?)" height="(\\d+(?:\\.\\d+)?)"/, (m, w, h) => ' width="' + Math.round(w * zoom) + '" height="' + Math.round(h * zoom) + '"');
+  if (zoom) out = out.replace(/ width="(\d+(?:\.\d+)?)" height="(\d+(?:\.\d+)?)"/, (m, w, h) => ' width="' + Math.round(w * zoom) + '" height="' + Math.round(h * zoom) + '"');
   return (st.marking ? '<p class="markhint">' + I('pin', 'sm') + 'Tap the part you mean.</p>' : '') + '<div class="map-scroll' + (st.marking ? ' marking' : '') + '" data-map="' + esc(d.id) + '">' + out + '</div>'
     + '<div class="legend"><span><i class="done"></i>Answered</span><span><i class="on"></i>You are here</span>' + (marked.length ? '<span><i class="pin"></i>Marked by you</span>' : '') + '</div>';
 }
@@ -752,13 +1561,13 @@ function galleryHtml(nowScreen){
 const RISK = { low: 'Low risk', medium: 'Medium risk', high: 'High risk' };
 function consoleHtml(a){
   return '<div class="console"><span class="c"># dry run: nothing happens until you approve</span>'
-    + String(a.preview || '').split('\\n').filter(Boolean).map(l => '<span class="p">$ ' + esc(l) + '</span>').join('')
+    + String(a.preview || '').split('\n').filter(Boolean).map(l => '<span class="p">$ ' + esc(l) + '</span>').join('')
     + '<span class="w">! will run: ' + esc(a.action) + '</span><span>  affects: ' + esc(a.scope) + '</span><span class="' + (a.risk === 'high' ? 'r' : 'c') + '">  ' + esc(RISK[a.risk] || a.risk) + '</span></div>';
 }
 const exp = (tone, icon, head, text) => '<div class="exp ' + tone + '"><span class="ei">' + I(icon, 'sm') + '</span><b>' + head + '</b><span>' + text + '</span></div>';
 function examplesRows(list){
   return (list || []).map(x => exp('info', 'globe', 'Done before · ' + esc(x.name), esc(x.what || '') + (x.shows ? ' What people see: ' + esc(x.shows) + '.' : '')
-    + ' ' + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\\/\\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>'))).join('');
+    + ' ' + (x.source ? '<a href="' + esc(x.source) + '" target="_blank" rel="noopener noreferrer">' + esc(String(x.source).replace(/^https?:\/\//, '').split('/')[0]) + '</a>' : '<span class="unverified">unverified · I could not find a source</span>'))).join('');
 }
 function protoFor(s){
   if (!s) return '';
@@ -864,11 +1673,11 @@ function toMarkdown(){
       L.push('');
     });
   }
-  return L.join('\\n');
+  return L.join('\n');
 }
 // The answered page also carries its answers as plain text, shown only where no script runs (a phone's
 // file preview). Line breaks become <br>, so no answer can start a line of the page (#78 reads the SEED line).
-const flat = (t) => esc(t).replace(/\\r\\n|[\\r\\n\\u2028\\u2029]/g, '<br>');
+const flat = (t) => esc(t).replace(/\r\n|[\r\n\u2028\u2029]/g, '<br>');
 function staticAnswers(){
   const rows = STEPS.map(s => { const v = answerLabel(s);
     return '<div class="sum-row"><span>' + flat(stepTitle(s)) + '</span><span class="v' + (v ? '' : ' open') + '">' + (v ? flat(v) : 'Stays open') + '</span>'
@@ -877,14 +1686,14 @@ function staticAnswers(){
   const added = (store.added || []).map(a => '<div class="sum-row"><span>Added: ' + flat(a.title) + '</span>' + (a.body ? '<p>' + flat(a.body) + '</p>' : '') + '</div>').join('');
   return '<div id="static-answers"><h2>The answers in this file</h2>' + rows + added + '</div>';
 }
-const htmlSeed = () => { const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\\u2028\\u2029]/g, (c) => '\\\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+const htmlSeed = () => { const seed = JSON.stringify({ ...store, exportedAt: new Date().toISOString() }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   return PAGE.replace(/^const SEED = .*$/m, () => 'const SEED = ' + seed + ';').replace('<div id="static-answers">' + '</div>', () => staticAnswers()); };
 const saveAs = (text, type, name) => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text], { type })); a.download = name; a.click(); URL.revokeObjectURL(a.href); };
 function downloadsHtml(){
   const open = STEPS.length - answeredCount(), notes = Object.values(store.notes).filter(x => (x || '').trim()).length, added = (store.added || []).length;
   const inc = [answeredCount() + ' answers', open + ' still open', notes + ' note' + (notes === 1 ? '' : 's'), added + ' added by you']
     .concat(VIEW ? [(VIEW.round - 1) + (VIEW.round === 2 ? ' earlier round' : ' earlier rounds') + ' of history', VIEW.settled.length + ' settled earlier'] : []);
-  const p = st.preview, txt = p === 'md' ? toMarkdown() : p === 'json' ? JSON.stringify(buildFeedback(REVIEW, store), null, 2) : p === 'html' ? 'The whole page, exactly as you see it, with your answers inside.\\nOpens in any browser, even offline. It holds:\\n\\n' + toMarkdown() : '';
+  const p = st.preview, txt = p === 'md' ? toMarkdown() : p === 'json' ? JSON.stringify(buildFeedback(REVIEW, store), null, 2) : p === 'html' ? 'The whole page, exactly as you see it, with your answers inside.\nOpens in any browser, even offline. It holds:\n\n' + toMarkdown() : '';
   const f = (fmt, icon, title, text, pri) => '<div class="dlf"><h4>' + I(icon) + title + '</h4><p>' + text + '</p><div class="rowgap"><button type="button" class="btn small' + (pri ? ' pri' : '') + '" data-export="' + fmt.toLowerCase() + '">' + I('download', 'sm') + fmt + '</button><button type="button" class="btn small" data-preview="' + fmt.toLowerCase() + '" aria-pressed="' + (p === fmt.toLowerCase()) + '">' + I('eye', 'sm') + 'Preview</button></div></div>';
   return '<div class="included" aria-label="Included in every download">' + inc.map(x => '<span>' + I('check', 'sm') + esc(x) + '</span>').join('') + '</div>'
     + '<div class="dl">' + f('HTML', 'globe', 'This page, answered', 'Opens in any browser. Best to send back.', true) + f('MD', 'list', 'A readable report', 'For notes, a wiki or an email.') + f('JSON', 'code', 'For the agent', 'The same answers as data.') + '</div>'
@@ -1071,8 +1880,4 @@ document.addEventListener('input', e => {
 render(null);
 if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
 </script>
-</body></html>`;
-
-writeFileSync(outPath, html);
-const kb = (Buffer.byteLength(html) / 1024).toFixed(0);
-console.log(`wrote ${outPath}  (${kb} KB · ${review.items.length} items · ${(review.sections||[]).length} sections)`);
+</body></html>

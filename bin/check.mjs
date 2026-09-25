@@ -946,13 +946,34 @@ function checkFollowup(next, review, f, rep) {
   rep.check('requests answered', unanswered.length === 0, `${unanswered.join(' · ')}, or the reviewer's question goes unanswered where they asked it`);
 }
 
+// ── rounds: a continuing review, every round checked against the one before (#82) ─────────────────
+// Each earlier round is a checked pair; each next round carries what the round before left open
+// (followup); ids never repeat; and a `reply` answers something the reviewer said. The renderer runs this
+// before it writes a page that carries the history.
+function checkRounds(current, rounds, rep) {
+  const as = (label) => ({ check: (n, ok, d) => rep.check(`${label}: ${n}`, ok, d), warn: (n, c, d) => rep.warn(`${label}: ${n}`, c, d) });
+  const ids = [...rounds.map((x) => x.review?.id), current?.id];
+  rep.check('each round has its own id', new Set(ids).size === ids.length,
+    `review ids repeat across rounds (${ids.join(', ')}). Each round is a review of its own, with its own id`);
+  rounds.forEach(({ review, feedback }, i) => {
+    const here = as(`round ${i + 1}`), next = i + 1 < rounds.length ? rounds[i + 1].review : current, there = as(`round ${i + 2}`);
+    checkReview(review, here); checkFeedback(feedback, here, review);
+    checkHistory(next, [feedback], there); checkFollowup(next, review, feedback, there);
+    const earlier = new Set([...(feedback?.responses ?? []).map((x) => x.itemId), ...(feedback?.addedItems ?? []).map((x) => x.id)]);
+    const toNothing = (next?.items ?? []).filter((it) => it.reply && !earlier.has(it.id)
+      && !(it.affects ?? []).some((a) => a?.decision?.review === review?.id && earlier.has(a?.decision?.itemId))).map((it) => it.id);
+    there.check('replies answer something', toNothing.length === 0,
+      `${toNothing.join(', ')} ${toNothing.length === 1 ? 'has' : 'have'} a "reply", but the round before has no answer on ${toNothing.length === 1 ? 'it' : 'them'}. A reply answers what the reviewer said; leave it out on a new question`);
+  });
+}
+
 // ── run ─────────────────────────────────────────────────────────────────────────────────────────
 const argv = process.argv.slice(2);
 const rootAt = argv.indexOf('--root');
 const ROOT = rootAt >= 0 ? resolve(argv.splice(rootAt, 2)[1] ?? '.') : null;
 const [mode, a, b] = argv;
 if (!mode || !a) {
-  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...\n       check.mjs followup <next-review.json> <review.json> <feedback.json>');
+  console.error('usage: check.mjs review <review.json>\n       check.mjs feedback <feedback.json> [review.json]\n       check.mjs pair <review.json> <feedback.json>\n       check.mjs history <review.json> <earlier-feedback.json>...\n       check.mjs followup <next-review.json> <review.json> <feedback.json>\n       check.mjs rounds <review.json> <round-1-review.json> <round-1-feedback.json> [<round-2-review.json> <round-2-feedback.json>]...');
   process.exit(2);
 }
 const rep = new Report();
@@ -968,6 +989,13 @@ else if (mode === 'followup') {
   if (!b || !c) fail('followup needs the next review, the earlier review and its feedback');
   const next = load(a), r = load(b), f = load(c);
   checkReview(next, rep); checkFeedback(f, rep, r); checkHistory(next, [f], rep); checkFollowup(next, r, f, rep);
+}
+else if (mode === 'rounds') {
+  const rest = argv.slice(2);
+  if (!rest.length || rest.length % 2) fail('rounds needs the current review, then each earlier round oldest first: its review, then its feedback');
+  const rounds = [];
+  for (let i = 0; i < rest.length; i += 2) rounds.push({ review: load(rest[i]), feedback: load(rest[i + 1]) });
+  const current = load(a); checkReview(current, rep); checkRounds(current, rounds, rep);
 }
 else fail(`unknown mode "${mode}"`);
 

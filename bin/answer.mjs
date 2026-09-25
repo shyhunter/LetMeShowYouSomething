@@ -33,7 +33,7 @@ const review = JSON.parse(readFileSync(reviewPath, 'utf8'));
 function fromPage(html) {
   const line = (name) => {
     const found = [...html.matchAll(new RegExp(`^const ${name} = (.*);$`, 'gm'))];
-    if (found.length !== 1) refuse(`${answersPath} is not one feedback.html exported from the review page (${found.length} "${name}" lines). Ask for the file "Export feedback.html" saved, or its feedback.json`);
+    if (found.length !== 1) refuse(`${answersPath} is not one feedback.html exported from the review page (${found.length} "${name}" lines). Ask for the answered page (HTML) downloaded on its last step, or its JSON`);
     try { return JSON.parse(found[0][1]); } catch { refuse(`${answersPath}: its ${name} line is not JSON. Ask for a fresh export; the page is never run to recover it`); }
   };
   if (JSON.stringify(line('REVIEW')) !== JSON.stringify(review))

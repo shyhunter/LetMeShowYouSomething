@@ -243,6 +243,35 @@ node bin/check.mjs history examples/decision-review.example.json examples/earlie
 A misquoted title or verdict is an error. A quoted review with no earlier file given is a warning:
 not wrong, just not verified.
 
+### Every round in one page (#82)
+
+A follow-up review can carry the rounds before it, so the reviewer reads one continuing document
+instead of an unrelated new review. On each carried item, the agent says in **`reply`** what it did with
+the reviewer's earlier answer, in its own words; `reply` answers something the reviewer said, so it is
+refused on a new question. The renderer takes each earlier round as its review and its feedback,
+oldest first, and writes nothing unless the whole chain checks out:
+
+```bash
+node bin/render.mjs examples/checkout-round2.review.json out.html --earlier examples/review.example.json examples/checkout-uat.feedback.json
+node bin/check.mjs rounds examples/checkout-round2.review.json examples/review.example.json examples/checkout-uat.feedback.json
+```
+
+`check rounds` checks every earlier round as a pair, every next round with `followup` and `history`
+against the one before, that no two rounds share an id, and that every `reply` answers something. The
+page carries the rounds in one line of its script, `const HISTORY = {…};`, a closed envelope
+([`schemas/history.v1.schema.json`](schemas/history.v1.schema.json)): `{ protocol, schemaVersion,
+rounds: [{ review, feedback }] }`, each snapshot the review.v1 and feedback.v1 exactly as they were,
+escaped like `REVIEW` and `SEED` (#78). At most 20 rounds and 16 MB; more is refused, never cut.
+
+What became of each question is derived from those files, never invented: **New** (not in the round
+before), **You added** (the reviewer raised it), **Still open** (left unanswered), **Changed after your
+note** (answered, and the question changed since), **Asked again** (answered, the same question again).
+A positive answer the next round no longer carries is **settled**. Each question shows what the
+reviewer said and the agent's reply; **History** lists every round with its answers, notes and
+replies; Let me explain opens with "Since last time"; the Markdown report carries it all. Earlier
+answers are shown, never counted as answers to this round. The history is unsigned: it says what
+the files say, not who answered or when.
+
 ## Flows
 
 A review can walk someone through a user flow: an app idea, or a change to an existing app. It stays

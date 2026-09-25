@@ -3,13 +3,14 @@
 // fixed order, the Overview, Return with every download. In Chromium, Firefox and WebKit, at desktop,
 // tablet and phone size (D091).
 import { test, expect } from '@playwright/test';
-import { readFileSync, mkdtempSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -430,4 +431,59 @@ test('without a script: Let me explain, how to open it, and the answers as text;
   const text = readFileSync(file, 'utf8');
   expect(text.match(/^const SEED = /gm)).toHaveLength(1);
   await expect(page.locator('.no-script')).toBeHidden();                             // with a script, no such note
+});
+
+// #82 — a second round: what became of each question, every round in one place, and it all travels.
+test('a second round: since last time, tags and replies, History, settled answers, and the file keeps it all', async ({ page }) => {
+  await page.goto(example('checkout-round2'));
+  await expect(page.locator('#start .eyebrow')).toHaveText('Let me explain · round 2');
+  await expect(page.locator('#start-cards')).toContainText('Round 2: 2 changed after your notes, 1 still open, 1 you added, 1 settled.');
+  await start(page);
+  await expect(page.locator('.t-head .tag')).toHaveText('Changed after your note');
+  await expect(page.locator('.t-head .earlier')).toContainText('You: Partially works');
+  await expect(page.locator('.t-head .earlier')).toContainText('Me: Changed: the saved card is now chosen by default');
+  await page.locator('#next').click();
+  await expect(page.locator('.t-head .earlier')).toContainText('"Customer sees error 51."');
+  if (await page.locator('[data-act="why"]').first().isVisible()) { await page.locator('[data-act="why"]').first().click(); }
+  await page.locator('[data-act="history"]:visible').first().click();
+  const history = page.getByRole('dialog', { name: 'History' });
+  await expect(history.locator('.hround')).toHaveCount(2);
+  await expect(history).toContainText('A guest can buy without creating an account');
+  await expect(history).toContainText('Settled');
+  await expect(history).toContainText('You added: Currency switches halfway through');
+  await page.locator('[data-act="close-layer"]').click();
+  await page.locator('#mode-overview').click();
+  await expect(page.locator('.settled summary')).toContainText('Settled in earlier rounds (1)');
+  await page.locator('input[name="v-back-button"][value="works"]').check();
+  const md = readFileSync(await download(page, 'md', join(tmp(), 'r2.md')), 'utf8');
+  expect(md).toContain('## History · round 1');
+  expect(md).toContain('Reply: Changed: error 51 now reads');
+  const html = await download(page, 'html', join(tmp(), 'r2.html'));
+  expect(readFileSync(html, 'utf8').match(/^const HISTORY = /gm)).toHaveLength(1);
+  const back = check('pair', join(ROOT, 'examples/checkout-round2.review.json'), await download(page, 'json', join(tmp(), 'r2.json')));
+  expect(back.status, back.stdout).toBe(0);
+  await page.goto(pathToFileURL(html).href);
+  await expect(page.locator('#start .eyebrow')).toHaveText('Let me explain · round 2');
+});
+
+test('a hostile earlier round stays text in the tags, the replies and History', async ({ page }) => {
+  const bad = '<img src=x onerror="window.__pwned=1">';
+  const r1 = readReview('review.example.json'), f1 = JSON.parse(readFileSync(join(ROOT, 'examples/checkout-uat.feedback.json'), 'utf8'));
+  f1.responses.find((x) => x.itemId === 'declined-card').note = bad; f1.addedItems[0].title = bad;
+  const r2 = readReview('checkout-round2.review.json');
+  r1.id = f1.review.id = 'hostile-round-1'; r2.id = 'hostile-round-2';          // examples' ids are theirs alone (#38)
+  r2.items.find((i) => i.id === 'declined-card').reply = bad; r2.items.find((i) => i.id === 'added-1').title = bad;
+  const dir = tmp('pw-hostile-rounds-');
+  const w = (name, o) => { const p = join(dir, name); writeFileSync(p, JSON.stringify(o)); return p; };
+  const rp = w('r2.json', r2), out = join(dir, 'r2.html');
+  const run = spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), rp, out, '--earlier', w('r1.json', r1), w('f1.json', f1)], { encoding: 'utf8' });
+  expect(run.status, run.stderr + run.stdout).toBe(0);
+  await page.goto(pathToFileURL(out).href);
+  await start(page);
+  await page.locator('#next').click();
+  await expect(page.locator('.t-head .earlier')).toContainText(bad);
+  await page.evaluate(() => { st.layer = 'history'; render(null); });
+  await expect(page.getByRole('dialog', { name: 'History' })).toContainText(bad);
+  expect(await page.locator('img').count()).toBe(0);
+  expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
 });

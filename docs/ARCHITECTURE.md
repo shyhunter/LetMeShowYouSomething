@@ -59,14 +59,14 @@ choices, requests, approvals · answers given in chat · the answered page read 
 unique answer ids (#77) · answers that settle nothing carried forward (#88) · what became of each
 proposal, checked against the diagrams (#87) · conformance fixtures (#89) · the review page as the
 approved design: Let me explain, the tour with four places, the Overview, Return with HTML, Markdown
-and JSON, a phone layout on one screen (#74, #100–#103, #105).
+and JSON, a phone layout on one screen (#74, #100–#103, #105). · every round of a review in
+one page: tags, replies, History, the chain checked (#82).
 
 Proposed or in progress, **not** shipped, whatever an issue says:
 
 | Issue | What |
 |---|---|
 | [#94](https://github.com/shyhunter/LetMeShowYouSomething/issues/94) | the page shows what became of each proposal (the check exists; the display does not) |
-| [#82](https://github.com/shyhunter/LetMeShowYouSomething/issues/82) | one page that keeps every round of a review |
 | [#83](https://github.com/shyhunter/LetMeShowYouSomething/issues/83) | saving back to the same file, where the browser allows |
 | [#66](https://github.com/shyhunter/LetMeShowYouSomething/issues/66) | proposing changes to a flow's steps, outcomes and screens |
 | [#33](https://github.com/shyhunter/LetMeShowYouSomething/issues/33) | screenshots with clickable areas |

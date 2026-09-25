@@ -28,9 +28,10 @@ jobs:
         run: |
           mkdir -p _site/examples _site/schema
           cp -R site/. _site/
-          cp examples/checkout-uat.html examples/decision-review.html examples/flow-booking.html _site/examples/
+          cp examples/checkout-uat.html examples/decision-review.html examples/flow-booking.html examples/checkout-round2.html _site/examples/
           cp schemas/review.v1.schema.json _site/schema/review.v1.json
           cp schemas/feedback.v1.schema.json _site/schema/feedback.v1.json
+          cp schemas/history.v1.schema.json _site/schema/history.v1.json
       - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         with:
           path: _site

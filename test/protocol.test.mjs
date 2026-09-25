@@ -13,6 +13,7 @@ import './feedback-identity.test.mjs';
 import './answered-html.test.mjs';
 import './proposal-outcomes.test.mjs';
 import './conformance.test.mjs';
+import './rounds.test.mjs';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
