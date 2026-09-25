@@ -525,7 +525,8 @@ test('an inline screenshot never trips the secret check', () => {
   review.flow.screens[0].hotspots = [{ id: 'time-list-area', x: 10, y: 20, w: 80, h: 50 }];
   review.items[0].step.on = 'time-list-area';
   const r = checkReviewObj(review, '--root', root);
-  assert.equal(r.status, 0, r.stdout);
+  assert.match(r.stdout, /✓ no secrets/, 'base64 picture data is not read as a secret');
+  assert.match(r.stdout, /✗ screens are safe to show:.*is not really the picture type/, 'and bytes that are no picture are refused as such');
 });
 
 // ── layer verdicts (D006, D033) ──
