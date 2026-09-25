@@ -268,6 +268,15 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 
 /* the app prototype: a real phone screen, the buttons where the app puts them */
 .app{--brand:#0F6E68;--brand-soft:#E3F2F0;width:100%;max-width:280px;border:7px solid #15131A;border-radius:32px;background:#FFFFFF;color:#16181C;overflow:hidden;font:13px/1.4 var(--sans);display:grid;grid-template-rows:auto auto 1fr auto;min-height:470px;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);position:relative;color-scheme:light}
+.app.shot{display:block;min-height:0;background:#15131A}
+.shot-in{position:relative}
+.shot-in img{display:block;width:100%;height:auto}
+.shot-alt{aspect-ratio:1/2;margin:0;padding:24px 16px;color:#fff;font-size:13px}
+.hot{position:absolute;left:calc((var(--x) + var(--w) / 2) * 1%);top:calc((var(--y) + var(--h) / 2) * 1%);width:calc(var(--w) * 1%);height:calc(var(--h) * 1%);transform:translate(-50%,-50%);border:2px dashed var(--brand);border-radius:10px;background:color-mix(in srgb,var(--brand) 12%,transparent);padding:0;cursor:pointer}
+.hot.on{border-style:solid;background:color-mix(in srgb,var(--brand) 22%,transparent);box-shadow:0 0 0 3px #fff,0 0 0 5px var(--brand)}
+button.hot{min-width:calc(24px / var(--z, 1));min-height:calc(24px / var(--z, 1))}
+span.hot{cursor:default}
+@media (pointer:coarse){button.hot{min-width:calc(44px / var(--z, 1));min-height:calc(44px / var(--z, 1))}}
 .app .sb{display:flex;justify-content:space-between;padding:7px 16px 3px;font:600 11px var(--sans);color:#16181C}
 .app .sb span{display:inline-flex;gap:4px;align-items:center}
 .app .bar{display:grid;grid-template-columns:28px 1fr 28px;align-items:center;padding:6px 10px;border-bottom:1px solid #ECEEF1}
@@ -404,7 +413,7 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 .ptabs{display:none}
 details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
 @container (max-width:700px){
-  .tour{height:calc(100dvh - 76px);gap:6px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr) auto auto;grid-template-areas:"prog" "head" "vis" "ans" "nav";align-items:stretch}
+  .tour{min-height:calc(100dvh - 76px);gap:6px;grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(300px,1fr) auto auto;grid-template-areas:"prog" "head" "vis" "ans" "nav";align-items:stretch}
   .prog .pl,.prog .prog-sum{display:none}
   .t-head{border-radius:var(--r);padding:10px 12px;gap:6px;border-top-width:4px}
   .t-head h2{font-size:16px}
@@ -422,7 +431,7 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
   .tiles{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:6px}
   .tile{min-height:46px;padding:7px 9px;font-size:13.5px;gap:7px}
   .tile .dot{width:26px;height:26px}
-  .t-vis{grid-template-rows:auto minmax(0,1fr);gap:6px;min-height:0;overflow:hidden}
+  .t-vis{grid-template-rows:auto minmax(0,1fr);gap:6px;min-height:0;overflow:hidden;contain:size}
   .ptabs{display:flex;gap:4px;background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:3px}
   .ptabs button{flex:1;border:0;background:none;border-radius:7px;padding:4px 2px;font:600 11.5px var(--sans);color:var(--ink2);cursor:pointer;display:grid;justify-items:center;gap:2px;min-height:44px}
   .ptabs button[aria-pressed="true"]{background:var(--surf);color:var(--ac)}
@@ -431,7 +440,7 @@ details.more>summary{cursor:pointer;font-size:13px;color:var(--ac)}
   .slots .slot.shown{display:grid;grid-template-rows:auto minmax(0,1fr)}
   .slots .slot.shown .slot-body{display:block;overflow:auto;min-height:0;padding:8px}
   .slots .slot .minbtn,.right-head{display:none}
-  .slots .app{zoom:.6;max-width:280px}
+  .slots .app{zoom:.6;--z:.6;max-width:280px}
   .slots .slot-head{padding:3px 8px}
   .t-nav{padding-top:6px}
 }
@@ -741,8 +750,19 @@ function mapHtml(s, zoom, d){
 }
 
 // The prototype: a flow's screen as the app will show it, the main button at the bottom.
-function appHtml(screenId, on){
+// #33 — a screenshot, with its clickable areas drawn on it. An area leads to its step; in the gallery it is only shown.
+const SHOT = /^data:image\\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/;
+function shotHtml(s, on, live){
+  const areas = (s.hotspots || []).map(h => {
+    const k = STEPS.findIndex(x => x.kind === 'item' && x.it.step && x.it.step.from === s.id && x.it.step.on === h.id), stp = k >= 0 && STEPS[k].it;
+    const pos = 'style="--x:' + (+h.x) + ';--y:' + (+h.y) + ';--w:' + (+h.w) + ';--h:' + (+h.h) + '"', cls = 'hot' + (h.id === on ? ' on' : '');
+    return live && stp ? '<button type="button" class="' + cls + '" ' + pos + ' data-open="' + k + '" aria-label="' + esc(stp.title) + '"' + (h.id === on ? ' aria-current="step"' : '') + '></button>' : '<span class="' + cls + '" ' + pos + '></span>';
+  }).join('');
+  return '<div class="app shot"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + areas + '</div></div>';
+}
+function appHtml(screenId, on, live){
   const s = screenOf(screenId); if (!s) return '';
+  if (s.image) return shotHtml(s, on, live);
   const blocks = s.blocks || [], header = blocks.find(b => b.type === 'header');
   const ctx = { targets: new Set(on ? [on] : []), still: true };
   const foot = [], body = []; let sheet = '';
@@ -780,7 +800,7 @@ function examplesRows(list){
 function protoFor(s){
   if (!s) return '';
   if (s.kind === 'item' && s.it.approval) return consoleHtml(s.it.approval);
-  if (s.kind === 'item' && s.it.step && FLOW) return '<div class="proto-wrap">' + appHtml(s.it.step.from, s.it.step.on) + '</div>';
+  if (s.kind === 'item' && s.it.step && FLOW) return '<div class="proto-wrap">' + appHtml(s.it.step.from, s.it.step.on, true) + '</div>';
   return '';
 }
 function expectedFor(s){
@@ -998,6 +1018,9 @@ function render(focus){
   document.querySelectorAll('#topbar [data-mode]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === st.mode)));
   $('#main').innerHTML = st.mode === 'overview' ? renderOverview() : st.phase === 'start' ? '' : renderTour();
   $('#layer-root').innerHTML = layerHtml();
+  // #33 — the area this step starts from is in view, even when the screenshot is taller than its place.
+  const hot = document.querySelector('#main .slot-body .hot.on'), box = hot && hot.closest('.slot-body');
+  if (box) box.scrollTop += hot.getBoundingClientRect().top - box.getBoundingClientRect().top - box.clientHeight / 2;
   const el = key && document.querySelector(key);
   if (el) el.focus({ preventScroll: true });
   saveView();

@@ -285,7 +285,9 @@ everywhere else. Worked example: `examples/flow-booking.review.json`.
 
 **Screens** live in `flow.screens`, drawn from wireframe blocks or one inline screenshot with
 clickable `hotspots` (percent of the image; PNG, JPEG or WebP only, no SVG, no URL). `flow.start` is
-where the reviewer begins. A screen with no way out must say `"end": true`.
+where the reviewer begins. A screen with no way out must say `"end": true`. Each hotspot is where a step
+starts (the step's `on`): the page draws it on the screenshot, visible without hover and at least 44 px
+on a touch screen, and tapping it opens that step. Worked example: `examples/password-reset.review.json`.
 
 **A step** is an item with a `step`. Its **title is the cause** ("Taps Book 10:00") and its `goal`
 is the reason ("to secure the Saturday slot"). `from` and `on` say which screen and which button,
@@ -345,7 +347,8 @@ The checker proves a flow before anyone sees it:
 | `claims have a basis` | `exists` without a basis; a `code`, `prd` or `docs` basis without a ref; a `conversation` or `assumption` basis without a note |
 | `suggestions stay suggestions` | a `suggested` step with an entry marked `exists` |
 | `flow parts resolve` | a repeated part id, a missing parent, parts nesting in a loop, an empty part, a step without a part or with an unknown one |
-| `screens are safe to show` | a non-inline or SVG image, a hotspot outside the image, an unknown block type or layer |
+| `screens are safe to show` | a non-inline or SVG image, a hotspot not inside the image or with no image, an unknown block type or layer |
+| `every area leads to a step` | a hotspot no step starts from (a warning in a round that `continues` another) |
 | `components are consistent` | a repeated id on a screen, or any component rule in the table above |
 | `layer entries honest` | an entry without an id, a repeated id, `exists` without a `ref`, a `ref` that is not `path:line` |
 | `references resolve` (with `--root`) | a `ref` to a missing file or a line past its end, or one that leaves the project folder |
