@@ -750,8 +750,10 @@ order**, each with a number, a symbol and a − button that folds it to its titl
 
 1. **Map**: the diagram the question is on (every kind: flowchart, system, sequence, database, AI),
    its box marked "you are here", answered steps marked "answered". The review's other diagrams are
-   tabs beside it, to look at in place; the next question opens on its own diagram again. It zooms
-   in place (−, +, Fit), as well as in the expanded view.
+   tabs beside it, to look at in place; the next question opens on its own diagram again. It moves like a map: a pad in its corner
+   has arrows, zoom in and out, and back to the whole map (a mouse can also drag it; on a touch screen a swipe moves it,
+   so only zoom and reset show), in place and in the expanded view. The Map place is half as tall again as the map, the
+   room below, so the pad never covers it at its normal size.
 2. **Prototype**: a flow step's screen as the app will show it, in a phone frame: the app bar, the
    body drawn by `lib/draw-components.mjs` (inlined verbatim), the buttons at the bottom with the main
    one first, a dialog as a bottom sheet, and the part the step taps marked. An approval shows a dry

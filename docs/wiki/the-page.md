@@ -30,7 +30,8 @@ One question at a time, with **Back**, **Next** and "Step N of M". A question ca
   different?"), **Add a picture**, **Mark it on the map**, and asking back with **Show me an example** or **Explain it
   differently**. *Value:* you can say why, show it, point at it, or ask before you decide.
 - **Four places on the right, always in this order:**
-  1. **Map**: the diagram, with "you are here"; other diagrams as tabs; zoom in place.
+  1. **Map**: the diagram, with "you are here"; other diagrams as tabs; a pad to move and zoom it like a
+     map (arrows, zoom, back to the whole map), and a mouse can drag it.
   2. **Prototype**: the screen as the app will show it, the tapped part marked.
   3. **What should happen**: each outcome, with why and what the person can do next.
   4. **How I'd build it**: what runs and what changes, with status and code reference.

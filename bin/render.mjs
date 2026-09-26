@@ -89,7 +89,7 @@ const ICONS = {
   list: '<path d="M10 6h10M10 12h10M10 18h10M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>', code: '<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 5l-2 14"/>',
   clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', download: '<path d="M12 3v12M7 10l5 5 5-5M4 20h16"/>',
   expand: '<path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/>', minus: '<path d="M5 12h14"/>', plus: '<path d="M12 5v14M5 12h14"/>',
-  left: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8l-5.3 2.6 1.2-6-4.5-4.1 6-.7z"/>',
+  left: '<path d="M15 5l-7 7 7 7"/>', right: '<path d="M9 5l7 7-7 7"/>', up: '<path d="M5 15l7-7 7 7"/>', down: '<path d="M5 9l7 7 7-7"/>', reset: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/>', star: '<path d="M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.8l-5.3 2.6 1.2-6-4.5-4.1 6-.7z"/>',
   repeat: '<path d="M17 2l4 4-4 4"/><path d="M3 12V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4"/><path d="M21 12v3a3 3 0 0 1-3 3H3"/>',
   open: '<circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/>', settled: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
   shield: '<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
@@ -434,7 +434,15 @@ span.hot{cursor:default}
 .rec{font:600 10.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;background:var(--ac);color:var(--on-ac);border-radius:99px;padding:3px 8px;justify-self:start;display:inline-flex;gap:5px;align-items:center}
 
 /* the map: every kind of diagram drawn the way of the approved design */
-.map-scroll{overflow:auto}
+.map-scroll{overflow:auto;cursor:grab}
+.map-scroll.dragging{cursor:grabbing;user-select:none}
+.map-scroll.marking{cursor:crosshair}
+.map-frame{position:relative}
+.pad{position:absolute;right:8px;bottom:8px;display:grid;grid-template-columns:repeat(3,30px);gap:3px;padding:5px;border:2px solid var(--edge);border-radius:12px;background:color-mix(in srgb,var(--surf) 92%,transparent);box-shadow:2px 2px 0 var(--edge);z-index:2}
+.pad-b{width:30px;height:30px;display:grid;place-items:center;border:1.5px solid var(--line2);border-radius:8px;background:var(--surf);color:var(--ink);cursor:pointer;padding:0}
+.pad-b:hover:not(:disabled){border-color:var(--ac);color:var(--ac)}
+.pad-b:disabled{opacity:.4;cursor:default}
+@media (pointer:coarse){.pad{grid-template-columns:repeat(3,44px)}.pad-b{width:44px;height:44px}.pad span,.pad [data-mpan]{display:none}}
 .map-scroll svg{display:block;min-width:calc(var(--mz,1) * 680px);width:calc(var(--mz,1) * 100%);max-width:none;height:auto}
 .map-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:8px}
 .dtabs{flex-wrap:nowrap;overflow-x:auto;max-width:100%}
@@ -959,10 +967,19 @@ function mapHtml(s, zoom, d){
   const marked = (store.comments || []).filter(c => c.diagram === d.id && c.node !== undefined).map(c => c.node);
   for (const n of marked) out = out.split('<g data-node="' + escSvg(n) + '" class="dg-node').join('<g data-node="' + escSvg(n) + '" class="dg-node dg-marked');
   if (zoom) out = out.replace(/ width="(\\d+(?:\\.\\d+)?)" height="(\\d+(?:\\.\\d+)?)"/, (m, w, h) => ' width="' + Math.round(w * zoom) + '" height="' + Math.round(h * zoom) + '"');
-  return (st.marking ? '<p class="markhint">' + I('pin', 'sm') + 'Tap the part you mean.</p>' : '') + '<div class="map-scroll' + (st.marking ? ' marking' : '') + '" data-map="' + esc(d.id) + '"' + (zoom ? '' : ' style="--mz:' + st.mapZoom + '"') + '>' + out + '</div>'
+  return (st.marking ? '<p class="markhint">' + I('pin', 'sm') + 'Tap the part you mean.</p>' : '') + '<div class="map-frame"><div class="map-scroll' + (st.marking ? ' marking' : '') + '" data-map="' + esc(d.id) + '"' + (zoom ? '' : ' style="--mz:' + st.mapZoom + '"') + '>' + out + '</div>' + panPad(zoom ? 'zoom' : 'mzoom', zoom || st.mapZoom) + '</div>'
     + '<div class="legend"><span><i class="done"></i>Answered</span><span><i class="on"></i>You are here</span>' + (marked.length ? '<span><i class="pin"></i>Marked by you</span>' : '') + '</div>';
 }
 
+// Move and zoom a map the way a map moves: arrows, zoom in and out, and back to the start; a mouse can also drag it.
+// On a touch screen a swipe moves it, so only zoom and reset are shown there.
+function panPad(attr, z){
+  const b = (a, v, icon, label, off) => '<button type="button" class="pad-b" data-' + a + '="' + v + '" aria-label="' + label + '"' + (off ? ' disabled' : '') + '>' + I(icon, 'sm') + '</button>';
+  return '<div class="pad" role="group" aria-label="Move and zoom the map">'
+    + '<span></span>' + b('mpan', 'up', 'up', 'Move up') + b(attr, '+', 'plus', 'Zoom in', z >= 3)
+    + b('mpan', 'left', 'left', 'Move left') + b(attr, 'fit', 'reset', 'Back to the whole map', z === 1) + b('mpan', 'right', 'right', 'Move right')
+    + '<span></span>' + b('mpan', 'down', 'down', 'Move down') + b(attr, '-', 'minus', 'Zoom out', z <= 0.5) + '</div>';
+}
 // The Map place: the question's own diagram first, every other one a tab beside it, and zoom in place.
 // Each question opens on its own diagram again; marking a part always uses it.
 function mapPlace(s){
@@ -970,9 +987,7 @@ function mapPlace(s){
   const d = !st.marking && DIAGRAMS.find(x => x.id === st.mapTab) || main;
   const tabs = DIAGRAMS.length > 1 && !st.marking ? '<div class="seg dtabs" role="group" aria-label="Diagrams">' + [main].concat(DIAGRAMS.filter(x => x !== main)).map(x => '<button type="button" data-dtab="' + esc(x.id) + '" aria-pressed="' + (x === d) + '">'
     + I(x.kind === 'database' ? 'db' : 'map', 'sm') + esc(x.title || x.id) + '</button>').join('') + '</div>' : '';
-  const zoom = '<span class="zoom" role="group" aria-label="Zoom the map"><button type="button" class="btn icon small" data-mzoom="-" aria-label="Zoom out"' + (st.mapZoom <= 0.5 ? ' disabled' : '') + '>' + I('minus', 'sm') + '</button><output>' + Math.round(st.mapZoom * 100) + '%</output>'
-    + '<button type="button" class="btn icon small" data-mzoom="+" aria-label="Zoom in"' + (st.mapZoom >= 3 ? ' disabled' : '') + '>' + I('plus', 'sm') + '</button><button type="button" class="btn small" data-mzoom="fit"' + (st.mapZoom === 1 ? ' disabled' : '') + '>Fit</button></span>';
-  return '<div class="map-tools">' + tabs + zoom + '</div>' + mapHtml(s, null, d);
+  return (tabs ? '<div class="map-tools">' + tabs + '</div>' : '') + mapHtml(s, null, d);
 }
 
 // The prototype: a flow's screen as the app will show it, the main button at the bottom.
@@ -1382,7 +1397,7 @@ function layerHtml(){
     const part = (id, icon, title, body, extra) => '<section class="slot' + (st.lmin.has(id) ? ' min' : '') + '"><div class="slot-head"><h3>' + I(icon, 'sm') + esc(title) + '</h3>' + (extra || '') + '<button type="button" class="btn icon small" data-lmin="' + id + '" aria-label="' + (st.lmin.has(id) ? 'Show' : 'Minimize') + ' ' + esc(title) + '" aria-expanded="' + !st.lmin.has(id) + '">' + I(st.lmin.has(id) ? 'plus' : 'minus', 'sm') + '</button></div><div class="slot-body">' + body + '</div></section>';
     const main = mapFor(s), now = s && s.kind === 'item' && s.it.step ? s.it.step.from : '';
     return '<div class="layer" role="dialog" aria-modal="true" aria-label="Expanded view"><div class="layer-head"><h3>' + I('expand') + 'The map and every screen</h3><button type="button" class="btn small pri" data-act="close-layer">' + I('x', 'sm') + 'Close</button></div><div class="layer-body">'
-      + (main ? part('map', 'map', 'Map', mapHtml(s, st.zoom, main), '<span class="zoom"><button type="button" class="btn icon small" data-zoom="-" aria-label="Zoom out">' + I('minus', 'sm') + '</button><output>' + Math.round(st.zoom * 100) + '%</output><button type="button" class="btn icon small" data-zoom="+" aria-label="Zoom in">' + I('plus', 'sm') + '</button></span>') : '')
+      + (main ? part('map', 'map', 'Map', mapHtml(s, st.zoom, main)) : '')
       + (FLOW ? part('screens', 'phone', 'Every screen, in order', galleryHtml(now)) : protoFor(s) ? part('screens', 'phone', 'What it looks like', protoFor(s)) : '')
       + DIAGRAMS.filter(d => d !== main).map(d => part('d-' + d.id, 'map', d.title || d.id, mapHtml(s, st.zoom, d))).join('') + '</div></div>';
   }
@@ -1415,7 +1430,7 @@ function keyOf(el){
   if (!el || el === document.body) return null;
   if (el.id && el.id !== 'q-title') return '#' + CSS.escape(el.id);
   if (el.name && el.type === 'radio') return 'input[name="' + CSS.escape(el.name) + '"][value="' + CSS.escape(el.value) + '"]';
-  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-mzoom', 'data-dtab', 'data-sbtab', 'data-shot', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
+  for (const a of ['data-act', 'data-jump', 'data-min', 'data-lmin', 'data-ptab', 'data-zoom', 'data-mzoom', 'data-mpan', 'data-dtab', 'data-sbtab', 'data-shot', 'data-preview', 'data-export', 'data-mode', 'data-open']) if (el.hasAttribute && el.hasAttribute(a)) {
     const f = el.getAttribute('data-for'); return '[' + a + '="' + CSS.escape(el.getAttribute(a)) + '"]' + (f ? '[data-for="' + CSS.escape(f) + '"]' : ''); }
   if (el.dataset && el.dataset.ask) return '[data-ask="' + el.dataset.ask + '"][data-for="' + CSS.escape(el.dataset.for) + '"]';
   if (el.dataset && el.dataset.opt) return '[data-opt="' + CSS.escape(el.dataset.opt) + '"]';
@@ -1430,6 +1445,13 @@ function render(focus){
   // #33 — the area this step starts from is in view, even when the screenshot is taller than its place.
   const hot = document.querySelector('#main .slot-body .hot.on'), box = hot && hot.closest('.slot-body');
   if (box) box.scrollTop += hot.getBoundingClientRect().top - box.getBoundingClientRect().top - box.clientHeight / 2;
+  // The Map place is half as tall again as the whole map, the room below (at most three quarters of the window), and
+  // never less than the map with the pad under it: at the normal size the pad covers nothing, and zooming in has room.
+  for (const m of document.querySelectorAll('#slot-map .map-scroll')) {
+    const svg = m.querySelector('svg'), pad = m.parentNode.querySelector('.pad'), h = svg && svg.getBoundingClientRect().height / st.mapZoom;
+    const clear = h + (pad ? pad.offsetHeight + 16 : 0);   // a map taller than the window gets only the room for the pad
+    if (h) m.style.height = Math.round(Math.max(clear, Math.min(h * 1.5, innerHeight * 0.75))) + 'px';
+  }
   const el = key && document.querySelector(key);
   if (el) el.focus({ preventScroll: true });
   saveView();
@@ -1457,7 +1479,22 @@ function markOn(nodeId){
   const t = document.getElementById('cm-' + c.id); if (t) t.focus();
 }
 
+// A mouse drags the map to move it; a small move is still a click on a box.
+let drag = null;
+document.addEventListener('pointerdown', e => {
+  const m = e.pointerType === 'mouse' && e.button === 0 && e.target.closest('.map-scroll');
+  if (m && !m.classList.contains('marking')) drag = { m, x: e.clientX, y: e.clientY, l: m.scrollLeft, t: m.scrollTop, moved: false };
+});
+document.addEventListener('pointermove', e => {
+  if (!drag) return;
+  const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+  if (!drag.moved && Math.hypot(dx, dy) < 5) return;
+  drag.moved = true; drag.m.classList.add('dragging');
+  drag.m.scrollLeft = drag.l - dx; drag.m.scrollTop = drag.t - dy;
+});
+document.addEventListener('pointerup', () => { if (drag && drag.moved) { drag.m.classList.remove('dragging'); setTimeout(() => { drag = null; }); } else drag = null; });
 document.addEventListener('click', e => {
+  if (drag && drag.moved) { e.stopPropagation(); return; }
   const t = e.target.closest('button, [data-node], .gcard'); if (!t) return;
   const d = t.dataset || {};
   if (t.id === 'start-review') return go('q', 0);
@@ -1472,7 +1509,9 @@ document.addEventListener('click', e => {
   if (d.sbtab) { st.sbTab = d.sbtab; return render(); }
   if (d.shot) { st.shot = { id: d.shot, on: d.for, before: !!d.before }; st.layer = 'screen'; render(null); return $('[data-act="close-layer"]').focus(); }
   if (d.mzoom) { st.mapZoom = d.mzoom === 'fit' ? 1 : Math.min(3, Math.max(0.5, st.mapZoom + (d.mzoom === '+' ? 0.25 : -0.25))); return render(); }
-  if (d.zoom) { st.zoom = Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
+  if (d.zoom) { st.zoom = d.zoom === 'fit' ? 1 : Math.min(3, Math.max(0.5, st.zoom + (d.zoom === '+' ? 0.25 : -0.25))); return render(); }
+  if (d.mpan) { const m = t.closest('.map-frame').querySelector('.map-scroll'), x = { left: -1, right: 1 }[d.mpan] || 0, y = { up: -1, down: 1 }[d.mpan] || 0;
+    return m.scrollBy({ left: x * m.clientWidth * 0.4, top: y * m.clientHeight * 0.4, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); }
   if (d.preview !== undefined) { st.preview = d.preview || null; return render(); }
   if (d.picadd) { picFor = d.picadd; picScreen = null; picInput.click(); return; }
   if (d.shotadd) { picFor = d.for; picScreen = d.shotadd; picInput.click(); return; }
