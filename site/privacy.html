@@ -1,0 +1,72 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacy and terms · LetMeShowYouSomething</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<meta name="description" content="What this site and its pages keep about you (nothing is sent anywhere), why there is no cookie banner, and the terms: the open-source licences.">
+<style>
+:root{--bg:#F4F2F8;--surf:#FFFFFF;--ink:#1B1726;--ink2:#3C3550;--mut:#6B6480;--edge:#1B1726;--ac:#5B3E8C;--band:#E9E4F2;color-scheme:light;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--ac:#B39BE0;--band:#211B2D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--ac:#B39BE0;--band:#211B2D;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.65 var(--sans)}
+main{max-width:760px;margin:0 auto;padding:40px 16px 64px}
+h1{color:var(--ink);font-size:clamp(26px,5vw,38px);line-height:1.15;margin:0 0 8px;font-weight:800;letter-spacing:-.02em}
+h2{color:var(--ink);font-size:20px;font-weight:800;margin:36px 0 10px}
+.lead{font-size:18px;margin:0}
+.box{border:2px solid var(--edge);border-radius:14px;background:var(--band);padding:14px 18px;margin:20px 0}
+.box p{margin:0}
+a{color:var(--ac);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.home{display:inline-flex;align-items:center;min-height:44px;margin-bottom:18px;font-weight:700}
+footer{margin-top:40px;padding-top:14px;border-top:2px solid var(--edge);color:var(--mut);font-size:14px}
+</style>
+</head><body>
+<main>
+  <a class="home" href="./">← LetMeShowYouSomething</a>
+  <h1>Privacy and terms</h1>
+  <p class="lead">Short, because there is little to say: this site keeps nothing about you, and its pages send nothing
+  anywhere.</p>
+
+  <div class="box"><p><b>In one line:</b> no cookies, no tracking, no analytics, no accounts. What you type into an
+  example page stays in your own browser until you download it yourself.</p></div>
+
+  <h2>This site</h2>
+  <p>The site's own pages (this one, the landing page, the tutorial) set no cookies, store nothing in your browser, and
+  load no tracking or analytics. The videos and pictures come from this site only.</p>
+  <p>The site is hosted on GitHub Pages. Like any web host, GitHub receives the usual request data (such as your IP
+  address) when your browser asks for a page. That is GitHub's, under the
+  <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub General
+  Privacy Statement</a>; we see no visitor data from it.</p>
+
+  <h2>The review pages</h2>
+  <p>An example page, or any review page an agent sends you, works entirely in your browser and loads nothing from the
+  network. While you answer, it keeps two things in your browser's own storage (<code>localStorage</code>), for that
+  page only:</p>
+  <ul>
+    <li><b>your answers</b>, notes and pictures, so a reload doesn't lose them;</li>
+    <li><b>your view</b>: Tour or Overview, and which places you folded.</li>
+  </ul>
+  <p>Neither is sent anywhere. Downloading your answers writes a file on your device; sending it to anyone is up to you.
+  Where you clicked is never recorded. To remove what a page kept, clear this site's data in your browser's settings.</p>
+
+  <h2>Why there is no cookie banner</h2>
+  <p>A banner asks consent for cookies and tracking. There are none. The only thing stored is what an example page
+  needs to keep your own answers while you work, on your device, sent nowhere.</p>
+
+  <h2>Terms</h2>
+  <p>The software is free and open source. Its licences are the terms: <b>Apache-2.0</b> for the tools, <b>MIT-0</b> for
+  the code inside every page (so a page you send carries no obligation), and <b>CC0-1.0</b> for the protocol and its
+  schemas. See <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/LICENSING.md">LICENSING.md</a>.</p>
+  <p>It comes as is, without warranty of any kind, as those licences say. An answered page is unsigned: it shows what
+  was answered, not who answered, and an answer is never permission for an agent to act.</p>
+
+  <h2>Questions</h2>
+  <p>Open an <a href="https://github.com/shyhunter/LetMeShowYouSomething/issues">issue on GitHub</a>; for anything
+  about security, see <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/SECURITY.md">SECURITY.md</a>.</p>
+
+  <footer>LetMeShowYouSomething · <a href="./">Home</a> · <a href="tutorial.html">Tutorial</a></footer>
+</main>
+</body></html>
