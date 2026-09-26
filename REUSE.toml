@@ -19,5 +19,5 @@ path = ["docs/**", "conformance/README.md", "conformance/RESULTS.md"]
 SPDX-License-Identifier = "Apache-2.0"
 
 [[annotations]]
-path = ["site/social-preview.png", "site/loop.mp4", "site/loop-poster.jpg", "site/tutorial/*.mp4", "site/tutorial/*.jpg"]
+path = ["site/social-preview.png", "site/loop.mp4", "site/loop-poster.jpg", "site/tutorial/*.mp4", "site/tutorial/*.jpg", "site/tutorial/*.gif"]
 SPDX-License-Identifier = "Apache-2.0"
