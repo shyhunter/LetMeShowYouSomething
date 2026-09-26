@@ -20,7 +20,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-ap
 .msg.you{justify-self:end;background:var(--ac-bg)}
 .msg.agent{justify-self:start}
 .who{display:block;font:700 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin-bottom:4px}
-.file{display:inline-flex;gap:8px;align-items:center;margin-top:8px;padding:8px 14px;border:2px solid var(--edge);border-radius:10px;background:var(--surf);box-shadow:2px 2px 0 var(--edge);font:700 14px var(--mono);cursor:pointer;min-height:44px}
+.att{margin-top:12px;padding-top:12px;border-top:2px solid var(--edge)}
+.file{display:inline-flex;gap:8px;align-items:center;padding:8px 14px;border:2px solid var(--edge);border-radius:10px;background:var(--surf);box-shadow:2px 2px 0 var(--edge);font:700 14px var(--mono);cursor:pointer;min-height:44px}
 .dots::after{content:"…";animation:d 1s steps(3) infinite}
 @keyframes d{from{letter-spacing:-.4em}to{letter-spacing:0}}
 @media (prefers-reduced-motion:reduce){.dots::after{animation:none}}
@@ -37,8 +38,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-ap
 // Each conversation: [who, text, file?]. The agent's lines are what it said in the run the tutorial records.
 const TALKS = {
   idea: [
-    ['you', 'Let my friend\'s hair salon take bookings online.'],
-    ['agent', 'Before I build anything, here is the plan as one page: how a client books, what the booking page keeps, and what it could run on.\n\nOpen it, or send it to your friend, who decides. Read Let me explain, press Start and answer one question at a time. On the last step, Return, download the answered page and send it back to me.', 'salon-booking.html']],
+    ['you', '/letmeshowyousomething I want to create an app for my friend\'s hair salon that takes bookings online. Explain to me how it should look.'],
+    ['agent', 'I\'m using the LetMeShowYouSomething skill.\n\nBefore I build anything, here is the plan as one page: how a client books, what the booking page keeps, and what it could run on.\n\nOpen it, or send it to your friend, who decides. Read Let me explain, press Start and answer one question at a time. On the last step, Return, download the answered page and send it back to me.', 'salon-booking.html']],
   round2: [
     ['you', 'Here are the salon owner\'s answers.', 'salon-booking.answered.html'],
     ['agent', 'Checked: 4 of 5 questions answered, and one thing added.\n\n• Still open, their own item: "I want to see today\'s bookings on my phone". I drew it as a Today screen for the salon, behind a sign-in link.\n• They picked Supabase, the one I recommended.\n• Confirm booking, partly agree: "My clients use WhatsApp, not text messages." The reminder now goes by WhatsApp.\n\nRound 2 asks about just those two changes:', 'salon-booking-round2.html']]
@@ -55,7 +56,7 @@ async function play(talk) {
     if (who === 'agent') { t.className = 't dots'; await wait(1400); t.className = 't'; }
     const step = who === 'you' ? 45 : 14;
     for (let i = 1; i <= text.length; i++) { t.textContent = text.slice(0, i); if (i % 2 === 0) await wait(step); }
-    if (file) { const f = document.createElement('div'); f.className = 'file'; f.textContent = '📄 ' + file; m.appendChild(f); }
+    if (file) { const a = document.createElement('div'); a.className = 'att'; const f = document.createElement('span'); f.className = 'file'; f.textContent = '📄 ' + file; a.appendChild(f); m.appendChild(a); }
     await wait(900);
   }
   document.body.dataset.done = 'true';
