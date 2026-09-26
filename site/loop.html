@@ -84,7 +84,7 @@ code{font:.9em var(--mono)}
       <p>Readable without the page: every answer carries its step's title. What is still open is listed as <code>gaps</code>,
       and the question to the agent as a <code>request</code>. An excerpt of
       <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/examples/flow-booking.feedback.json">the exported file</a>:</p>
-<pre>{
+<pre tabindex="0" aria-label="An excerpt of the exported answers file">{
   "review": "booking-flow-2026-09",
   "summary": {
     "total": 11,
@@ -129,7 +129,7 @@ code{font:.9em var(--mono)}
       <h2>checks it before it trusts it</h2>
       <p>The checker recomputes the summary and the gaps and refuses a file that does not add up. The agent does not act on
       a file that fails.</p>
-<pre><span class="c">$ node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .</span>
+<pre tabindex="0" aria-label="The checker's output"><span class="c">$ node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .</span>
   ! examples are unverified: "A studio a colleague worked with" has no source. Add one, or the page shows it as unverified; agents invent convincing examples
 
 <span class="ok">PASS</span> — 42/42 checks, 1 warning(s)</pre>

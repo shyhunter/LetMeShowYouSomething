@@ -21,5 +21,7 @@ export default defineConfig({
   projects: ENGINES.flatMap((browserName) => Object.entries(SIZES).map(([size, use]) => ({
     name: `${browserName}-${size}`,
     use: { browserName, ...use },
+    // The accessibility scan (axe) does not depend on the engine and is slow: Chromium at desktop and phone size only.
+    ...(browserName === 'chromium' && size !== 'tablet' ? {} : { testIgnore: /a11y\.spec\.mjs$/ }),
   }))),
 });
