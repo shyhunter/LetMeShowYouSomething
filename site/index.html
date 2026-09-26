@@ -33,6 +33,17 @@ pre{background:var(--surf);border:2px solid var(--edge);border-radius:12px;paddi
 .steps span.t{font-size:14.5px}
 .steps img{width:100%;height:auto;aspect-ratio:1280/856;object-fit:cover;border:2px solid var(--edge);border-radius:8px;display:block}
 .all{display:inline-flex;margin-top:14px;min-height:44px;align-items:center;padding:8px 16px;border:2px solid var(--edge);border-radius:12px;background:var(--ac);color:var(--surf);font-weight:800;text-decoration:none;box-shadow:3px 3px 0 var(--edge)}
+/* #143 — one clear action first: install, copyable; the tutorial second. */
+.cta{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:22px}
+.install{display:flex;align-items:stretch;min-width:0;max-width:100%;border:2px solid var(--edge);border-radius:12px;background:var(--surf);box-shadow:3px 3px 0 var(--edge);overflow:hidden}
+.install code{padding:10px 14px;font:600 14px var(--mono);color:var(--ink);white-space:nowrap;overflow-x:auto;min-width:0;align-self:center}
+.copy{min-height:44px;min-width:72px;padding:0 14px;border:0;border-left:2px solid var(--edge);background:var(--ac);color:var(--surf);font:800 14px var(--sans);cursor:pointer}
+.copy:active{filter:brightness(.9)}
+.second{display:inline-flex;min-height:44px;align-items:center;padding:8px 16px;border:2px solid var(--edge);border-radius:12px;background:var(--surf);color:var(--ink);font-weight:800;text-decoration:none;box-shadow:3px 3px 0 var(--edge)}
+.cta-note{margin:10px 0 0;font-size:14.5px;color:var(--mut)}
+.faq details{border:2px solid var(--edge);border-radius:12px;background:var(--surf);margin:0 0 10px}
+.faq summary{min-height:44px;padding:10px 14px;cursor:pointer;color:var(--ink);font-weight:800;display:flex;align-items:center}
+.faq details p{margin:0;padding:0 14px 12px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
 .card{display:flex;flex-direction:column;gap:6px;background:var(--surf);border:2px solid var(--edge);border-radius:14px;padding:16px;color:inherit;text-decoration:none;box-shadow:2px 2px 0 var(--edge)}
 .card:hover,.card:focus-visible{box-shadow:5px 5px 0 var(--lift)}
@@ -77,6 +88,12 @@ footer{margin-top:48px;padding-top:16px;border-top:2px solid var(--edge);color:v
   <h1>LetMeShowYouSomething</h1>
   <p class="lead">Your AI agent writes down what it needs you to judge, you answer on one offline page, and your
   answers go back to the agent as a file it checks before it acts.</p>
+  <div class="cta">
+    <div class="install"><code id="install-cmd">npx skills add shyhunter/LetMeShowYouSomething -g</code><button type="button" class="copy" data-copy="install-cmd" aria-label="Copy the install command">Copy</button></div>
+    <a class="second" href="tutorial.html">Watch the tutorial</a>
+  </div>
+  <p class="cta-note">Installs the skill for Claude Code, Codex, Hermes and other agents that read skills. Then ask your agent,
+  for example: <i>"/letmeshowyousomething Explain to me how my app idea should look."</i></p>
 
   <h2>From an idea to a plan in 7 steps</h2>
   <p>One real run: an idea for a hair salon's online booking, from the first line to the second round.</p>
@@ -127,6 +144,16 @@ agent ◄── check (PASS) ◄── the answered page or feedback.json, given
       <div class="row"><a class="all" id="intro-open" href="#">Open the page →</a><a id="intro-watch" href="tutorial.html">Watch how it works</a></div></div>
   </dialog>
 
+  <h2>Questions people ask</h2>
+  <div class="faq">
+    <details><summary>Does the person answering need an account, an install or internet?</summary><p>No. The page is one HTML file that loads nothing from the network. Any browser, on a computer or a phone.</p></details>
+    <details><summary>Does anything leave my browser?</summary><p>Not until you send a file yourself. Answers stay in that browser while you work; downloading writes a file and sends nothing.</p></details>
+    <details><summary>Does "Agree" let the agent go ahead?</summary><p>No. An answer is an opinion. Before anything that deletes, sends, pays, publishes or contacts someone, the agent asks you in its own tool.</p></details>
+    <details><summary>Which agents does it work with?</summary><p>Any agent that can write files and run Node. It has been run with Claude Code, Codex and Hermes.</p></details>
+    <details><summary>What does it cost?</summary><p>Nothing: free and open source, with no paid version. Making a review uses your agent like any other task.</p></details>
+  </div>
+  <p><a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/docs/wiki/faq.md">All questions in the FAQ →</a></p>
+
   <h2>The format</h2>
   <p>Two files and the rules between them, so any agent, script or tool can write the question or read the answer.</p>
   <ul>
@@ -137,7 +164,7 @@ agent ◄── check (PASS) ◄── the answered page or feedback.json, given
   <h2>Use it</h2>
   <p>It is an agent skill with no dependencies. Install it for the agents on your machine:</p>
 <pre>npx skills add shyhunter/LetMeShowYouSomething -g</pre>
-  <p>Tested with Claude Code and Codex. The <a href="https://github.com/shyhunter/LetMeShowYouSomething#readme">README</a>
+  <p>Run with Claude Code, Codex and Hermes. The <a href="https://github.com/shyhunter/LetMeShowYouSomething#readme">README</a>
   has the other ways to install it and how to run the checker.</p>
 
   <footer>Open source on <a href="https://github.com/shyhunter/LetMeShowYouSomething">GitHub</a>, with a <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/docs/wiki/README.md">wiki</a> and an <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/docs/wiki/faq.md">FAQ</a>.
@@ -182,5 +209,14 @@ intro.querySelector('[data-close]').addEventListener('click', () => intro.close(
 intro.addEventListener('click', (e) => { if (e.target === intro) intro.close(); });
 player.addEventListener('click', (e) => { if (e.target === player) player.close(); });   // a click on the blurred page
 player.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); });
+</script>
+<script>
+// Copy the install command; where the clipboard is not allowed, select it so it can be copied by hand.
+for (const b of document.querySelectorAll('[data-copy]')) b.addEventListener('click', async () => {
+  const code = document.getElementById(b.dataset.copy);
+  try { await navigator.clipboard.writeText(code.textContent); b.textContent = 'Copied'; }
+  catch { const r = document.createRange(); r.selectNodeContents(code); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); b.textContent = 'Selected'; }
+  setTimeout(() => { b.textContent = 'Copy'; }, 1800);
+});
 </script>
 </body></html>
