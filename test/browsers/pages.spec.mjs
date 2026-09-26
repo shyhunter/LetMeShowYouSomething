@@ -87,6 +87,7 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await page.locator('.card').nth(1).click();
   const intro = page.getByRole('dialog', { name: 'A user flow' });
   await expect(intro.locator('#intro-try li')).toHaveCount(3);
+  await expect(intro.locator('#intro-ask')).toHaveText(/^\/letmeshowyousomething /);
   await expect(intro.locator('#intro-open')).toHaveAttribute('href', 'examples/flow-booking.html');
   await expect(intro.locator('#intro-watch')).toHaveAttribute('href', 'tutorial.html#flow');
   await page.keyboard.press('Escape');
