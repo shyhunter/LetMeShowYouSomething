@@ -272,6 +272,7 @@
       "description": "A clickable flow: screens, and steps (items with a `step`) that move between them. Nothing is computed; branches are outcomes the reviewer picks (D002).",
       "properties": {
         "start": {"$ref": "#/$defs/id"},
+        "device": {"$ref": "#/$defs/device"},
         "layers": {
           "type": "object",
           "additionalProperties": false,
@@ -298,6 +299,10 @@
         }
       }
     },
+    "device": {
+      "enum": ["phone", "desktop"],
+      "description": "#146 — what the screens are shown on: a phone (the default) or a computer, in a browser window. Set on the flow for every screen, or on one screen."
+    },
     "screen": {
       "type": "object",
       "required": ["id", "title"],
@@ -305,6 +310,7 @@
       "properties": {
         "id": {"$ref": "#/$defs/id"},
         "title": {"type": "string", "minLength": 1, "maxLength": 120},
+        "device": {"$ref": "#/$defs/device"},
         "end": {
           "type": "boolean",
           "description": "true when the flow may stop here. A screen with no way out must say so."

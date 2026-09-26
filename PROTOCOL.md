@@ -296,6 +296,11 @@ A review can walk someone through a user flow: an app idea, or a change to an ex
 a normal review: **each step is an item**, so verdicts, notes, unanswered items and gaps work as
 everywhere else. Worked example: `examples/flow-booking.review.json`.
 
+**Phone or computer** (#146). `flow.device` says what the screens are shown on: `phone` (the default) or
+`desktop`, drawn in a browser window, wide, with buttons in a row and a dialog in the middle; a screen's own `device`
+overrides it, so one flow can move from the phone to the front desk. On a phone a desktop screen is scaled to fit,
+never scrolled sideways. Worked example: `examples/salon-desk.review.json`.
+
 **Screens** live in `flow.screens`, drawn from wireframe blocks or one inline screenshot with
 clickable `hotspots` (percent of the image; PNG, JPEG or WebP only, no SVG, no URL). `flow.start` is
 where the reviewer begins. A screen with no way out must say `"end": true`. Each hotspot is where a step

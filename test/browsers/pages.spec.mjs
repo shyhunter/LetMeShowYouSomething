@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json', 'salon-booking': 'salon-booking.review.json', 'salon-booking-round2': 'salon-booking-round2.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json', 'salon-booking': 'salon-booking.review.json', 'salon-booking-round2': 'salon-booking-round2.review.json', 'salon-desk': 'salon-desk.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 

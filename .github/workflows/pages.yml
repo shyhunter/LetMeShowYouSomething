@@ -46,6 +46,7 @@ jobs:
           password-reset.review.json password-reset
           results-layout.review.json results-layout
           salon-booking.review.json salon-booking
+          salon-desk.review.json salon-desk
           salon-booking-round2.review.json salon-booking-round2 --earlier examples/salon-booking.review.json examples/salon-booking.feedback.json
           EOF
           cp schemas/review.v1.schema.json _site/schema/review.v1.json
