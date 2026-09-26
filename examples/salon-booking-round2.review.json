@@ -1,0 +1,442 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "salon-booking-2026-09-r2",
+  "title": "Online booking for the salon · round 2",
+  "audience": "The salon owner, who decides; no AI account needed",
+  "ask": "Two things changed after your answers. Judge each one again: is this how your salon works?",
+  "afterwards": "The steps you agreed with last time are being built on Supabase, as you picked. What you agree with here joins them; anything else I change again. Nothing goes live and no client gets a message until you say so.",
+  "addNoun": "step",
+  "focus": "user-flow",
+  "brief": {
+    "question": "Are the WhatsApp reminder and your list of today's bookings what you meant?",
+    "explains": "Round 1 settled how a client books and what it runs on (Supabase). You asked for WhatsApp instead of text messages, and to see today's bookings on your phone: both are drawn here.",
+    "recommendation": "Keep the list behind a sign-in link sent to the salon's email, so only the salon sees clients' names and numbers.",
+    "risks": [
+      "WhatsApp messages from a business need a WhatsApp Business account, which the salon would have to set up."
+    ]
+  },
+  "createdAt": "2026-09-26T10:46:00Z",
+  "createdBy": {
+    "agent": "claude-code"
+  },
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      }
+    ]
+  },
+  "sections": [
+    {
+      "id": "visit",
+      "label": "What changed"
+    }
+  ],
+  "flow": {
+    "start": "services",
+    "parts": [
+      {
+        "id": "book-visit",
+        "title": "Book a visit",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The idea, in chat: \"Let my friend's hair salon take bookings online\""
+        }
+      },
+      {
+        "id": "slot-gone",
+        "title": "When the time is gone",
+        "status": "suggested",
+        "basis": {
+          "kind": "assumption",
+          "note": "Two clients can pick the same time at once; the flow needs a way out"
+        }
+      },
+      {
+        "id": "salon-day",
+        "title": "The salon's day",
+        "status": "suggested",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\""
+        }
+      }
+    ],
+    "screens": [
+      {
+        "id": "services",
+        "title": "Pick a service",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Studio Mira",
+            "actions": [
+              {
+                "id": "for-salon",
+                "label": "For the salon"
+              }
+            ]
+          },
+          {
+            "type": "text",
+            "text": "Book online, pay in the salon."
+          },
+          {
+            "type": "card",
+            "id": "cut",
+            "title": "Haircut",
+            "text": "45 min · €35",
+            "actions": [
+              {
+                "id": "pick-cut",
+                "label": "Choose"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "colour",
+            "title": "Colour",
+            "text": "2 h · €90",
+            "actions": [
+              {
+                "id": "pick-colour",
+                "label": "Choose"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "beard",
+            "title": "Beard trim",
+            "text": "20 min · €15",
+            "actions": [
+              {
+                "id": "pick-beard",
+                "label": "Choose"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "times",
+        "title": "Pick a time",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Haircut",
+            "back": {
+              "id": "back-services"
+            }
+          },
+          {
+            "type": "date-time",
+            "id": "day",
+            "label": "Day",
+            "mode": "date",
+            "value": "2026-10-03"
+          },
+          {
+            "type": "card",
+            "id": "t1030",
+            "title": "10:30 · with Mira",
+            "actions": [
+              {
+                "id": "pick-1030",
+                "label": "Book 10:30"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "t1115",
+            "title": "11:15 · with Jonas",
+            "actions": [
+              {
+                "id": "pick-1115",
+                "label": "Book 11:15"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "t1200",
+            "title": "12:00",
+            "text": "Fully booked"
+          }
+        ]
+      },
+      {
+        "id": "details",
+        "title": "Your details",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Your details",
+            "back": {
+              "id": "back-times"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Haircut · Saturday 3 October, 10:30 · with Mira"
+          },
+          {
+            "type": "input",
+            "id": "name",
+            "label": "Name",
+            "value": "Sam"
+          },
+          {
+            "type": "input",
+            "id": "phone",
+            "label": "WhatsApp number",
+            "value": "0151 000 000 00"
+          },
+          {
+            "type": "text",
+            "text": "We send a WhatsApp reminder the day before."
+          },
+          {
+            "type": "button",
+            "id": "confirm",
+            "label": "Confirm booking"
+          }
+        ]
+      },
+      {
+        "id": "booked",
+        "title": "Booked",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "See you Saturday"
+          },
+          {
+            "type": "chip",
+            "text": "Confirmed",
+            "tone": "positive"
+          },
+          {
+            "type": "card",
+            "id": "booking",
+            "title": "Saturday 3 October, 10:30",
+            "text": "Haircut with Mira · €35, pay in the salon"
+          },
+          {
+            "type": "toast",
+            "text": "Reminder on WhatsApp the day before"
+          }
+        ]
+      },
+      {
+        "id": "taken",
+        "title": "Time just taken",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Just taken"
+          },
+          {
+            "type": "banner",
+            "tone": "caution",
+            "text": "10:30 was booked a moment ago",
+            "because": "Someone else confirmed it first",
+            "canNow": "Pick another time; your details are kept"
+          },
+          {
+            "type": "button",
+            "id": "other-time",
+            "label": "Pick another time"
+          }
+        ]
+      },
+      {
+        "id": "today",
+        "title": "Today at the salon",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Today · Saturday 3 October",
+            "back": {
+              "id": "back-home"
+            }
+          },
+          {
+            "type": "chip",
+            "text": "Signed in as the salon",
+            "tone": "neutral"
+          },
+          {
+            "type": "table",
+            "columns": [
+              "Time",
+              "Client",
+              "Service",
+              "With"
+            ],
+            "rows": [
+              [
+                "10:30",
+                "Sam",
+                "Haircut",
+                "Mira"
+              ],
+              [
+                "11:15",
+                "Alex",
+                "Colour",
+                "Jonas"
+              ],
+              [
+                "14:00",
+                "Robin",
+                "Beard trim",
+                "Mira"
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "confirm",
+      "sectionId": "visit",
+      "title": "Taps Confirm booking",
+      "step": {
+        "goal": "to be sure the time is theirs",
+        "part": "book-visit",
+        "from": "details",
+        "on": "confirm",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The idea, in chat: \"Let my friend's hair salon take bookings online\""
+        },
+        "outcomes": [
+          {
+            "label": "The time is still free",
+            "effect": "Saves the booking and sends a WhatsApp reminder the day before",
+            "to": "booked",
+            "canNow": "Come to the salon",
+            "system": [
+              {
+                "id": "no-clash",
+                "kind": "guard",
+                "name": "One booking per stylist and time",
+                "status": "proposed"
+              },
+              {
+                "id": "reminder",
+                "kind": "external",
+                "name": "WhatsApp reminder the day before",
+                "status": "proposed"
+              }
+            ],
+            "data": [
+              {
+                "id": "new-booking",
+                "entity": "bookings",
+                "change": "insert",
+                "status": "proposed",
+                "fields": [
+                  {
+                    "name": "starts_at",
+                    "after": "2026-10-03 10:30"
+                  },
+                  {
+                    "name": "client_name",
+                    "after": "Sam"
+                  },
+                  {
+                    "name": "status",
+                    "after": "confirmed"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Someone was faster",
+            "effect": "Saves nothing",
+            "to": "taken",
+            "because": "Another client confirmed 10:30 a moment earlier",
+            "canNow": "Pick another time"
+          }
+        ]
+      },
+      "reply": "Changed: the reminder now goes by WhatsApp, and the form asks for the WhatsApp number, as you said."
+    },
+    {
+      "id": "added-1",
+      "sectionId": "visit",
+      "title": "Taps For the salon",
+      "reply": "Added, as you asked: your own list of today's bookings, on your phone.",
+      "step": {
+        "goal": "to see today's bookings at a glance",
+        "part": "salon-day",
+        "from": "services",
+        "on": "for-salon",
+        "status": "suggested",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\""
+        },
+        "outcomes": [
+          {
+            "effect": "After a sign-in link sent to the salon's email, shows today's bookings in time order",
+            "to": "today",
+            "canNow": "Call a client, or go back"
+          }
+        ]
+      }
+    }
+  ],
+  "continues": "salon-booking-2026-09",
+  "usage": {
+    "status": "measured",
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "calls": 7,
+    "tokens": {
+      "input": 14,
+      "output": 5518,
+      "cacheRead": 1547622,
+      "cacheWrite": 10084
+    },
+    "source": {
+      "host": "Claude Code",
+      "method": "session-transcript",
+      "since": "2026-09-26T10:45:00.000Z",
+      "capturedAt": "2026-09-26T10:46:08.171Z"
+    },
+    "scope": "the model calls of the conversation that ran this command from 2026-09-26T10:45:00.000Z until 2026-09-26T10:46:08.171Z, as Claude Code logged them"
+  }
+}

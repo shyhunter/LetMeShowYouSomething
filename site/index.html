@@ -6,47 +6,85 @@
 <link rel="icon" href="logo.svg" type="image/svg+xml">
 <meta name="description" content="Your AI agent writes down what it needs you to judge, you answer on one offline page, and your answers go back as a file it checks before it acts.">
 <style>
-:root{--bg:#FBFAFC;--surf:#FFFFFF;--line:rgba(28,22,42,.13);--ink:#16141B;--ink2:#2C2735;--mut:#6F6880;--ac:#5B3E8C;--ac-bg:rgba(91,62,140,.10);color-scheme:light;
+:root{--bg:#F4F2F8;--surf:#FFFFFF;--ink:#1B1726;--ink2:#3C3550;--mut:#6B6480;--edge:#1B1726;--lift:#5B3E8C;--ac:#5B3E8C;--ac-bg:#EEE8F7;--band:#E9E4F2;color-scheme:light;
   --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
-@media (prefers-color-scheme:dark){:root{--bg:#121017;--surf:#1A1721;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440;--band:#211B2D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440;--band:#211B2D;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
-main{max-width:880px;margin:0 auto;padding:48px 16px 64px}
-h1{color:var(--ink);font-size:clamp(22px,6.4vw,40px);line-height:1.15;margin:0 0 12px;letter-spacing:-.015em;overflow-wrap:anywhere}
-h2{color:var(--ink);font-size:20px;margin:40px 0 12px}
+main{max-width:960px;margin:0 auto;padding:48px 16px 64px}
+h1{color:var(--ink);font-size:clamp(24px,6.4vw,42px);line-height:1.12;margin:0 0 12px;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere}
+h2{color:var(--ink);font-size:22px;font-weight:800;margin:44px 0 12px}
 .lead{font-size:18px;max-width:62ch;margin:0}
-pre{background:var(--surf);border:1px solid var(--line);border-radius:10px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--mono);color:var(--ink)}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
-.card{display:flex;flex-direction:column;gap:6px;background:var(--surf);border:1px solid var(--line);border-radius:12px;padding:16px;color:inherit;text-decoration:none}
-.card:hover,.card:focus-visible{border-color:var(--ac);box-shadow:0 0 0 3px var(--ac-bg)}
-.card b{color:var(--ink);font-size:16px}
+a{color:var(--ac);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+pre{background:var(--surf);border:2px solid var(--edge);border-radius:12px;padding:14px 16px;overflow-x:auto;font:13px/1.5 var(--mono);color:var(--ink)}
+.num{flex:none;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--ac);color:var(--surf);font:800 14px var(--mono);border:2px solid var(--edge);position:relative;z-index:1}
+/* From an idea to a plan: the steps on the left, each chapter's picture on the right, joined from step 1 down. */
+.steps{list-style:none;margin:16px 0 0;padding:0;display:grid;gap:12px}
+.steps a{position:relative;display:grid;grid-template-columns:32px minmax(0,1fr) 208px;gap:14px;align-items:center;padding:12px;border:2px solid var(--edge);border-radius:14px;background:var(--band);color:inherit;text-decoration:none;box-shadow:2px 2px 0 var(--edge)}
+.steps a:hover,.steps a:focus-visible{box-shadow:5px 5px 0 var(--lift)}
+.steps a:active{transform:translate(2px,2px);box-shadow:none}
+.steps li{position:relative}
+.steps li::before{content:"";position:absolute;left:26px;top:-14px;bottom:-14px;width:3px;background:var(--edge)}
+.steps li:first-child::before{top:40px}
+.steps li:last-child::before{bottom:auto;height:40px}
+.steps b{display:block;color:var(--ink);font-size:17px;font-weight:800}
+.steps span.t{font-size:14.5px}
+.steps img{width:100%;height:auto;aspect-ratio:1280/856;object-fit:cover;border:2px solid var(--edge);border-radius:8px;display:block}
+.all{display:inline-flex;margin-top:14px;min-height:44px;align-items:center;padding:8px 16px;border:2px solid var(--edge);border-radius:12px;background:var(--ac);color:var(--surf);font-weight:800;text-decoration:none;box-shadow:3px 3px 0 var(--edge)}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{display:flex;flex-direction:column;gap:6px;background:var(--surf);border:2px solid var(--edge);border-radius:14px;padding:16px;color:inherit;text-decoration:none;box-shadow:2px 2px 0 var(--edge)}
+.card:hover,.card:focus-visible{box-shadow:5px 5px 0 var(--lift)}
+.card b{color:var(--ink);font-size:16px;font-weight:800}
 .card span{color:var(--mut);font-size:14px}
-.card em{margin-top:auto;padding-top:8px;color:var(--ac);font-style:normal;font-weight:600;font-size:14px}
-a{color:var(--ac)}
-:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.card em{margin-top:auto;padding-top:8px;color:var(--ac);font-style:normal;font-weight:700;font-size:14px}
 ul{padding-left:20px}
-footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:var(--mut);font-size:14px}
+footer{margin-top:48px;padding-top:16px;border-top:2px solid var(--edge);color:var(--mut);font-size:14px}
+@media (max-width:640px){
+  .steps a{grid-template-columns:32px minmax(0,1fr)}
+  .steps img{grid-column:1/-1}
+  .steps li::before{display:none}
+}
 </style>
 </head><body>
 <main>
   <h1>LetMeShowYouSomething</h1>
   <p class="lead">Your AI agent writes down what it needs you to judge, you answer on one offline page, and your
   answers go back to the agent as a file it checks before it acts.</p>
-<pre>agent ──► review.json ──► one HTML page ──► a person judges each item ──► Export
-agent ◄── check (PASS) ◄── feedback.json ◄────────────────────────────────┘</pre>
-  <p><a href="loop.html"><b>See the whole loop →</b></a> A person answers, the page exports the answer, the checker
-  verifies it, and the agent reports back, gaps first. Every piece is real.</p>
+
+  <h2>From an idea to a plan in 7 steps</h2>
+  <p>One real run: an idea for a hair salon's online booking, from the first line to the second round.</p>
+  <ol class="steps">
+    <li><a href="tutorial.html#idea"><span class="num">1</span><span><b>The idea</b><span class="t">You type one line; the agent answers with the plan as one page.</span></span><img src="tutorial/1-idea.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#explain"><span class="num">2</span><span><b>Let me explain</b><span class="t">What it needs from you, its recommendation, what could go wrong.</span></span><img src="tutorial/2-explain.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#flow"><span class="num">3</span><span><b>A step in the flow</b><span class="t">Tap through the screens; agree, or say what should be different.</span></span><img src="tutorial/3-flow.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#choice"><span class="num">4</span><span><b>What it runs on</b><span class="t">Three options side by side, with costs and a recommendation.</span></span><img src="tutorial/4-choice.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#overview"><span class="num">5</span><span><b>Overview</b><span class="t">Every question beside its step and its screen, on one page.</span></span><img src="tutorial/5-overview.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#return"><span class="num">6</span><span><b>Return</b><span class="t">Add what is missing, download your answers, give the file back.</span></span><img src="tutorial/6-return.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#round2"><span class="num">7</span><span><b>Round 2</b><span class="t">The agent checks your file and shows what changed, before and after.</span></span><img src="tutorial/7-round2.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+  </ol>
+  <a class="all" href="tutorial.html">Watch the tutorial →</a>
+
+<pre>agent ──► review.json ──► one HTML page ──► a person answers each question ──► downloads the answers
+agent ◄── check (PASS) ◄── the answered page or feedback.json, given back ◄────────────────┘</pre>
 
   <h2>Try it</h2>
   <p>Each page is the real thing: press <b>Start</b>, answer, and download your answers on the last step. Nothing
   leaves your browser until you do.</p>
   <div class="cards">
-    <a class="card" href="examples/checkout-uat.html"><b>Test results</b>
-      <span>Four checkout cases: works, partially works, doesn't work or couldn't test, with a note.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/decision-review.html"><b>A decision</b>
-      <span>The options, the agent's recommendation and why, and the earlier decisions it would reopen.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/salon-booking.html"><b>An app idea</b>
+      <span>A salon's online booking: the screens, what it stores, and what it runs on.</span><em>Open the page →</em></a>
     <a class="card" href="examples/flow-booking.html"><b>A user flow</b>
       <span>Click through a booking app's screens, see the flow as a diagram, and judge every step.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/results-layout.html"><b>A choice between layouts</b>
+      <span>Three ways to show search results, side by side; pick one.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/decision-review.html"><b>A decision</b>
+      <span>The options, the agent's recommendation and why, and the earlier decisions it would reopen.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/checkout-uat.html"><b>Test results</b>
+      <span>Four checkout cases: works, partially works, doesn't work or couldn't test, with a note.</span><em>Open the page →</em></a>
+    <a class="card" href="examples/password-reset.html"><b>Screenshots of a running app</b>
+      <span>A password reset, judged on the app's real screens.</span><em>Open the page →</em></a>
   </div>
 
   <h2>The format</h2>

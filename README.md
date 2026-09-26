@@ -60,9 +60,11 @@ Here the answer is data:
 Open any of them in your browser, no install: the pages are the product, not screenshots of it.
 All three are on the [project site](https://shyhunter.github.io/LetMeShowYouSomething/).
 
-**[See the whole loop](https://shyhunter.github.io/LetMeShowYouSomething/loop.html):** a person answers the booking
-review (a 30-second recording), the file the page exported, the checker's verdict, and what the agent says back, gaps
-first. Every piece is real; the files are in [`examples/`](examples) ([the report](examples/flow-booking.report.md)).
+**[Watch the tutorial](https://shyhunter.github.io/LetMeShowYouSomething/tutorial.html):** from an app idea to a plan in
+7 short videos: a salon's online booking, answered on its page, and the agent's round 2
+([the page](examples/salon-booking.html), [round 2](examples/salon-booking-round2.html)).
+**[See the whole loop](https://shyhunter.github.io/LetMeShowYouSomething/loop.html):** the file a page exported, the
+checker's verdict, and what the agent says back, gaps first. Every piece is real; the files are in [`examples/`](examples) ([the report](examples/flow-booking.report.md)).
 
 Every page starts with **Let me explain**, a few short cards and one button, then walks through one
 question at a time. Each question shows the same four places in the same order: the map (you are

@@ -63,6 +63,9 @@ jobs:
           node bin/check.mjs review examples/ai-tool-loop.review.json
           node bin/check.mjs review examples/password-reset.review.json
           node bin/check.mjs review examples/results-layout.review.json
+          node bin/check.mjs review examples/salon-booking.review.json --root .
+          node bin/check.mjs pair examples/salon-booking.review.json examples/salon-booking.feedback.json
+          node bin/check.mjs rounds examples/salon-booking-round2.review.json examples/salon-booking.review.json examples/salon-booking.feedback.json
           node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
           node bin/check.mjs pair examples/review.example.json examples/feedback.example.json
           node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .
@@ -76,7 +79,7 @@ jobs:
       - name: Example pages are up to date
         run: |
           out="$RUNNER_TEMP/pages"; mkdir -p "$out"
-          for pair in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking retry-backoff.review.json:retry-backoff booking-race.review.json:booking-race ai-tool-loop.review.json:ai-tool-loop password-reset.review.json:password-reset results-layout.review.json:results-layout; do
+          for pair in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking retry-backoff.review.json:retry-backoff booking-race.review.json:booking-race ai-tool-loop.review.json:ai-tool-loop password-reset.review.json:password-reset results-layout.review.json:results-layout salon-booking.review.json:salon-booking; do
             node bin/render.mjs "examples/${pair%%:*}" "$out/${pair##*:}.html" > /dev/null
             cmp -s "$out/${pair##*:}.html" "examples/${pair##*:}.html" \
               || { echo "::error file=examples/${pair##*:}.html::out of date; run: node bin/render.mjs examples/${pair%%:*} examples/${pair##*:}.html"; exit 1; }
@@ -88,6 +91,7 @@ jobs:
             cmp -s "$out/$name.html" "examples/$name.html" || { echo "::error file=examples/$name.html::out of date; run: node bin/render.mjs examples/$name.review.json examples/$name.html $earlier"; exit 1; }
           done <<EOF
           checkout-round2 --earlier examples/review.example.json examples/checkout-uat.feedback.json
+          salon-booking-round2 --earlier examples/salon-booking.review.json examples/salon-booking.feedback.json
           flow-booking-round2 --earlier $F1
           flow-booking-round3 --earlier $F1 --earlier $F2
           EOF

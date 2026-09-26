@@ -1,0 +1,129 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>From idea to plan · LetMeShowYouSomething</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<meta name="description" content="Seven short videos: an app idea becomes a plan your agent asks you about on one page, and your answers come back as a file it checks.">
+<style>
+:root{--bg:#F4F2F8;--surf:#FFFFFF;--ink:#1B1726;--ink2:#3C3550;--mut:#6B6480;--edge:#1B1726;--lift:#5B3E8C;--ac:#5B3E8C;--ac-bg:#EEE8F7;--band:#E9E4F2;color-scheme:light;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440;--band:#211B2D;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--ink2:#D2CBE0;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440;--band:#211B2D;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
+main{max-width:1180px;margin:0 auto;padding:40px 16px 64px}
+a{color:var(--ac);text-underline-offset:3px}
+:focus-visible{outline:3px solid var(--ac);outline-offset:2px}
+.eyebrow{font:700 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ac);margin:0 0 8px}
+h1{color:var(--ink);font-size:clamp(26px,5vw,42px);line-height:1.12;margin:0 0 12px;font-weight:800;letter-spacing:-.02em}
+.lead{font-size:18px;max-width:64ch;margin:0}
+/* The index: every chapter, one link each. */
+.index{list-style:none;margin:28px 0 36px;padding:0;display:flex;flex-wrap:wrap;gap:10px}
+.index a{display:inline-flex;gap:8px;align-items:center;min-height:44px;padding:8px 14px;border:2px solid var(--edge);border-radius:12px;background:var(--surf);box-shadow:2px 2px 0 var(--edge);color:var(--ink);font-weight:700;text-decoration:none}
+.index a:active{transform:translate(2px,2px);box-shadow:none}
+.num{flex:none;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--ac);color:var(--surf);font:800 14px var(--mono)}
+/* One band per chapter: the step on the left, its video on the right; a line joins the steps from step 1 down. */
+.chapters{list-style:none;margin:0;padding:0;display:grid;gap:18px;position:relative}
+.band{position:relative;display:grid;grid-template-columns:minmax(0,4fr) minmax(0,7fr);gap:18px;align-items:start;padding:18px;border:2px solid var(--edge);border-radius:16px;background:var(--band);scroll-margin-top:16px}
+.band.now{box-shadow:6px 6px 0 var(--lift)}
+.band::before{content:"";position:absolute;left:34px;top:-20px;bottom:-20px;width:3px;background:var(--edge)}
+.band:first-child::before{top:34px}
+.band:last-child::before{bottom:auto;height:34px;top:-20px}
+.step{position:relative;display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;min-width:0}
+.step .num{width:34px;height:34px;font-size:15px;position:relative;z-index:1;border:2px solid var(--edge)}
+.step h2{color:var(--ink);font-size:21px;font-weight:800;line-height:1.2;margin:4px 0 8px}
+.step p{margin:0 0 10px}
+.try{font-weight:700}
+video{display:block;width:100%;height:auto;border:2px solid var(--edge);border-radius:12px;background:var(--surf)}
+.honest{margin-top:36px;font-size:14px;color:var(--mut);max-width:80ch}
+@media (max-width:760px){
+  .band{grid-template-columns:1fr}
+  .band::before{display:none}
+}
+</style>
+</head><body>
+<main>
+  <p class="eyebrow">Tutorial · 7 short videos</p>
+  <h1>From an idea to a plan</h1>
+  <p class="lead">You have an app idea, not a spec. Your agent turns it into a plan (the screens, what it stores, what
+  it runs on) and asks you about it on one page instead of in a long chat. Here is one real run, for a hair salon.</p>
+
+  <ol class="index" aria-label="Chapters">
+    <li><a href="#idea"><span class="num">1</span>The idea</a></li>
+    <li><a href="#explain"><span class="num">2</span>Let me explain</a></li>
+    <li><a href="#flow"><span class="num">3</span>A step in the flow</a></li>
+    <li><a href="#choice"><span class="num">4</span>What it runs on</a></li>
+    <li><a href="#overview"><span class="num">5</span>Overview</a></li>
+    <li><a href="#return"><span class="num">6</span>Return</a></li>
+    <li><a href="#round2"><span class="num">7</span>Round 2</a></li>
+  </ol>
+
+  <ol class="chapters">
+    <li class="band" id="idea"><div class="step"><span class="num">1</span><div>
+      <h2>The idea</h2>
+      <p>You call the skill with your idea: "/letmeshowyousomething I want to create an app for my friend's hair salon
+      that takes bookings online. Explain to me how it should look." Before writing code, the agent answers with the
+      plan as one page. You open it, or send it to whoever decides.</p>
+      <a class="try" href="examples/salon-booking.html">Open that page →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/1-idea.jpg" width="1280" height="856"><source src="tutorial/1-idea.mp4" type="video/mp4">The idea typed into a chat, and the agent answering with a page.</video></li>
+
+    <li class="band" id="explain"><div class="step"><span class="num">2</span><div>
+      <h2>Let me explain</h2>
+      <p>The page first says what it needs from you, what the agent recommends, what could go wrong and what happens
+      next. Then you press <b>Start</b>.</p>
+      <a class="try" href="examples/salon-booking.html">Try it yourself →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/2-explain.jpg" width="1280" height="856"><source src="tutorial/2-explain.mp4" type="video/mp4">Reading Let me explain, then pressing Start.</video></li>
+
+    <li class="band" id="flow"><div class="step"><span class="num">3</span><div>
+      <h2>The tour: a step in the flow</h2>
+      <p>One question at a time. The prototype shows the screen a client would see, the map where that step sits. Agree,
+      or say what should be different: here the owner writes that clients use WhatsApp, not text messages.</p>
+      <a class="try" href="examples/salon-booking.html">Try it yourself →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/3-flow.jpg" width="1280" height="856"><source src="tutorial/3-flow.mp4" type="video/mp4">Answering the booking steps, one with a note.</video></li>
+
+    <li class="band" id="choice"><div class="step"><span class="num">4</span><div>
+      <h2>The tour: what it runs on</h2>
+      <p>The technical choice, in plain words: three options side by side, what each costs, what it takes to build and
+      its catch, with the agent's recommendation. One tap picks.</p>
+      <a class="try" href="examples/salon-booking.html">Try it yourself →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/4-choice.jpg" width="1280" height="856"><source src="tutorial/4-choice.mp4" type="video/mp4">Comparing Google Sheet, Supabase and Firebase, and picking Supabase.</video></li>
+
+    <li class="band" id="overview"><div class="step"><span class="num">5</span><div>
+      <h2>Overview</h2>
+      <p>Everything on one page: each question beside its step in the flow and the screen it is about. The database tab
+      shows what each step stores.</p>
+      <a class="try" href="examples/salon-booking.html">Try it yourself →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/5-overview.jpg" width="1280" height="856"><source src="tutorial/5-overview.mp4" type="video/mp4">The Overview, then its database tab.</video></li>
+
+    <li class="band" id="return"><div class="step"><span class="num">6</span><div>
+      <h2>Return</h2>
+      <p>Add what nobody asked about, then download the answered page and send that one file back. Nothing leaves the
+      browser until you do.</p>
+      <a class="try" href="examples/salon-booking.html">Try it yourself →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/6-return.jpg" width="1280" height="856"><source src="tutorial/6-return.mp4" type="video/mp4">Adding a missing point and downloading the answered page.</video></li>
+
+    <li class="band" id="round2"><div class="step"><span class="num">7</span><div>
+      <h2>Round 2</h2>
+      <p>The agent checks the file, reports what is still open first, and sends round 2: only what changed, before and
+      after, side by side.</p>
+      <a class="try" href="examples/salon-booking-round2.html">Open round 2 →</a></div></div>
+      <video controls muted playsinline preload="metadata" poster="tutorial/7-round2.jpg" width="1280" height="856"><source src="tutorial/7-round2.mp4" type="video/mp4">The agent's report, then round 2 with before and after.</video></li>
+  </ol>
+
+  <p class="honest">How this was made: the pages, the exported answers and round 2 are real output of the skill; the
+  agent was Claude Code following <a href="https://github.com/shyhunter/LetMeShowYouSomething/blob/main/SKILL.md">SKILL.md</a>.
+  The reviewer is scripted in a real browser (the circle marks each tap), and the chat window is a replay of that run's
+  prompt and replies. All of it is in <a href="https://github.com/shyhunter/LetMeShowYouSomething/tree/main/examples">examples/</a>;
+  <a href="loop.html">the whole loop</a> shows the files, the checker and the report of another run.</p>
+</main>
+<script>
+// The chapter you are watching is lifted; only one plays at a time.
+const videos = [...document.querySelectorAll('video')];
+for (const v of videos) v.addEventListener('play', () => {
+  for (const o of videos) if (o !== v) o.pause();
+  document.querySelectorAll('.band.now').forEach((b) => b.classList.remove('now'));
+  v.closest('.band').classList.add('now');
+});
+</script>
+</body></html>
