@@ -66,6 +66,24 @@ test('the tutorial: every step links to its chapter, every chapter has its video
   await expect(page.locator('#choice')).toBeInViewport();
 });
 
+// The landing page: a step plays its chapter in front of the page, which blurs behind; Close or Esc goes back.
+test('the landing page: a step opens its video in front, and closes back to the page', async ({ page }) => {
+  await page.goto(pathToFileURL(join(ROOT, 'site/index.html')).href);
+  const player = page.getByRole('dialog', { name: 'What it runs on' });
+  await page.locator('.steps a').nth(3).click();
+  await expect(player).toBeVisible();
+  expect(await player.locator('video').getAttribute('src')).toBe('tutorial/4-choice.mp4');
+  await expect(player.locator('#player-more')).toHaveAttribute('href', 'tutorial.html#choice');
+  expect(await page.evaluate(() => getComputedStyle(document.getElementById('player'), '::backdrop').backdropFilter)).toContain('blur');
+  await player.getByRole('button', { name: 'Close' }).click();
+  await expect(player).toBeHidden();
+  await expect(page.locator('#player video')).not.toHaveAttribute('src', /./);
+  await page.locator('.steps a').first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#player')).toBeHidden();
+  await expect(page.locator('.card .icon svg')).toHaveCount(6);
+});
+
 // #105 — Let me explain is its own first screen: short cards, one action. After Start it folds to a bar.
 test('Let me explain: short cards, one action; it folds after Start and opens again', async ({ page }) => {
   await page.goto(example('flow-booking'));
