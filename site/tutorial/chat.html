@@ -1,0 +1,66 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Chat replay · LetMeShowYouSomething</title>
+<meta name="description" content="The chat around the tutorial's salon review, replayed for the recording: the prompt and the agent's replies from that run.">
+<style>
+:root{--bg:#F4F2F8;--surf:#FFFFFF;--ink:#1B1726;--mut:#6B6480;--edge:#1B1726;--lift:#5B3E8C;--ac:#5B3E8C;--ac-bg:#EEE8F7;--mono:ui-monospace,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440}}
+:root[data-theme="dark"]{--bg:#15121C;--surf:#1F1A29;--ink:#EEEAF5;--mut:#9A92AE;--edge:#D9D2E6;--lift:#B39BE0;--ac:#B39BE0;--ac-bg:#2C2440}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.win{width:min(860px,100%);background:var(--surf);border:2px solid var(--edge);border-radius:16px;box-shadow:6px 6px 0 var(--lift);overflow:hidden}
+.bar{display:flex;gap:8px;align-items:center;padding:12px 16px;border-bottom:2px solid var(--edge);font:700 13px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--mut)}
+.bar i{width:12px;height:12px;border-radius:50%;border:2px solid var(--edge)}
+.log{padding:22px;display:grid;gap:16px;min-height:520px;align-content:start}
+.msg{max-width:80%;padding:12px 16px;border:2px solid var(--edge);border-radius:14px;white-space:pre-line}
+.msg.you{justify-self:end;background:var(--ac-bg)}
+.msg.agent{justify-self:start}
+.who{display:block;font:700 11px var(--mono);letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin-bottom:4px}
+.file{display:inline-flex;gap:8px;align-items:center;margin-top:8px;padding:8px 14px;border:2px solid var(--edge);border-radius:10px;background:var(--surf);box-shadow:2px 2px 0 var(--edge);font:700 14px var(--mono);cursor:pointer;min-height:44px}
+.dots::after{content:"…";animation:d 1s steps(3) infinite}
+@keyframes d{from{letter-spacing:-.4em}to{letter-spacing:0}}
+@media (prefers-reduced-motion:reduce){.dots::after{animation:none}}
+.note{font-size:13px;color:var(--mut);padding:0 22px 16px}
+</style>
+</head>
+<body>
+<div class="win" role="log" aria-label="Chat replay">
+  <div class="bar"><i></i><i></i><i></i>Chat with your coding agent</div>
+  <div class="log" id="log"></div>
+  <p class="note">A replay of the tutorial's run: the prompt and the agent's replies, as they were.</p>
+</div>
+<script>
+// Each conversation: [who, text, file?]. The agent's lines are what it said in the run the tutorial records.
+const TALKS = {
+  idea: [
+    ['you', 'Let my friend\'s hair salon take bookings online.'],
+    ['agent', 'Before I build anything, here is the plan as one page: how a client books, what the booking page keeps, and what it could run on.\n\nOpen it, or send it to your friend, who decides. Read Let me explain, press Start and answer one question at a time. On the last step, Return, download the answered page and send it back to me.', 'salon-booking.html']],
+  round2: [
+    ['you', 'Here are the salon owner\'s answers.', 'salon-booking.answered.html'],
+    ['agent', 'Checked: 4 of 5 questions answered, and one thing added.\n\n• Still open, their own item: "I want to see today\'s bookings on my phone". I drew it as a Today screen for the salon, behind a sign-in link.\n• They picked Supabase, the one I recommended.\n• Confirm booking, partly agree: "My clients use WhatsApp, not text messages." The reminder now goes by WhatsApp.\n\nRound 2 asks about just those two changes:', 'salon-booking-round2.html']]
+};
+const log = document.getElementById('log');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+async function play(talk) {
+  for (const [who, text, file] of talk) {
+    const m = document.createElement('div');
+    m.className = 'msg ' + who;
+    m.innerHTML = '<span class="who">' + (who === 'you' ? 'You' : 'Agent') + '</span><span class="t"></span>';
+    log.appendChild(m);
+    const t = m.querySelector('.t');
+    if (who === 'agent') { t.className = 't dots'; await wait(1400); t.className = 't'; }
+    const step = who === 'you' ? 45 : 14;
+    for (let i = 1; i <= text.length; i++) { t.textContent = text.slice(0, i); if (i % 2 === 0) await wait(step); }
+    if (file) { const f = document.createElement('div'); f.className = 'file'; f.textContent = '📄 ' + file; m.appendChild(f); }
+    await wait(900);
+  }
+  document.body.dataset.done = 'true';
+}
+play(TALKS[location.hash.slice(1)] || TALKS.idea);
+</script>
+</body>
+</html>

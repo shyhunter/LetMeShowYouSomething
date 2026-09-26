@@ -1,0 +1,132 @@
+{
+  "protocol": "letmeshowyousomething/feedback",
+  "schemaVersion": 1,
+  "review": {
+    "id": "salon-booking-2026-09",
+    "title": "Online booking for the salon",
+    "schemaVersion": 1
+  },
+  "respondedAt": "2026-09-26T10:44:37.285Z",
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      }
+    ]
+  },
+  "responses": [
+    {
+      "itemId": "pick-service",
+      "title": "Taps Choose on Haircut",
+      "verdict": "agree",
+      "note": null,
+      "sectionId": "visit",
+      "sectionLabel": "Booking a visit"
+    },
+    {
+      "itemId": "pick-time",
+      "title": "Taps Book 10:30",
+      "verdict": "agree",
+      "note": null,
+      "sectionId": "visit",
+      "sectionLabel": "Booking a visit"
+    },
+    {
+      "itemId": "confirm",
+      "title": "Taps Confirm booking",
+      "verdict": "partly-agree",
+      "note": "My clients use WhatsApp, not text messages.",
+      "sectionId": "visit",
+      "sectionLabel": "Booking a visit"
+    },
+    {
+      "itemId": "other-time",
+      "title": "Taps Pick another time",
+      "verdict": "agree",
+      "note": null,
+      "sectionId": "visit",
+      "sectionLabel": "Booking a visit"
+    },
+    {
+      "itemId": "opt-sheet",
+      "title": "A Google Sheet behind a form",
+      "verdict": "unset",
+      "note": null,
+      "sectionId": "build",
+      "sectionLabel": "What it runs on"
+    },
+    {
+      "itemId": "opt-supabase",
+      "title": "Supabase, free plan",
+      "verdict": "unset",
+      "note": null,
+      "sectionId": "build",
+      "sectionLabel": "What it runs on"
+    },
+    {
+      "itemId": "opt-firebase",
+      "title": "Firebase, free plan",
+      "verdict": "unset",
+      "note": null,
+      "sectionId": "build",
+      "sectionLabel": "What it runs on"
+    }
+  ],
+  "summary": {
+    "total": 7,
+    "answered": 4,
+    "unset": 3,
+    "added": 1,
+    "byVerdict": {
+      "unset": 3,
+      "agree": 3,
+      "partly-agree": 1,
+      "disagree": 0,
+      "revisit": 0
+    }
+  },
+  "gaps": [
+    "added-1"
+  ],
+  "addedItems": [
+    {
+      "id": "added-1",
+      "title": "I want to see today's bookings on my phone",
+      "verdict": "unset",
+      "note": null
+    }
+  ],
+  "choices": [
+    {
+      "sectionId": "build",
+      "sectionLabel": "What it runs on",
+      "itemId": "opt-supabase",
+      "title": "Supabase, free plan",
+      "recommended": {
+        "itemId": "opt-supabase",
+        "title": "Supabase, free plan"
+      },
+      "followedRecommendation": true
+    }
+  ],
+  "via": "page"
+}

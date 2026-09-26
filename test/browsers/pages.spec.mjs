@@ -3,14 +3,14 @@
 // fixed order, the Overview, Return with every download. In Chromium, Firefox and WebKit, at desktop,
 // tablet and phone size (D091).
 import { test, expect } from '@playwright/test';
-import { readFileSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json', 'salon-booking': 'salon-booking.review.json', 'salon-booking-round2': 'salon-booking-round2.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -41,13 +41,30 @@ for (const [name, file] of Object.entries(PAGES)) {
   });
 }
 
-for (const name of ['index', 'loop']) {
+for (const name of ['index', 'loop', 'tutorial']) {
   test(`site ${name}: loads, fits the screen`, async ({ page }) => {
     await page.goto(pathToFileURL(join(ROOT, `site/${name}.html`)).href);
     await expect(page.locator('h1')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
   });
 }
+
+// #112 — the tutorial: the landing page's 7 steps and the tutorial's index each land on their chapter, every
+// chapter has its video and poster, and the landing page no longer says "Export".
+test('the tutorial: every step links to its chapter, every chapter has its video', async ({ page }) => {
+  await page.goto(pathToFileURL(join(ROOT, 'site/index.html')).href);
+  await expect(page.locator('body')).not.toContainText('Export');
+  const steps = await page.locator('.steps a').evaluateAll((l) => l.map((a) => a.getAttribute('href')));
+  expect(steps).toHaveLength(7);
+  await page.goto(pathToFileURL(join(ROOT, 'site/tutorial.html')).href);
+  const index = await page.locator('.index a').evaluateAll((l) => l.map((a) => a.getAttribute('href')));
+  expect(index.map((h) => 'tutorial.html' + h)).toEqual(steps);
+  for (const h of index) await expect(page.locator(h + ' video')).toHaveCount(1);
+  const media = await page.locator('video').evaluateAll((l) => l.flatMap((v) => [v.poster, v.querySelector('source').src]));
+  for (const m of media) expect(existsSync(fileURLToPath(m)), m).toBe(true);
+  await page.locator('.index a').nth(3).click();
+  await expect(page.locator('#choice')).toBeInViewport();
+});
 
 // #105 — Let me explain is its own first screen: short cards, one action. After Start it folds to a bar.
 test('Let me explain: short cards, one action; it folds after Start and opens again', async ({ page }) => {
