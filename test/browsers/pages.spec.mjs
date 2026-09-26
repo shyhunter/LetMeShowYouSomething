@@ -82,6 +82,18 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await page.keyboard.press('Escape');
   await expect(page.locator('#player')).toBeHidden();
   await expect(page.locator('.card .icon svg')).toHaveCount(6);
+  expect(await page.locator('.card .icon').first().evaluate((el) => getComputedStyle(el).color), 'the icons are ink, not grey')
+    .toBe(await page.locator('h1').evaluate((el) => getComputedStyle(el).color));
+  await page.locator('.card').nth(1).click();
+  const intro = page.getByRole('dialog', { name: 'A user flow' });
+  await expect(intro.locator('#intro-try li')).toHaveCount(3);
+  await expect(intro.locator('#intro-open')).toHaveAttribute('href', 'examples/flow-booking.html');
+  await expect(intro.locator('#intro-watch')).toHaveAttribute('href', 'tutorial.html#flow');
+  await page.keyboard.press('Escape');
+  await page.locator('.card').nth(4).click();
+  await expect(page.locator('#intro-watch')).toBeHidden();
+  await page.getByRole('dialog', { name: 'Test results' }).getByRole('button', { name: 'Close' }).click();
+  await expect(page.locator('#intro')).toBeHidden();
 });
 
 // #105 — Let me explain is its own first screen: short cards, one action. After Start it folds to a bar.
