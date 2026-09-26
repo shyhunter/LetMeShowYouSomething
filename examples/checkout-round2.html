@@ -14,7 +14,7 @@
   --ac:#5B3E8C; --ac-bg:#EEE8F7; --on-ac:#FFFFFF;
   --ok:#2F6B45; --ok-bg:#E4F1E8; --warn:#8E6110; --warn-bg:#F6EDDA; --bad:#A03A2E; --bad-bg:#F6E3E0; --neut:#566070; --neut-bg:#E9ECF0;
   --blue:#2D5DA8; --blue-bg:#E3ECF8;
-  --s0:#6B6480; --s1:#1F7A74; --s2:#A63D63; --s3:#4056A6; --s4:#9A6B12; --s5:#5B3E8C; --s6:#2F6B45;
+  --s0:#6B6480; --s1:#1F7A74; --s2:#A63D63; --s3:#4056A6; --s4:#8F620F; --s5:#5B3E8C; --s6:#2F6B45;
   --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; --mono:ui-monospace,SFMono-Regular,Menlo,monospace; --r:12px;
   --edge:#1B1726; --lift:#5B3E8C;
 }
@@ -1752,7 +1752,7 @@ function appHtml(screenId, on, live, flow = FLOW){
 }
 function galleryHtml(nowScreen){
   if (!FLOW) return '';
-  return '<div class="gallery">' + FLOW.screens.map((s, i) => '<div class="gcard' + (s.id === nowScreen ? ' now' : '') + '" data-screen="' + esc(s.id) + '">' + appHtml(s.id) + '<p><span class="step">' + (i + 1) + '</span>' + esc(s.title) + '</p></div>').join('') + '</div>';
+  return '<div class="gallery" tabindex="0" role="region" aria-label="Every screen, in order">' + FLOW.screens.map((s, i) => '<div class="gcard' + (s.id === nowScreen ? ' now' : '') + '" data-screen="' + esc(s.id) + '">' + appHtml(s.id) + '<p><span class="step">' + (i + 1) + '</span>' + esc(s.title) + '</p></div>').join('') + '</div>';
 }
 const RISK = { low: 'Low risk', medium: 'Medium risk', high: 'High risk' };
 function consoleHtml(a){
@@ -1835,7 +1835,7 @@ function slotHtml(id, label, icon, i, body, sub, tab){
   return '<section class="slot' + (min ? ' min' : '') + (shown ? ' shown' : '') + '" id="slot-' + id + '" data-slot="' + id + '"><div class="slot-head"><span class="num">' + (i + 1) + '</span><h3>' + I(icon, 'sm') + label + (sub ? ' <small>· ' + esc(sub) + '</small>' : '') + '</h3>'
     + (id === 'map' || id === 'proto' ? '<button type="button" class="btn icon small" data-act="expand" aria-label="Expand">' + I('expand', 'sm') + '</button>' : '')
     + '<button type="button" class="btn icon small minbtn" data-min="' + id + '" aria-label="' + (min ? 'Show' : 'Minimize') + ' ' + label + '" aria-expanded="' + !min + '">' + I(min ? 'plus' : 'minus', 'sm') + '</button></div>'
-    + '<div class="slot-body">' + (body || '<p class="empty">' + I('info', 'sm') + 'Nothing here for this question</p>') + '</div></section>';
+    + '<div class="slot-body" tabindex="0" role="region" aria-label="' + label + '">' + (body || '<p class="empty">' + I('info', 'sm') + 'Nothing here for this question</p>') + '</div></section>';
 }
 // Only the places this question has something in are shown: no empty places.
 function slots(bodies, subs){
