@@ -1,0 +1,317 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "salon-desk-2026-09",
+  "title": "The salon's week, on the computer",
+  "audience": "The salon owner, at the front desk",
+  "ask": "Click through how you would move a booking on the computer at the desk. Judge each step: is this how you work?",
+  "afterwards": "Steps you agree with I build as shown. Anything else I change and send back. No client gets a message until you say so.",
+  "addNoun": "step",
+  "focus": "user-flow",
+  "brief": {
+    "question": "Is this how you want to move a client's booking from the front desk?",
+    "explains": "The same bookings as the phone list, laid out for the computer: the whole week at once, and moving a booking in two clicks. Nothing is built yet: every screen is a sketch.",
+    "recommendation": "Move a booking in place, and send the client one WhatsApp message saying the new time, only after you confirm.",
+    "risks": [
+      "Moving a booking to a time another stylist has free changes who does the haircut; the client may care."
+    ]
+  },
+  "createdAt": "2026-09-26T15:25:00Z",
+  "createdBy": {
+    "agent": "claude-code"
+  },
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      {
+        "value": "agree",
+        "label": "Agree",
+        "tone": "positive"
+      },
+      {
+        "value": "partly-agree",
+        "label": "Partly agree",
+        "tone": "caution"
+      },
+      {
+        "value": "disagree",
+        "label": "Disagree",
+        "tone": "negative"
+      },
+      {
+        "value": "revisit",
+        "label": "Revisit",
+        "tone": "caution",
+        "hint": "Right question, not ready to decide"
+      }
+    ]
+  },
+  "flow": {
+    "start": "week",
+    "device": "desktop",
+    "parts": [
+      {
+        "id": "move",
+        "title": "Move a booking",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\" — and on the computer at the desk"
+        }
+      }
+    ],
+    "screens": [
+      {
+        "id": "week",
+        "title": "This week",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Studio Mira · week of 28 September"
+          },
+          {
+            "type": "card",
+            "id": "b-sam",
+            "title": "Sam · Haircut",
+            "text": "Saturday 10:30 · with Mira",
+            "actions": [
+              {
+                "id": "move-sam",
+                "label": "Move"
+              }
+            ]
+          },
+          {
+            "type": "card",
+            "id": "b-alex",
+            "title": "Alex · Colour",
+            "text": "Saturday 11:15 · with Jonas"
+          },
+          {
+            "type": "card",
+            "id": "b-robin",
+            "title": "Robin · Beard trim",
+            "text": "Saturday 14:00 · with Mira"
+          },
+          {
+            "type": "table",
+            "columns": [
+              "Day",
+              "Bookings",
+              "Free"
+            ],
+            "rows": [
+              [
+                "Thursday",
+                "5",
+                "3"
+              ],
+              [
+                "Friday",
+                "7",
+                "1"
+              ],
+              [
+                "Saturday",
+                "9",
+                "0"
+              ]
+            ]
+          }
+        ]
+      },
+      {
+        "id": "move",
+        "title": "Move Sam's booking",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Move Sam's haircut",
+            "back": {
+              "id": "back-week"
+            }
+          },
+          {
+            "type": "text",
+            "text": "Now: Saturday 3 October, 10:30 with Mira"
+          },
+          {
+            "type": "select",
+            "id": "new-time",
+            "label": "New time",
+            "options": [
+              "Thursday 14:00 · Mira",
+              "Friday 9:00 · Jonas"
+            ],
+            "value": "Thursday 14:00 · Mira"
+          },
+          {
+            "type": "switch",
+            "id": "tell",
+            "label": "Send Sam a WhatsApp message with the new time",
+            "on": true
+          },
+          {
+            "type": "button",
+            "id": "confirm-move",
+            "label": "Move booking"
+          }
+        ]
+      },
+      {
+        "id": "moved",
+        "title": "Booking moved",
+        "end": true,
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Studio Mira · week of 28 September"
+          },
+          {
+            "type": "toast",
+            "text": "Moved to Thursday 14:00. Sam gets a WhatsApp message."
+          },
+          {
+            "type": "card",
+            "id": "b-sam-new",
+            "title": "Sam · Haircut",
+            "text": "Thursday 14:00 · with Mira"
+          }
+        ]
+      },
+      {
+        "id": "clash",
+        "title": "Time just taken",
+        "blocks": [
+          {
+            "type": "header",
+            "title": "Move Sam's haircut"
+          },
+          {
+            "type": "banner",
+            "tone": "caution",
+            "text": "Thursday 14:00 was just booked online",
+            "because": "A client booked it while you were choosing",
+            "canNow": "Pick another time; nothing was moved"
+          },
+          {
+            "type": "button",
+            "id": "pick-again",
+            "label": "Pick another time"
+          }
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "move",
+      "title": "Clicks Move on Sam's booking",
+      "step": {
+        "goal": "to give Sam another time",
+        "part": "move",
+        "from": "week",
+        "on": "move-sam",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\" — and on the computer at the desk"
+        },
+        "outcomes": [
+          {
+            "effect": "Opens the booking with the free times that fit a haircut",
+            "to": "move",
+            "canNow": "Pick a new time, or go back to the week"
+          }
+        ]
+      }
+    },
+    {
+      "id": "confirm-move",
+      "title": "Picks Thursday 14:00 and clicks Move booking",
+      "step": {
+        "goal": "to move it without phoning Sam",
+        "part": "move",
+        "from": "move",
+        "on": "confirm-move",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\" — and on the computer at the desk"
+        },
+        "outcomes": [
+          {
+            "label": "The time is still free",
+            "effect": "Moves the booking and, if ticked, sends Sam one WhatsApp message with the new time",
+            "to": "moved",
+            "canNow": "See the week, with the booking in its new place",
+            "data": [
+              {
+                "id": "moved-row",
+                "entity": "bookings",
+                "change": "update",
+                "status": "proposed",
+                "fields": [
+                  {
+                    "name": "starts_at",
+                    "before": "2026-10-03 10:30",
+                    "after": "2026-10-01 14:00"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "label": "Someone booked it first",
+            "effect": "Moves nothing",
+            "to": "clash",
+            "because": "A client booked Thursday 14:00 online a moment earlier",
+            "canNow": "Pick another time"
+          }
+        ]
+      }
+    },
+    {
+      "id": "pick-again",
+      "title": "Clicks Pick another time",
+      "step": {
+        "goal": "to still move Sam",
+        "part": "move",
+        "from": "clash",
+        "on": "pick-again",
+        "status": "proposed",
+        "basis": {
+          "kind": "conversation",
+          "note": "The salon owner, round 1: \"I want to see today's bookings on my phone\" — and on the computer at the desk"
+        },
+        "outcomes": [
+          {
+            "effect": "Shows the free times again",
+            "to": "move",
+            "canNow": "Pick another time"
+          }
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "status": "measured",
+    "models": [
+      "claude-opus-5-5"
+    ],
+    "calls": 22,
+    "tokens": {
+      "input": 44,
+      "output": 17381,
+      "cacheRead": 12861783,
+      "cacheWrite": 26886
+    },
+    "source": {
+      "host": "Claude Code",
+      "method": "session-transcript",
+      "since": "2026-09-26T15:15:00.000Z",
+      "capturedAt": "2026-09-26T15:29:10.271Z"
+    },
+    "scope": "the model calls of the conversation that ran this command from 2026-09-26T15:15:00.000Z until 2026-09-26T15:29:10.271Z, as Claude Code logged them"
+  }
+}

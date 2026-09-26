@@ -44,6 +44,8 @@ A flow is a review where **each step is one tap**:
 - **A step** says what is tapped (`from`, `on`), why (`goal`) and what happens (`outcomes`): where it leads, what the
   person can do next (`canNow`), and why something went wrong (`because`). Value: dead ends and unexplained failures
   show up before anything is built.
+- **Phone or computer** (`flow.device`, or a screen's own `device`): screens are drawn in a phone, or in a browser
+  window for a desktop app. Value: an admin screen or a dashboard is judged the way it will be used.
 - **Parts** (`flow.parts`) split a long process into sub-processes. Value: you always know where you are
   ("Booking › Book a slot").
 - **Status and basis**: every step is `exists`, `proposed` or `suggested`, with where the claim comes from (code with a
