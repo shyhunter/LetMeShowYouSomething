@@ -784,6 +784,10 @@ answered), its old words struck through, or, when only what it does changed, the
 removed boxes struck through; new ones marked New. A changed screen opens as **Before and now**, both
 drawn side by side. Derived from the two rounds' files only; what stayed the same is left out.
 
+**A page published on a site.** `render.mjs … --home <https address>` adds a home button on Let me explain and in
+the top bar, back to that address; only an https address is taken. It is for example pages on a website; a review
+you hand over to someone has none.
+
 **Return** lists every question with its answer or "Stays open", takes **Something missing? Add it**
 (D072), and holds the downloads. Each can be previewed and copied first, and each holds everything:
 **HTML**, this page with the answers written into it (D076), so whoever opens it sees everything, not a

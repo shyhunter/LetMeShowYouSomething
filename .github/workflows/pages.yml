@@ -24,11 +24,30 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
       - name: Put the site together
         run: |
           mkdir -p _site/examples _site/schema
           cp -R site/. _site/
-          cp examples/checkout-uat.html examples/decision-review.html examples/flow-booking.html examples/checkout-round2.html examples/flow-booking-round2.html examples/flow-booking-round3.html examples/password-reset.html examples/results-layout.html examples/salon-booking.html examples/salon-booking-round2.html _site/examples/
+          # The example pages, each rendered as in examples/ plus a home button back to this site.
+          SITE="https://shyhunter.github.io/LetMeShowYouSomething/"
+          F1="examples/flow-booking.review.json examples/flow-booking.feedback.json"; F2="examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json"
+          while read -r src name earlier; do
+            node bin/render.mjs "examples/$src" "_site/examples/$name.html" --home "$SITE" $earlier > /dev/null
+          done <<EOF
+          review.example.json checkout-uat
+          decision-review.example.json decision-review
+          flow-booking.review.json flow-booking
+          checkout-round2.review.json checkout-round2 --earlier examples/review.example.json examples/checkout-uat.feedback.json
+          flow-booking-round2.review.json flow-booking-round2 --earlier $F1
+          flow-booking-round3.review.json flow-booking-round3 --earlier $F1 --earlier $F2
+          password-reset.review.json password-reset
+          results-layout.review.json results-layout
+          salon-booking.review.json salon-booking
+          salon-booking-round2.review.json salon-booking-round2 --earlier examples/salon-booking.review.json examples/salon-booking.feedback.json
+          EOF
           cp schemas/review.v1.schema.json _site/schema/review.v1.json
           cp schemas/feedback.v1.schema.json _site/schema/feedback.v1.json
           cp schemas/history.v1.schema.json _site/schema/history.v1.json

@@ -82,6 +82,11 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await page.keyboard.press('Escape');
   await expect(page.locator('#player')).toBeHidden();
   await expect(page.locator('.card .icon svg')).toHaveCount(6);
+  for (const sub of ['tutorial', 'loop']) {
+    await page.goto(pathToFileURL(join(ROOT, `site/${sub}.html`)).href);
+    await expect(page.getByRole('link', { name: 'Home' })).toHaveAttribute('href', './');
+  }
+  await page.goto(pathToFileURL(join(ROOT, 'site/index.html')).href);
   expect(await page.locator('.card .icon').first().evaluate((el) => getComputedStyle(el).color), 'the icons are ink, not grey')
     .toBe(await page.locator('h1').evaluate((el) => getComputedStyle(el).color));
   await page.locator('.card').nth(1).click();
@@ -95,6 +100,20 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await expect(page.locator('#intro-watch')).toBeHidden();
   await page.getByRole('dialog', { name: 'Test results' }).getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#intro')).toBeHidden();
+});
+
+// A page published on the site (render --home): the home button on Let me explain and in the top bar, and the page
+// still fits every screen with targets big enough to hit.
+test('a published page: home on Let me explain and in the top bar; it still fits', async ({ page }, info) => {
+  const out = join(tmp(), 'home.html');
+  expect(spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), join(ROOT, 'examples/salon-booking.review.json'), out, '--home', 'https://example.org/'], { encoding: 'utf8' }).status).toBe(0);
+  await page.goto(pathToFileURL(out).href);
+  await expect(page.locator('#start .home')).toHaveAttribute('href', 'https://example.org/');
+  await start(page);
+  await expect(page.locator('#topbar .home')).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
+  expect(await smallTargets(page, info.project.use.hasTouch ? 44 : 24)).toEqual([]);
+  await expect(page.locator('#start-mini')).toContainText('Let me explain');
 });
 
 // #105 — Let me explain is its own first screen: short cards, one action. After Start it folds to a bar.
