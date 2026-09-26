@@ -62,7 +62,9 @@ function main() {
   if (!claudeCode && !argv[0]) refuse('give the session log, or --claude-code to use this Claude Code session\'s own');
 
   const capturedAt = new Date().toISOString();
-  const base = { source: { host: hostName || 'Claude Code', method: 'session-transcript', since: new Date(since).toISOString(), capturedAt } };
+  // Outside a Claude Code session nothing is read, so the record never names Claude Code as the host.
+  const inClaudeCode = !claudeCode || /^[0-9a-f-]{36}$/i.test(process.env.CLAUDE_CODE_SESSION_ID || '');
+  const base = { source: { host: hostName || (inClaudeCode ? 'Claude Code' : 'this agent, not Claude Code'), method: 'session-transcript', since: new Date(since).toISOString(), capturedAt } };
   const unavailable = (reason) => ({ status: 'unavailable', reason, ...base });
 
   // A sub-agent's commands see the same session id as the main conversation, so the id alone does not say whose
@@ -96,7 +98,7 @@ function main() {
     try { text = readFileSync(log, 'utf8'); } catch { record = unavailable('the session log could not be read'); }
     if (text !== null) { const m = measure(text.split('\n'), base.source.since, capturedAt); record = { ...m, ...base }; }
   }
-  record.scope = `the model calls of ${log && log.includes('/subagents/') ? 'the sub-agent that ran this command' : 'the conversation that ran this command'} from ${base.source.since} until ${capturedAt}, as ${base.source.host} logged them`;
+  record.scope = record.status === 'unavailable' ? `nothing was counted: ${record.reason}` : `the model calls of ${log && log.includes('/subagents/') ? 'the sub-agent that ran this command' : 'the conversation that ran this command'} from ${base.source.since} until ${capturedAt}, as ${base.source.host} logged them`;
 
   if (!into) { console.log(JSON.stringify(record, null, 2)); return; }
   let review;
@@ -106,6 +108,6 @@ function main() {
   const tmp = `${into}.usage-${process.pid}.tmp`;
   writeFileSync(tmp, JSON.stringify(review, null, 2) + '\n');
   renameSync(tmp, into);
-  console.log(`${into}: usage ${record.status}${record.tokens ? ` · ${record.calls} calls · ${record.tokens.input} in · ${record.tokens.output} out · ${record.tokens.cacheRead} read from cache` : ''}${record.reason ? ` · ${record.reason}` : ''}`);
+  console.log(`${into}: usage ${record.status}${record.tokens ? ` · ${record.calls} calls · ${record.tokens.input} in · ${record.tokens.output} out · ${record.tokens.cacheRead} read from cache` : ''}${record.reason ? ` · ${record.reason}` : ''} · written into ${into}; never edit it by hand`);
 }
 if (import.meta.url === pathToFileURL(process.argv[1] || '').href) main();
