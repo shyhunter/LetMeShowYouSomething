@@ -16,7 +16,7 @@ The agent writes a `review.json`. It becomes one offline HTML page, the only fil
 
 ## 1. Write and check the review
 
-Start with `node <skill>/bin/init.mjs <decision|plan|test|explain|flow|backlog> docs/<name>.review.json --title "…"`: the smallest valid review of that kind, with its own id, where every place that needs your words says `[[fill in: …]]` (the checker refuses any left). Or start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it).
+Start with `node <skill>/bin/init.mjs <decision|plan|test|explain|flow|backlog> docs/<name>.review.json --title "…"`: the smallest valid review of that kind, with its own id, where every place that needs your words says `[[fill in: …]]` (the checker refuses any left). Or start from the closest example in `<skill>/examples/`: `decision-review.example.json` for options and plans, `review.example.json` for testing. Give the review **its own `id`** (never the example's; the checker refuses it). A review file already on disk from an earlier run is reused only when it answers this request; otherwise start a new one.
 
 - `ask` and `afterwards`: what you need, and what you will do with the answer. For anything that deletes, sends, pays, publishes or contacts someone, `afterwards` says you will ask before doing it, never that you will do whatever they agree with.
 - An action that deletes, sends, pays, publishes or contacts someone: make it an `approval` item in a section of its own (`action` exactly, `scope`, `risk`, a `preview` of the command or message, and `expiresAt`). It is answered Approve or Decline, never agreed with.
@@ -110,4 +110,6 @@ Set `continues` to the id of the round before. A flow review that continues anot
 | Talking to the user as if they were the reviewer | "The product owner picked…"; ask the user to pass questions on, or send a follow-up review. |
 | Quoting an earlier decision from memory | Quote it from the earlier feedback file and run `check history`. |
 | Carrying out an agreed deletion, email, payment or post | Agreement is not permission. Ask in your host first, naming the exact action and what it affects. |
+| `usage.mjs` seemed to do nothing, so you wrote `usage` yourself | It always writes a record, measured or unavailable, and its last line says where. Read that line; never edit `usage` by hand. |
+| Reusing a review file you found on disk without checking it | Reuse it only if it answers this request; otherwise write a new one with its own id. |
 | Treating an agreed item with a request as done | They agreed *and* asked for an example or an explanation. Give it, then carry on. |

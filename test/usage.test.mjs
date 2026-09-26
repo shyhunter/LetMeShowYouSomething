@@ -85,6 +85,13 @@ test('usage: outside a Claude Code session it is unavailable, with the reason, a
   const m = JSON.parse(r.stdout);
   assert.equal(m.status, 'unavailable');
   assert.equal(m.reason, 'this agent does not report it; only Claude Code does so far');
+  assert.equal(m.source.host, 'this agent, not Claude Code', 'another agent is never called Claude Code');
+  assert.doesNotMatch(m.scope, /Claude Code logged/);
+  const dir = mkdtempSync(join(tmpdir(), 'usage-other-')), rp = join(dir, 'r.review.json');
+  writeFileSync(rp, readFileSync(join(ROOT, 'examples/review.example.json')));
+  const w = run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', SINCE, '--into', rp], { CLAUDE_CODE_SESSION_ID: '' });
+  assert.match(w.stdout, /usage unavailable · this agent does not report it; only Claude Code does so far · written into .*r\.review\.json; never edit it by hand/);
+  assert.equal(JSON.parse(readFileSync(rp, 'utf8')).usage.status, 'unavailable', 'the record is in the file');
   assert.equal(run([join(ROOT, 'bin/usage.mjs'), '--claude-code']).status, 2, 'without --since it refuses');
 });
 
