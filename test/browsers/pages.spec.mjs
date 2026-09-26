@@ -233,7 +233,7 @@ test('Expand: the map with zoom and every screen, closed with Esc', async ({ pag
   await expect(layer.locator('.gcard')).toHaveCount(10);
   await expect(layer.locator('.gcard.now')).toContainText('Pick a time');
   const w = Number(await layer.locator('.map-scroll svg').first().getAttribute('width'));
-  await layer.locator('[data-zoom="+"]').click();
+  await layer.locator('[data-zoom="+"]').first().click();
   expect(Number(await layer.locator('.map-scroll svg').first().getAttribute('width'))).toBeGreaterThan(w);
   await expect(layer).toContainText('What happens behind booking');
   await page.keyboard.press('Escape');
@@ -667,16 +667,50 @@ test('the map: other diagrams as tabs in place, zoom in place, and each question
   expect(await shown()).toBe('user-flow');
   const width = async () => (await page.locator('#slot-map svg.dg').boundingBox()).width;
   const before = await width();
+  const reset = page.locator('#slot-map [data-mzoom="fit"]');
+  await expect(reset).toBeDisabled();
   await page.locator('#slot-map [data-mzoom="+"]').click();
-  await expect(page.locator('#slot-map .zoom output')).toHaveText('125%');
+  await expect(reset).toBeEnabled();
   expect(await width()).toBeGreaterThan(before * 1.2);
   await page.locator('#slot-map [data-dtab="booking-system"]').click();
   expect(await shown()).toBe('booking-system');
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
   await page.locator('#next').click();
   expect(await shown(), 'the next question opens on its own diagram').toBe('user-flow');
+  await reset.click();
+  await expect(reset).toBeDisabled();
+  expect(await width()).toBeCloseTo(before, -1);
+});
+
+// The map moves like a map: arrows (with a mouse), zoom in and out, back to the whole map; a mouse can drag it; on a
+// touch screen a swipe moves it, so only zoom and reset show. The Map place is half as tall again as the map, and the
+// pad never covers the map at its normal size.
+test('the map moves like a map: arrows, zoom, reset, drag, and room below for the pad', async ({ page }, info) => {
+  await page.goto(example('salon-booking'));
+  await start(page);
+  await showPlace(page, 'map');
+  const box = page.locator('#slot-map .map-scroll'), pad = page.locator('#slot-map .pad');
+  const [room, drawn] = await box.evaluate((m) => [m.clientHeight, m.querySelector('svg').getBoundingClientRect().height]);
+  expect(room, 'half as tall again, or more').toBeGreaterThanOrEqual(drawn * 1.5 - 1);
+  const [padBox, svgBox] = [await pad.boundingBox(), await box.locator('svg').boundingBox()];
+  expect(padBox.y, 'the pad sits below the map').toBeGreaterThanOrEqual(svgBox.y + svgBox.height - 1);
+  await page.locator('#slot-map [data-mzoom="+"]').click();
+  await page.locator('#slot-map [data-mzoom="+"]').click();
+  const touch = info.project.use.hasTouch;
+  await expect(page.locator('#slot-map [data-mpan]:visible')).toHaveCount(touch ? 0 : 4);
+  if (touch) return;
+  await page.locator('#slot-map [data-mpan="right"]').click();
+  await expect.poll(() => box.evaluate((m) => m.scrollLeft)).toBeGreaterThan(50);
+  await page.locator('#slot-map [data-mpan="left"]').click();
+  await expect.poll(() => box.evaluate((m) => m.scrollLeft)).toBeLessThan(5);
+  const b = await box.boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + 20);
+  await page.mouse.down();
+  await page.mouse.move(b.x + b.width / 2 - 200, b.y + 20, { steps: 8 });
+  await page.mouse.up();
+  expect(await box.evaluate((m) => m.scrollLeft), 'dragged').toBeGreaterThan(150);
   await page.locator('#slot-map [data-mzoom="fit"]').click();
-  await expect(page.locator('#slot-map .zoom output')).toHaveText('100%');
+  await expect(page.locator('#slot-map [data-mzoom="fit"]')).toBeDisabled();
 });
 
 // #129 — soft brutalist: a hard shadow says "you can press this"; information stays flat; the question you are on is lifted.
