@@ -358,7 +358,8 @@ test('page escapes every agent-written field', () => {
   // The page's own code draws pictures (#60); what must never appear is the review's markup, unescaped.
   assert.doesNotMatch(html, /<img src=x onerror/i, 'raw markup from the review reached the static HTML');
   // the embedded data must not be able to close the script tag either
-  assert.doesNotMatch(html.slice(html.indexOf('<script>')), /<\/script>[\s\S]*<\/script>/, 'embedded data closed the script tag');
+  // (the main script, which holds the data, is the page's last; the day or night one-liner in <head> holds none)
+  assert.doesNotMatch(html.slice(html.lastIndexOf('<script>')), /<\/script>[\s\S]*<\/script>/, 'embedded data closed the script tag');
 });
 
 // SKILL.md is what an agent actually reads. If it names a file or command that no longer exists,

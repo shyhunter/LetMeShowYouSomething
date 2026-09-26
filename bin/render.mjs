@@ -97,7 +97,7 @@ const ICONS = {
   info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7h.01"/>', msg: '<path d="M4 5h16v11H9l-5 4z"/>',
   branch: '<circle cx="6" cy="5" r="2"/><circle cx="18" cy="5" r="2"/><circle cx="12" cy="19" r="2"/><path d="M6 7v2a5 5 0 0 0 5 5h1M18 7v2a5 5 0 0 1-5 5M12 14v3"/>',
   globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>', flag: '<path d="M5 21V4M5 4h11l-2 4 2 4H5"/>',
-  send: '<path d="M4 12l16-8-6 16-3-7z"/>', home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+  send: '<path d="M4 12l16-8-6 16-3-7z"/>', sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>', moon: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>', home: '<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>', eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
   half: '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>', user: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   bot: '<rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/>',
   copy: '<rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>',
@@ -128,6 +128,9 @@ try {
 // #74 — the Let me explain cards are written into the page itself: a phone's file preview runs no
 // script and must still show them.
 const startCards = startCardsHtml(review, reviewParts(review), I, view);
+// #147 — day or night: a switch shown as a sun and a moon. It starts from the system's setting; a choice is kept in
+// this browser only, never in the answers or the export. Hidden until the script runs, as it does nothing without one.
+const themeSwitch = `<button type="button" class="theme" role="switch" aria-checked="false" aria-label="Dark mode" title="Day or night" data-theme-switch hidden>${I('sun', 'sm')}${I('moon', 'sm')}</button>`;
 const homeLink = home ? `<a class="home" href="${esc(home)}" aria-label="Home" title="Home">${I('home')}</a>` : '';
 // #130 — for a flow, what the checker proved about it, in the reviewer's words: only checks that ran and passed.
 const checked = (() => {
@@ -162,6 +165,7 @@ const html = `<!doctype html>
 <title>${esc(review.title)}</title>
 <meta name="description" content="${esc(describe)}">
 ${favicon}
+<script>try { const t = localStorage.getItem('lmsys:theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch {}</script>
 <style>
 /* #74 — the page as the approved design: the guided tour, four places in a fixed order, the Overview. */
 :root{
@@ -257,12 +261,21 @@ button{font:inherit;color:inherit}
 #topbar{display:flex;gap:10px;align-items:center;justify-content:space-between;margin-bottom:10px}
 .home{display:inline-grid;place-items:center;width:44px;height:44px;flex:none;border:2px solid var(--edge);border-radius:12px;background:var(--surf);color:var(--ink);box-shadow:2px 2px 0 var(--edge)}
 .home:active{transform:translate(2px,2px);box-shadow:none}
-#start>.home{margin-bottom:14px}
+.start-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.start-bar:not(:has(.home)){justify-content:flex-end}
+.theme{--k:26px;position:relative;flex:none;display:inline-flex;align-items:center;justify-content:space-between;width:66px;height:34px;padding:0 7px;border:2px solid var(--edge);border-radius:99px;background:var(--sunk);color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--edge)}
+.theme[hidden]{display:none}
+.theme .ic{position:relative;z-index:1}
+.theme::after{content:"";position:absolute;top:2px;left:2px;width:var(--k);height:var(--k);border-radius:50%;background:var(--surf);border:2px solid var(--edge);box-sizing:border-box;transition:left .2s}
+.theme[aria-checked="true"]::after{left:calc(100% - var(--k) - 2px)}
+.theme:active{transform:translate(2px,2px);box-shadow:none}
+@media (pointer:coarse){.theme{--k:36px;width:84px;height:44px;padding:0 11px}}
+@media (prefers-reduced-motion:reduce){.theme::after{transition:none}}
 #start-mini{display:flex;gap:8px;align-items:center;flex:1;min-width:0;min-height:44px;padding:6px 12px;border:1px solid var(--line);border-radius:10px;background:var(--surf);color:var(--ink2);font:600 13px var(--sans);cursor:pointer;text-align:left}
 #start-mini b{font-weight:500;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #start-mini .more{margin-left:auto;color:var(--ac);font-weight:500;flex:none}
 #start-mini{white-space:nowrap;overflow:hidden}
-@media (max-width:520px){#topbar:has(.home){flex-wrap:wrap}.home~#start-mini{order:3;flex-basis:100%}}
+@media (max-width:520px){#topbar:has(.home){flex-wrap:wrap}.home~#start-mini{order:3;flex-basis:100%}#topbar .theme{display:none}}
 body.at-start :is(#topbar,#main,#footnote),body:not(.at-start) #start{display:none}
 /* Without a script (a phone's file preview) the cards and any answers still show, and say why nothing moves. */
 html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:none}
@@ -681,7 +694,7 @@ ${SPRITE}
 <a class="skip" href="#main">Skip to the question</a>
 <div class="wrap">
 <section id="start" aria-labelledby="start-h">
-  ${homeLink}<p class="eyebrow">${I('flag', 'sm')}Let me explain${view ? ` · round ${view.round}` : ''}</p>
+  <div class="start-bar">${homeLink}${themeSwitch}</div><p class="eyebrow">${I('flag', 'sm')}Let me explain${view ? ` · round ${view.round}` : ''}</p>
   <h1 id="start-h">${esc(review.title)}</h1>
   <p class="no-script">This page needs a web browser to answer. A phone's file preview shows it but cannot run it: open the file in a browser app such as Chrome or Safari, or on a computer.</p>
   <ol id="start-cards" class="start-cards">${startCards}</ol>
@@ -691,6 +704,7 @@ ${SPRITE}
 <div id="topbar">
   ${homeLink}<button type="button" id="start-mini">${I('flag')}Let me explain<b>· ${esc(review.title)}</b><span class="more">Show</span></button>
   <div class="seg" role="group" aria-label="View"><button type="button" id="mode-tour" data-mode="tour" aria-pressed="true">${I('flag', 'sm')}Tour</button><button type="button" id="mode-overview" data-mode="overview" aria-pressed="false">${I('list', 'sm')}Overview</button></div>
+  ${themeSwitch}
 </div>
 <p id="save-warning" role="alert" hidden></p>
 <main id="main"></main>
@@ -704,7 +718,8 @@ ${usageLine}
 <script>
 // D076 — the page as it arrived, before anything is drawn: the answered HTML download saves this whole
 // page with the answers written into SEED, so the file shows everything, not a summary.
-const PAGE = '<!doctype html>\\n' + document.documentElement.outerHTML;
+// The day or night choice (#147) is this reader's, applied before this line runs: the copy never carries it.
+const PAGE = '<!doctype html>\\n' + document.documentElement.outerHTML.replace(/^(<html[^>]*?) data-theme="(?:light|dark)"/, '$1');
 // Taken after PAGE, so a downloaded copy opened without scripts still shows what needs them.
 document.documentElement.classList.add('js');
 const REVIEW = ${embed(review)};
@@ -1488,6 +1503,19 @@ document.addEventListener('input', e => {
 });
 
 render(null);
+// #147 — the day and night switch: checked means dark.
+(() => {
+  const dark = matchMedia('(prefers-color-scheme: dark)'), root = document.documentElement;
+  const isDark = () => root.dataset.theme ? root.dataset.theme === 'dark' : dark.matches;
+  const show = () => document.querySelectorAll('[data-theme-switch]').forEach(b => { b.hidden = false; b.setAttribute('aria-checked', String(isDark())); });
+  document.querySelectorAll('[data-theme-switch]').forEach(b => b.addEventListener('click', () => {
+    root.dataset.theme = isDark() ? 'light' : 'dark';
+    try { localStorage.setItem('lmsys:theme', root.dataset.theme); } catch {}
+    show();
+  }));
+  dark.addEventListener('change', show);
+  show();
+})();
 if (SEED) $('#footnote').textContent = 'An exported copy with the answers given ' + String(SEED.exportedAt).slice(0, 10) + '. Changes you make here stay in this browser.';
 </script>
 </body></html>`;

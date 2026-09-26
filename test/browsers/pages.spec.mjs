@@ -121,7 +121,7 @@ test('Let me explain: short cards, one action; it folds after Start and opens ag
   await page.goto(example('flow-booking'));
   await expect(page.locator('#start')).toBeVisible();
   await expect(page.locator('#start .eyebrow')).toHaveText('Let me explain');
-  expect(await page.locator('button:visible').evaluateAll((l) => l.map((b) => b.id))).toEqual(['start-review']);
+  expect(await page.locator('button:visible:not([data-theme-switch])').evaluateAll((l) => l.map((b) => b.id)), 'one action; the day or night switch is a view setting').toEqual(['start-review']);
   const cards = page.locator('#start-cards > li');
   expect(await cards.count()).toBeGreaterThanOrEqual(5);
   await expect(cards.first().locator('h3')).toHaveText('What I need you to decide');
