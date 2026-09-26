@@ -109,13 +109,13 @@ footer{margin-top:48px;padding-top:16px;border-top:2px solid var(--edge);color:v
   <h2>From an idea to a plan in 7 steps</h2>
   <p>One real run: an idea for a hair salon's online booking, from the first line to the second round.</p>
   <ol class="steps">
-    <li><a href="tutorial.html#idea"><span class="num">1</span><span><b>The idea</b><span class="t">You type one line; the agent answers with the plan as one page.</span></span><img src="tutorial/1-idea.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#explain"><span class="num">2</span><span><b>Let me explain</b><span class="t">What it needs from you, its recommendation, what could go wrong.</span></span><img src="tutorial/2-explain.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#flow"><span class="num">3</span><span><b>A step in the flow</b><span class="t">Tap through the screens; agree, or say what should be different.</span></span><img src="tutorial/3-flow.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#choice"><span class="num">4</span><span><b>What it runs on</b><span class="t">Three options side by side, with costs and a recommendation.</span></span><img src="tutorial/4-choice.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#overview"><span class="num">5</span><span><b>Overview</b><span class="t">Every question beside its step and its screen, on one page.</span></span><img src="tutorial/5-overview.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#return"><span class="num">6</span><span><b>Return</b><span class="t">Add what is missing, download your answers, give the file back.</span></span><img src="tutorial/6-return.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
-    <li><a href="tutorial.html#round2"><span class="num">7</span><span><b>Round 2</b><span class="t">The agent checks your file and shows what changed, before and after.</span></span><img src="tutorial/7-round2.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#idea"><span class="num">1</span><span><b>The idea</b><span class="t">You type one line; the agent answers with the plan as one page.</span></span><img src="tutorial/1-idea.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#explain"><span class="num">2</span><span><b>Let me explain</b><span class="t">What it needs from you, its recommendation, what could go wrong.</span></span><img src="tutorial/2-explain.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#flow"><span class="num">3</span><span><b>A step in the flow</b><span class="t">Tap through the screens; agree, or say what should be different.</span></span><img src="tutorial/3-flow.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#choice"><span class="num">4</span><span><b>What it runs on</b><span class="t">Three options side by side, with costs and a recommendation.</span></span><img src="tutorial/4-choice.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#overview"><span class="num">5</span><span><b>Overview</b><span class="t">Every question beside its step and its screen, on one page.</span></span><img src="tutorial/5-overview.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#return"><span class="num">6</span><span><b>Return</b><span class="t">Add what is missing, download your answers, give the file back.</span></span><img src="tutorial/6-return.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
+    <li><a href="tutorial.html#round2"><span class="num">7</span><span><b>Round 2</b><span class="t">The agent checks your file and shows what changed, before and after.</span></span><img src="tutorial/7-round2.thumb.jpg" alt="" loading="lazy" width="1280" height="856"></a></li>
   </ol>
   <a class="all" href="tutorial.html">Watch the tutorial →</a>
 
@@ -188,9 +188,9 @@ const player = document.getElementById('player'), video = player.querySelector('
 for (const a of document.querySelectorAll('.steps a')) a.addEventListener('click', (e) => {
   if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || !player.showModal) return;
   e.preventDefault();
-  const poster = a.querySelector('img').getAttribute('src');
-  video.poster = poster;
-  video.src = poster.replace(/\.jpg$/, '.mp4');
+  const chapter = a.querySelector('img').getAttribute('src').replace(/\.thumb\.jpg$/, '');   // the step shows a small copy
+  video.poster = chapter + '.jpg';
+  video.src = chapter + '.mp4';
   document.getElementById('player-num').textContent = a.querySelector('.num').textContent;
   document.getElementById('player-title').textContent = a.querySelector('b').textContent;
   document.getElementById('player-text').textContent = a.querySelector('.t').textContent;
