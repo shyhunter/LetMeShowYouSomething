@@ -39,7 +39,7 @@ pre{background:var(--surf);border:2px solid var(--edge);border-radius:12px;paddi
 .card b{color:var(--ink);font-size:16px;font-weight:800}
 .card span{color:var(--mut);font-size:14px}
 .card em{margin-top:auto;padding-top:8px;color:var(--ac);font-style:normal;font-weight:700;font-size:14px}
-.icon{width:44px;height:44px;border:2px solid var(--edge);border-radius:12px;display:grid;place-items:center;background:var(--band);color:var(--ink);margin-bottom:6px}
+.icon,.card .icon{width:44px;height:44px;border:2px solid var(--edge);border-radius:12px;display:grid;place-items:center;background:var(--band);color:var(--ink);margin-bottom:6px}
 .ic{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 /* A step opens its chapter in front of the page, the page blurred behind; Close (or Esc) goes back. */
 #player{width:min(1100px,calc(100vw - 32px));max-height:calc(100vh - 32px);padding:0;border:2px solid var(--edge);border-radius:16px;background:var(--surf);color:var(--ink2);box-shadow:8px 8px 0 var(--lift)}
@@ -54,6 +54,14 @@ pre{background:var(--surf);border:2px solid var(--edge);border-radius:12px;paddi
 .pb{padding:16px;display:grid;gap:12px}
 .pb video{width:100%;height:auto;max-height:calc(100vh - 220px);border:2px solid var(--edge);border-radius:10px;background:#000;display:block}
 .pb p{margin:0}
+#intro{width:min(620px,calc(100vw - 32px))}
+#intro ol{margin:0;padding-left:22px;display:grid;gap:6px}
+#intro .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+#intro .all{margin:0}
+#intro,#player{padding:0;border:2px solid var(--edge);border-radius:16px;background:var(--surf);color:var(--ink2);box-shadow:8px 8px 0 var(--lift);max-height:calc(100vh - 32px)}
+#intro::backdrop{background:rgba(20,16,30,.45);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+#intro[open]{animation:pop .22s ease-out}
+@media (prefers-reduced-motion:reduce){#intro[open]{animation:none}}
 ul{padding-left:20px}
 footer{margin-top:48px;padding-top:16px;border-top:2px solid var(--edge);color:var(--mut);font-size:14px}
 @media (max-width:640px){
@@ -95,19 +103,26 @@ agent ◄── check (PASS) ◄── the answered page or feedback.json, given
   <p>Each page is the real thing: press <b>Start</b>, answer, and download your answers on the last step. Nothing
   leaves your browser until you do.</p>
   <div class="cards">
-    <a class="card" href="examples/salon-booking.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg></span><b>An app idea</b>
+    <a class="card" href="examples/salon-booking.html" data-try="Press Start and answer the first step|Compare the three options for what it runs on, and pick one|Open Overview and switch to the database tab" data-watch="tutorial.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-4 10.5c.7.7 1 1.5 1 2.5h6c0-1 .3-1.8 1-2.5A6 6 0 0 0 12 3z"/></svg></span><b>An app idea</b>
       <span>A salon's online booking: the screens, what it stores, and what it runs on.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/flow-booking.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg></span><b>A user flow</b>
+    <a class="card" href="examples/flow-booking.html" data-try="Tap through booking and cancelling on the prototype|Disagree with a step and say what should be different|Press Expand to see the whole map and every screen" data-watch="tutorial.html#flow"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/></svg></span><b>A user flow</b>
       <span>Click through a booking app's screens, see the flow as a diagram, and judge every step.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/results-layout.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg></span><b>A choice between layouts</b>
+    <a class="card" href="examples/results-layout.html" data-try="Look at the three layouts side by side|Pick one from its own screen|On Return, download your answers" data-watch="tutorial.html#choice"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="18" height="7" rx="1"/></svg></span><b>A choice between layouts</b>
       <span>Three ways to show search results, side by side; pick one.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/decision-review.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><b>A decision</b>
+    <a class="card" href="examples/decision-review.html" data-try="Read the recommendation and why|Pick an option, even against the recommendation|Say where the agent could be wrong" data-watch="tutorial.html#choice"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 21V4M5 4h11l-2 4 2 4H5"/></svg></span><b>A decision</b>
       <span>The options, the agent's recommendation and why, and the earlier decisions it would reopen.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/checkout-uat.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><b>Test results</b>
+    <a class="card" href="examples/checkout-uat.html" data-try="Mark each case: works, partially works, or doesn't work|Add a note or a picture to a case that fails|On Return, preview your answers as MD"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg></span><b>Test results</b>
       <span>Four checkout cases: works, partially works, doesn't work or couldn't test, with a note.</span><em>Open the page →</em></a>
-    <a class="card" href="examples/password-reset.html"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span><b>Screenshots of a running app</b>
+    <a class="card" href="examples/password-reset.html" data-try="Judge each step on the app's real screenshots|Tap the highlighted spot on a screenshot|Ask for &quot;Explain it differently&quot; on one step" data-watch="tutorial.html#flow"><span class="icon"><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></span><b>Screenshots of a running app</b>
       <span>A password reset, judged on the app's real screens.</span><em>Open the page →</em></a>
   </div>
+
+  <dialog id="intro" aria-labelledby="intro-title">
+    <div class="ph"><span class="icon" id="intro-icon"></span><h2 id="intro-title"></h2>
+      <button type="button" class="close" data-close><svg class="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Close</button></div>
+    <div class="pb"><p id="intro-text"></p><p><b>Three things to try:</b></p><ol id="intro-try"></ol>
+      <div class="row"><a class="all" id="intro-open" href="#">Open the page →</a><a id="intro-watch" href="tutorial.html">Watch how it works</a></div></div>
+  </dialog>
 
   <h2>The format</h2>
   <p>Two files and the rules between them, so any agent, script or tool can write the question or read the answer.</p>
@@ -142,6 +157,25 @@ for (const a of document.querySelectorAll('.steps a')) a.addEventListener('click
   video.play().catch(() => {});
 });
 player.querySelector('[data-close]').addEventListener('click', () => player.close());
+// A card says what the example is and three things to try, then opens the page. The page itself is unchanged.
+const intro = document.getElementById('intro');
+for (const a of document.querySelectorAll('.card[data-try]')) a.addEventListener('click', (e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0 || !intro.showModal) return;
+  e.preventDefault();
+  document.getElementById('intro-icon').innerHTML = a.querySelector('.icon').innerHTML;
+  document.getElementById('intro-title').textContent = a.querySelector('b').textContent;
+  document.getElementById('intro-text').textContent = a.querySelector('span:not(.icon)').textContent;
+  const list = document.getElementById('intro-try');
+  list.replaceChildren(...a.dataset.try.split('|').map((t) => Object.assign(document.createElement('li'), { textContent: t })));
+  document.getElementById('intro-open').href = a.getAttribute('href');
+  const watch = document.getElementById('intro-watch');
+  watch.hidden = !a.dataset.watch;
+  if (a.dataset.watch) watch.href = a.dataset.watch;
+  intro.showModal();
+  document.getElementById('intro-open').focus();
+});
+intro.querySelector('[data-close]').addEventListener('click', () => intro.close());
+intro.addEventListener('click', (e) => { if (e.target === intro) intro.close(); });
 player.addEventListener('click', (e) => { if (e.target === player) player.close(); });   // a click on the blurred page
 player.addEventListener('close', () => { video.pause(); video.removeAttribute('src'); video.load(); });
 </script>
