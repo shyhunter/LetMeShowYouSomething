@@ -41,9 +41,13 @@ video{display:block;width:100%;height:auto;border:2px solid var(--edge);border-r
   .band{grid-template-columns:1fr}
   .band::before{display:none}
 }
+.home{display:inline-grid;place-items:center;width:44px;height:44px;margin-bottom:14px;border:2px solid var(--edge,var(--ink));border-radius:12px;background:var(--surf);color:var(--ink);box-shadow:2px 2px 0 var(--edge,var(--ink))}
+.home:active{transform:translate(2px,2px);box-shadow:none}
+.home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head><body>
 <main>
+  <a class="home" href="./" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></a>
   <p class="eyebrow">Tutorial · 7 short videos</p>
   <h1>From an idea to a plan</h1>
   <p class="lead">You have an app idea, not a spec. Your agent turns it into a plan (the screens, what it stores, what

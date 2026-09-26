@@ -15,6 +15,7 @@ import './proposal-outcomes.test.mjs';
 import './conformance.test.mjs';
 import './rounds.test.mjs';
 import './usage.test.mjs';
+import './home-link.test.mjs';
 import './image-meta.test.mjs';
 import './check-json.test.mjs';
 import './scenarios.test.mjs';

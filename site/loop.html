@@ -34,9 +34,13 @@ pre .ok{color:var(--ok);font-weight:700}
 a{color:var(--ac)}
 code{font:.9em var(--mono)}
 :focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+.home{display:inline-grid;place-items:center;width:44px;height:44px;margin-bottom:14px;border:2px solid var(--edge,var(--ink));border-radius:12px;background:var(--surf);color:var(--ink);box-shadow:2px 2px 0 var(--edge,var(--ink))}
+.home:active{transform:translate(2px,2px);box-shadow:none}
+.home svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 </style>
 </head><body>
 <main>
+  <a class="home" href="./" aria-label="Home" title="Home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></a>
   <a class="back" href="./">← LetMeShowYouSomething</a>
   <h1>The whole loop</h1>
   <p class="lead">An agent asks, a person answers on one offline page, and the agent checks the answer and acts on it.
