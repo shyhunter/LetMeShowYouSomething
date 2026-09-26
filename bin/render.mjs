@@ -152,11 +152,15 @@ const usageLine = (() => {
   return `<p class="usage">Making this review${u.status === 'partial' ? ', at least' : ''}: ${n(t.input)} tokens in, ${n(t.output)} out, ${n(t.cacheRead)} read from cache and ${n(t.cacheWrite)} written to it, over ${n(u.calls)} model call${u.calls === 1 ? '' : 's'}${(u.models || []).length ? ` (${u.models.map(esc).join(', ')})` : ''}; ${who}.${u.status === 'partial' ? ` Partial: ${esc(u.reason || '')}.` : ''} Cost: not measured.</p>`;
 })();
 
+// What the page is about, in one line, for a browser tab, a search result or a shared link: the review's own words.
+const describe = (() => { const b = review.brief || {}, t = String(b.question || b.explains || review.ask || review.intro || review.title).replace(/\s+/g, ' ').trim();
+  return t.length > 200 ? t.slice(0, 197).replace(/\s+\S*$/, '') + '…' : t; })();
 const html = `<!doctype html>
 <html lang="en"><head>
 <!-- SPDX-License-Identifier: MIT-0 -->
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(review.title)}</title>
+<meta name="description" content="${esc(describe)}">
 ${favicon}
 <style>
 /* #74 — the page as the approved design: the guided tour, four places in a fixed order, the Overview. */
