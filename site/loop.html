@@ -15,10 +15,12 @@
 <meta property="og:image:width" content="1280"><meta property="og:image:height" content="640">
 <meta property="og:image:alt" content="LetMeShowYouSomething: your agent asks on one offline page, and your answers come back as a checked file.">
 <meta name="twitter:card" content="summary_large_image">
+<script src="theme.js"></script>
 <style>
 :root{--bg:#FBFAFC;--surf:#FFFFFF;--inset:#F2F0F6;--line:rgba(28,22,42,.13);--ink:#16141B;--ink2:#2C2735;--mut:#6F6880;--ac:#5B3E8C;--ac-bg:rgba(91,62,140,.10);--ok:#2F6B45;color-scheme:light;
   --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
-@media (prefers-color-scheme:dark){:root{--bg:#121017;--surf:#1A1721;--inset:#221E2C;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);--ok:#63B584;color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121017;--surf:#1A1721;--inset:#221E2C;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);--ok:#63B584;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121017;--surf:#1A1721;--inset:#221E2C;--line:#2B2736;--ink:#ECE9F1;--ink2:#D6D1E0;--mut:#8C859E;--ac:#A98BD6;--ac-bg:rgba(169,139,214,.14);--ok:#63B584;color-scheme:dark}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink2);font:16px/1.6 var(--sans)}
 main{max-width:880px;margin:0 auto;padding:40px 16px 64px}

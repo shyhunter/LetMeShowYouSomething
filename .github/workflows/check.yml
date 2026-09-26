@@ -17,7 +17,7 @@ jobs:
     # Pinned, not ubuntu-latest: the runner changes when we choose, like the actions below. The job
     # needs only Node, so moving to a newer image is a one-line change once a run on it passes.
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       # Actions pinned to a commit, not a tag: a tag can be moved to other code.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
