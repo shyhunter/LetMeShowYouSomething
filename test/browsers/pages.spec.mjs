@@ -797,3 +797,17 @@ test('the storyboard of another diagram: a box on a choose-one option opens its 
   await expect(page.locator('#main [data-sbtab="salon-data"]')).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('#main .sb-band:not(.quiet) .sb-card[data-card]').first()).toBeVisible();
 });
+
+// A choice has no place in the flow: in the storyboard its prototype and options take both columns and stay inside their band.
+test('the storyboard of a choice: every layout and option stays inside its band', async ({ page }) => {
+  await page.goto(example('results-layout')); await overview(page);
+  const band = page.locator('#main .sb-band').filter({ has: page.locator('.sb-wide') }).first();
+  await band.locator('details summary').click();
+  await expect(band.locator('.variant')).toHaveCount(3);
+  const b = await band.boundingBox();
+  for (const part of ['.sb-wide', '.expected', '.options']) {
+    const r = await band.locator(part).first().boundingBox();
+    expect(r.x + r.width, `${part} stays inside its band`).toBeLessThanOrEqual(b.x + b.width + 1);
+  }
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'no sideways scroll').toBeLessThanOrEqual(0);
+});
