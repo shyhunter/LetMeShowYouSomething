@@ -18,10 +18,8 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFil
 import { tmpdir } from 'node:os';
 import { basename, join, relative, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { chromium } from '@playwright/test';
 import { ROOT, made, docsIn, passes } from './fixtures.mjs';
 import { runAgent, agentVersion } from './agents.mjs';
-import { start, download, note } from '../test/browsers/page-helpers.mjs';
 
 const [dirArg, ...rest] = process.argv.slice(2);
 const flag = (name, dflt) => { const i = rest.indexOf(`--${name}`); return i >= 0 ? rest[i + 1] : dflt; };
@@ -32,6 +30,9 @@ if (!dirArg || !['claude', 'codex'].includes(agent) || !['github', 'local'].incl
 const dir = resolve(dirArg), project = join(dir, 'project');
 if (existsSync(dir) && readdirSync(dir).length) { console.error(`✗ ${dir} is not empty. Use a fresh folder`); process.exit(2); }
 mkdirSync(project, { recursive: true });
+// Playwright is a dev dependency: loaded only once a run really starts, so the usage check needs nothing installed.
+const { chromium } = await import('@playwright/test');
+const { start, download, note } = await import('../test/browsers/page-helpers.mjs');
 
 const REPO = 'shyhunter/LetMeShowYouSomething';
 const TASK = 'My friend Rosa runs a small bakery. She wants a website where people can order a cake and pick it up in the shop. '
@@ -63,7 +64,10 @@ console.log(`1. Install (${from})`);
 let source = REPO, revision;
 if (from === 'local') {
   source = mkdtempSync(join(tmpdir(), 'lmsys-src-'));
-  sh('sh', ['-c', `git -C "${ROOT}" archive HEAD | tar -x -C "${source}"`]);
+  // No shell: the paths go to git and tar as arguments, never into a command line.
+  const tar = join(source, '..', `${basename(source)}.tar`);
+  sh('git', ['-C', ROOT, 'archive', '-o', tar, 'HEAD']);
+  sh('tar', ['-xf', tar, '-C', source]);
   revision = sh('git', ['-C', ROOT, 'rev-parse', '--short', 'HEAD']).stdout.trim();
 } else revision = (sh('git', ['ls-remote', `https://github.com/${REPO}`, 'HEAD']).stdout.split('\t')[0] || 'unknown').slice(0, 7);
 report.skillRevision = revision;
