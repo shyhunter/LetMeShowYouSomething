@@ -38,6 +38,21 @@ node conformance/run.mjs score returned-page /tmp/run-1 --agent "<agent>" --mode
 `score` prints the machine checks and writes `conformance-report.json` into the folder, with the skill
 revision and every rubric line left unscored. Fill in each score (1, 0, or "n/a" with why) and a note.
 
+## Token use (#164)
+
+What the skill costs, from a clean session rather than a long one. In the `handoff` fixture the agent writes a
+review, and SKILL.md has it run `bin/usage.mjs` before rendering, so the review carries `usage`: the model calls the
+host logged while the agent made it, each counted once, never estimated. In a fresh session with nothing else in it,
+that is the skill's own cost.
+
+```bash
+node -e 'const u=require(process.argv[1]).usage; console.log(u.status, u.calls, u.tokens)' /tmp/run-1/<the review it wrote>.review.json
+```
+
+Record it in [RESULTS.md](RESULTS.md) under **Token use**, one row per run, with the host and model. `usage` says
+`unavailable` where the host does not report it (only Claude Code does so far): record that too, never a guess.
+The limits the skill's own files and tool outputs are held to are in `test/token-budget.test.mjs`.
+
 Record what actually ran. An agent or fixture you did not run is **not tested**, not a pass, and one
 good run is not a claim about an agent in general. Keep reports free of credentials, private prompts,
 hidden reasoning and real feedback: the fixtures are synthetic on purpose.

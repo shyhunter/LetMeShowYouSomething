@@ -76,7 +76,7 @@ test('usage: written into the review, checked, and shown on the page as reported
   const out = join(dir, 'r.html');
   assert.equal(run([join(ROOT, 'bin/render.mjs'), rp, out]).status, 0);
   const page = readFileSync(out, 'utf8');
-  assert.match(page, /<p class="usage">Making this review: 12 tokens in, 345 out, 6,789 read from cache and 10 written to it, over 1 model call \(claude-test-model\); reported by Claude Code's session log, not independently verified\. Cost: not measured\.<\/p>/);
+  assert.match(page, /<p class="usage">Making this review \(the whole conversation that ran it, not the skill alone\): 12 tokens in, 345 out, 6,789 read from cache and 10 written to it, over 1 model call \(claude-test-model\); reported by Claude Code's session log, not independently verified\. Cost: not measured\.<\/p>/);
 });
 
 test('usage: outside a Claude Code session it is unavailable, with the reason, and never guessed', () => {
@@ -122,7 +122,7 @@ test('usage: markup in the host or the reason stays text on the page', () => {
   const p = join(dir, 'r.json'), out = join(dir, 'r.html'); writeFileSync(p, JSON.stringify(r));
   assert.equal(run([join(ROOT, 'bin/render.mjs'), p, out]).status, 0);
   const line = readFileSync(out, 'utf8').match(/<p class="usage">.*?<\/p>/)[0];
-  assert.equal(line, '<p class="usage">Making this review: usage unavailable (&lt;img src=x onerror=alert(1)&gt;).</p>');
+  assert.equal(line, '<p class="usage">Making this review (the whole conversation that ran it): usage unavailable (&lt;img src=x onerror=alert(1)&gt;).</p>');
 });
 
 // A sub-agent's commands see the main conversation's session id: the log that holds this very command is the one

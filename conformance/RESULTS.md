@@ -30,3 +30,17 @@ On PIN every time it drew neither the PIN nor a decision: it drew issuer-side ve
 
 **Not tested:** Gemini, Hermes and every other agent or host. A fixture with no row for an
 agent is not a pass for it.
+
+## Token use (#164)
+
+Measured from the skill's files on 2026-09-27, about 4 characters a token (held to limits by
+`test/token-budget.test.mjs`): SKILL.md about 4,600 tokens, read once when the skill is used, and 89 for its one-line
+description, always in context. Starting a review with `init.mjs` costs about 640; checking one prints about 220;
+reading an answers file back costs about 1,050. The review itself is what the agent writes, about 4,300 for the salon
+example: the questions it would otherwise have written into the chat.
+
+Clean-session runs, from the `handoff` fixture's `usage` (see README.md, "Token use"):
+
+| date | skill revision | host · model | calls | input | output | read from cache | written to cache |
+|---|---|---|---|---|---|---|---|
+| | | not yet recorded | | | | | |
