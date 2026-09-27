@@ -38,6 +38,38 @@ node conformance/run.mjs score returned-page /tmp/run-1 --agent "<agent>" --mode
 `score` prints the machine checks and writes `conformance-report.json` into the folder, with the skill
 revision and every rubric line left unscored. Fill in each score (1, 0, or "n/a" with why) and a note.
 
+### Letting the harness run the agent
+
+`run` does all three steps with an agent you already use, headless, in a fresh session: Claude Code (`claude -p`)
+or Codex (`codex exec`). It keeps the agent's reply (`agent-reply.md`) and every tool call it made
+(`agent-calls.json`) next to the report, so the rubric can be scored from what the agent did, not what it said.
+
+```bash
+node conformance/run.mjs run returned-page /tmp/run-2 --agent codex
+```
+
+It is opt-in and never runs in CI: it uses your own login and may use your plan or cost money.
+
+## The whole loop, end to end (#25)
+
+`e2e.mjs` runs what a new user does, from install to round 2:
+
+1. installs the skill into a clean project with `npx skills add`, from GitHub or from this checkout (`--from local`);
+2. gives the agent the task as its very first message, with no word about the skill;
+3. checks that its review passes, and that it made exactly one page, rendered from that review;
+4. answers that page like a reviewer, **on a phone and on a computer**: one question left open, one disagreement
+   with a note, one thing added, then *Download HTML*; both downloads are read back and must hold exactly those answers;
+5. hands the answered page back in the same conversation, and checks that the agent reads it with `answer.mjs`
+   and never opens it, keeps every answer, and prepares a round 2 that passes `check followup`.
+
+```bash
+node conformance/e2e.mjs /tmp/e2e-1 --agent claude            # or --agent codex, --from local, --model <m>
+```
+
+It writes `e2e-report.json`, the agent's two replies, and the rubric for a person to score. The scripted reviewer
+proves the mechanics on both screen sizes; whether a real, non-technical person understands the page is still a
+person's test (#25).
+
 ## Token use (#164)
 
 What the skill costs, from a clean session rather than a long one. In the `handoff` fixture the agent writes a

@@ -5,6 +5,7 @@
 //   node conformance/run.mjs list
 //   node conformance/run.mjs setup <fixture> <empty-folder>        prints the prompt to give the agent
 //   node conformance/run.mjs score <fixture> <folder> [--agent A] [--model M] [--host H]
+//   node conformance/run.mjs run <fixture> <empty-folder> --agent claude|codex [--model M]   setup, run the agent, score
 //
 // `score` prints what the machine checked and writes <folder>/conformance-report.json, with the rubric
 // left unscored for a person to fill in. A run that did not happen is "not tested", never a pass.
@@ -12,16 +13,18 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { FIXTURES, installSkill } from './fixtures.mjs';
+import { runAgent, agentVersion } from './agents.mjs';
 
 const [cmd, id, dirArg, ...rest] = process.argv.slice(2);
 const flag = (name) => { const i = rest.indexOf(`--${name}`); return i >= 0 ? rest[i + 1] : null; };
 const fail = (why) => { console.error(`✗ ${why}`); process.exit(2); };
 if (cmd === 'list') { for (const f of FIXTURES) console.log(`${f.id.padEnd(18)} ${f.issue}  ${f.prompt.slice(0, 70)}…`); process.exit(0); }
 const fx = FIXTURES.find((f) => f.id === id);
-if (!['setup', 'score'].includes(cmd) || !fx || !dirArg) fail('usage: run.mjs list | setup <fixture> <folder> | score <fixture> <folder> [--agent A] [--model M] [--host H]');
+if (!['setup', 'score', 'run'].includes(cmd) || !fx || !dirArg) fail('usage: run.mjs list | setup <fixture> <folder> | score <fixture> <folder> [--agent A] [--model M] [--host H] | run <fixture> <folder> --agent claude|codex [--model M]');
+if (cmd === 'run' && !['claude', 'codex'].includes(flag('agent'))) fail('run needs --agent claude or --agent codex (opt-in: it runs that agent with your own login)');
 const dir = resolve(dirArg);
 
-if (cmd === 'setup') {
+if (cmd === 'setup' || cmd === 'run') {
   if (existsSync(dir) && readdirSync(dir).length) fail(`${dir} is not empty. Use a fresh folder, so nothing from another run is scored`);
   mkdirSync(dir, { recursive: true });
   installSkill(dir);
@@ -29,7 +32,18 @@ if (cmd === 'setup') {
   const skill = join(dir, '_skill');
   console.log(`Project folder: ${dir}\nSkill folder:   ${skill}\n\nGive a fresh agent, in a new context, exactly this:\n\n` +
     `The "LetMeShowYouSomething" skill is installed at ${skill} (read its SKILL.md and follow it). Your project folder is ${dir}; work only inside it and do not change the skill folder.\n\n${fx.prompt}\n`);
-} else {
+}
+if (cmd === 'run') {
+  // #89 — the agent gets exactly the prompt setup printed, in a fresh session; its reply is kept for the rubric.
+  const prompt = `The "LetMeShowYouSomething" skill is installed at ${join(dir, '_skill')} (read its SKILL.md and follow it). Your project folder is ${dir}; work only inside it and do not change the skill folder.\n\n${fx.prompt}`;
+  console.log(`\nRunning ${flag('agent')}…`);
+  const r = runAgent({ agent: flag('agent'), dir, prompt, model: flag('model') });
+  writeFileSync(join(dir, 'agent-reply.md'), r.text || r.error || '');
+  writeFileSync(join(dir, 'agent-calls.json'), JSON.stringify({ usage: r.usage, calls: r.calls }, null, 2) + '\n');
+  if (!r.ok) console.log(`✗ the agent did not finish: ${(r.error || r.text || '').slice(0, 300)}`);
+  rest.push('--agent', flag('agent'), '--host', flag('host') || `${agentVersion(flag('agent'))} · ${process.platform}`);
+}
+if (cmd === 'score' || cmd === 'run') {
   const machine = fx.score(dir);
   for (const r of machine) console.log(`  ${r.ok ? '✓' : '✗'} ${r.name}${r.ok ? '' : ` — ${r.detail}`}`);
   console.log(`\nFor a person to score (0 = no, 1 = yes, or "n/a" with why):\n${fx.rubric.map((c) => `  [ ] ${c}`).join('\n')}`);
