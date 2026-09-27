@@ -21,6 +21,7 @@
     show();
     const style = document.createElement('style');
     style.textContent = `.theme-switch{--k:26px;position:absolute;top:14px;right:16px;display:inline-flex;align-items:center;justify-content:space-between;width:66px;height:34px;padding:0 7px;border:2px solid var(--edge,var(--ink));border-radius:99px;background:var(--band,var(--surf));color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--edge,var(--ink));z-index:5}
+.theme-switch.in-slot{position:relative;top:auto;right:auto;flex:none}
 .theme-switch svg{position:relative;z-index:1;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .theme-switch::after{content:"";position:absolute;top:2px;left:2px;width:var(--k);height:var(--k);border-radius:50%;background:var(--surf);border:2px solid var(--edge,var(--ink));box-sizing:border-box;transition:left .2s}
 .theme-switch[aria-checked="true"]::after{left:calc(100% - var(--k) - 2px)}
@@ -28,6 +29,8 @@
 @media (pointer:coarse){.theme-switch{--k:36px;width:84px;height:44px;padding:0 11px}}
 @media (prefers-reduced-motion:reduce){.theme-switch::after{transition:none}}`;
     document.head.appendChild(style);
-    document.body.appendChild(b);
+    // A page with a place for it (the landing page's top bar) gets it there; any other page top right.
+    const slot = document.querySelector('[data-theme-slot]');
+    if (slot) { b.classList.add('in-slot'); slot.appendChild(b); } else document.body.appendChild(b);
   });
 })();
