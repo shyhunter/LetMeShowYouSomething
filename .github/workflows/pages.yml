@@ -71,3 +71,24 @@ jobs:
     steps:
       - id: deployment
         uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
+
+  # Only the live site stays listed under Deployments. After a successful deploy, every older github-pages
+  # deployment is marked inactive (GitHub deletes only inactive ones) and deleted. The newest is the one just made:
+  # the concurrency group above lets only one deploy run at a time.
+  tidy:
+    needs: deploy
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      deployments: write
+    steps:
+      - env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          old="$(gh api --paginate "repos/$REPO/deployments?environment=github-pages&per_page=100" -q '.[].id' | tail -n +2)"
+          for id in $old; do
+            gh api -X POST "repos/$REPO/deployments/$id/statuses" -f state=inactive > /dev/null
+            gh api -X DELETE "repos/$REPO/deployments/$id" > /dev/null
+          done
+          echo "Removed $(printf '%s' "$old" | grep -c .) older deployment(s); the live one stays."
