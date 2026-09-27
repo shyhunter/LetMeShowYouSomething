@@ -41,6 +41,21 @@ example: the questions it would otherwise have written into the chat.
 
 Clean-session runs, from the `handoff` fixture's `usage` (see README.md, "Token use"):
 
-| date | skill revision | host · model | calls | input | output | read from cache | written to cache |
-|---|---|---|---|---|---|---|---|
-| | | not yet recorded | | | | | |
+All three runs below are the `handoff` fixture in a fresh session, each scoring **3/3 machine** and **3/3 rubric**
+(one page to send, "downloading sends nothing", exactly the five cases). `usage.mjs` counts the calls up to the
+moment it runs, before the page is rendered; the host's own total covers the whole session.
+
+| date | skill revision | host · model | counted by | calls | input | output | read from cache | written to cache |
+|---|---|---|---|---|---|---|---|---|
+| 2026-09-27 | `d52620e` | Claude Code headless (`claude -p`) · claude-opus-5-5 | `usage.mjs` | unavailable: the headless log writes a call only once it finishes, so the command was not in it yet (fixed below) | | | | |
+| 2026-09-27 | `d52620e` | same run | Claude Code's own total | 9 turns | 16 | 3,550 | 341,452 | 54,520 |
+| 2026-09-27 | `d52620e` + headless fix | Claude Code headless (`claude -p`) · claude-opus-5-5 | `usage.mjs` | 6 | 12 | 2,337 | 290,899 | 12,293 |
+| 2026-09-27 | same | same run | Claude Code's own total | 8 turns | 16 | 3,164 | 365,747 | 34,465 |
+| 2026-09-27 | `d52620e` + headless fix | Codex CLI 0.155.1 · its default model | `usage.mjs` | unavailable: Codex keeps no Claude Code log (as expected) | | | | |
+| 2026-09-27 | same | same run | Codex's own total | 1 turn | 375,834 (338,688 cached) | 6,757 (1,910 reasoning) | | |
+
+**Reading it.** Each call re-reads the host's own system prompt, tools and the user's instructions from the cache
+(about 40,000 to 50,000 tokens a call in Claude Code), which is why "read from cache" is large in every session,
+with or without the skill. The skill's own share is the budget above: about 10,000 tokens for a round. The whole task
+cost about $0.41 to $0.58 in Claude Code (Opus, as it reported), in under a minute. Codex read all of PROTOCOL.md
+(about 14,000 tokens) though SKILL.md never asks it to; SKILL.md now says it does not need to.
