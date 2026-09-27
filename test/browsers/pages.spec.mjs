@@ -10,7 +10,7 @@ import { join } from 'node:path';
 import { pathToFileURL, fileURLToPath } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, toReturn, showPlace, download, note } from './page-helpers.mjs';
 
-const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json', 'salon-booking': 'salon-booking.review.json', 'salon-booking-round2': 'salon-booking-round2.review.json', 'salon-desk': 'salon-desk.review.json' };
+const PAGES = { 'checkout-uat': 'review.example.json', 'decision-review': 'decision-review.example.json', 'flow-booking': 'flow-booking.review.json', 'database-booking': 'database-booking.review.json', 'retry-backoff': 'retry-backoff.review.json', 'booking-race': 'booking-race.review.json', 'ai-tool-loop': 'ai-tool-loop.review.json', 'checkout-round2': 'checkout-round2.review.json', 'flow-booking-round2': 'flow-booking-round2.review.json', 'flow-booking-round3': 'flow-booking-round3.review.json', 'password-reset': 'password-reset.review.json', 'results-layout': 'results-layout.review.json', 'salon-booking': 'salon-booking.review.json', 'salon-booking-round2': 'salon-booking-round2.review.json', 'salon-desk': 'salon-desk.review.json', 'bakery-website': 'bakery-website.review.json' };
 const tmp = (p = 'pw-') => mkdtempSync(join(tmpdir(), p));
 guard(test);
 
@@ -81,7 +81,7 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await page.locator('.steps a').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('#player')).toBeHidden();
-  await expect(page.locator('.card .icon svg')).toHaveCount(6);
+  await expect(page.locator('.card .icon svg')).toHaveCount(7);
   for (const sub of ['tutorial', 'loop']) {
     await page.goto(pathToFileURL(join(ROOT, `site/${sub}.html`)).href);
     await expect(page.getByRole('link', { name: 'Home' })).toHaveAttribute('href', './');
@@ -89,14 +89,14 @@ test('the landing page: a step opens its video in front, and closes back to the 
   await page.goto(pathToFileURL(join(ROOT, 'site/index.html')).href);
   expect(await page.locator('.card .icon').first().evaluate((el) => getComputedStyle(el).color), 'the icons are ink, not grey')
     .toBe(await page.locator('h1').evaluate((el) => getComputedStyle(el).color));
-  await page.locator('.card').nth(1).click();
+  await page.locator('.card[href="examples/flow-booking.html"]').click();
   const intro = page.getByRole('dialog', { name: 'A user flow' });
   await expect(intro.locator('#intro-try li')).toHaveCount(3);
   await expect(intro.locator('#intro-ask')).toHaveText(/^\/letmeshowyousomething /);
   await expect(intro.locator('#intro-open')).toHaveAttribute('href', 'examples/flow-booking.html');
   await expect(intro.locator('#intro-watch')).toHaveAttribute('href', 'tutorial.html#flow');
   await page.keyboard.press('Escape');
-  await page.locator('.card').nth(4).click();
+  await page.locator('.card[href="examples/checkout-uat.html"]').click();
   await expect(page.locator('#intro-watch')).toBeHidden();
   await page.getByRole('dialog', { name: 'Test results' }).getByRole('button', { name: 'Close' }).click();
   await expect(page.locator('#intro')).toBeHidden();

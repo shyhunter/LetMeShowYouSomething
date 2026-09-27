@@ -1108,7 +1108,7 @@ function progressHtml(nowStep){
     + seg('Return', 'var(--s0)', 'send', 0, 0, st.phase === 'return', 'return') + '</div>'
     + '<p class="prog-sum" id="overview">' + (nowStep ? esc(nowStep.seg.label) + ' · ' : '') + a + ' of ' + n + ' answered' + (n - a ? ' · ' + (n - a) + ' open' : '') + '</p></div>';
 }
-const SLOTS = [['map', 'Map', 'map'], ['proto', 'Prototype', 'phone'], ['expected', 'What should happen', 'list'], ['build', "How I'd build it", 'code']];
+const SLOTS = [['map', 'Map', 'map'], ['proto', 'Prototype', FLOW && FLOW.device === 'website' ? 'globe' : 'phone'], ['expected', 'What should happen', 'list'], ['build', "How I'd build it", 'code']];
 function slotHtml(id, label, icon, i, body, sub, tab){
   const min = st.min.has(id), shown = (tab || st.ptab) === id;
   return '<section class="slot' + (min ? ' min' : '') + (shown ? ' shown' : '') + '" id="slot-' + id + '" data-slot="' + id + '"><div class="slot-head"><span class="num">' + (i + 1) + '</span><h3>' + I(icon, 'sm') + label + (sub ? ' <small>· ' + esc(sub) + '</small>' : '') + '</h3>'

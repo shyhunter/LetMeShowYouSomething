@@ -88,7 +88,7 @@ Then ask, for example:
 1. **You ask.** Anything with five or more things to judge, something to look at, or a reviewer outside the chat.
    One to four quick questions stay in chat.
 2. **The agent writes a review and checks it.** Plain words, the right answer words for the job, screens drawn for an
-   app idea, every code reference proven.
+   app or website idea, every code reference proven.
 3. **It hands you one page.** No JSON, no summary in chat.
 4. **You answer** in the tour or the Overview, with notes, pictures and marks on the map, and ask back with **Show me
    an example** or **Explain it differently**.
@@ -105,6 +105,7 @@ Each page below is the real thing: open it, press **Start**, answer, and downloa
 | If you ask your agent … | You get | Try it |
 |---|---|---|
 | "I want an app for my friend's hair salon that takes bookings online. Explain how it should look." | An app idea: screens, what it stores, what it runs on | [Salon booking](https://shyhunter.github.io/LetMeShowYouSomething/examples/salon-booking.html) · [round 2](https://shyhunter.github.io/LetMeShowYouSomething/examples/salon-booking-round2.html) |
+| "I want a website for my bakery where people can order cakes. Show me how it should look." | A website idea: every page in a browser window, and how people pay | [Bakery website](https://shyhunter.github.io/LetMeShowYouSomething/examples/bakery-website.html) |
 | "Show me how booking and cancelling would work, step by step, before you build it." | A user flow to click through, with a diagram | [Booking flow](https://shyhunter.github.io/LetMeShowYouSomething/examples/flow-booking.html) |
 | "Should our search results be cards, a list or a table? Show me each." | Mockups side by side, picked from their own screen | [Results layout](https://shyhunter.github.io/LetMeShowYouSomething/examples/results-layout.html) |
 | "Where should the answers be stored? Give me the options and your recommendation." | A decision, with the agent's doubts to judge | [Decision](https://shyhunter.github.io/LetMeShowYouSomething/examples/decision-review.html) |

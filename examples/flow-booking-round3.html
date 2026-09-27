@@ -960,7 +960,7 @@ function reviewParts(review) {
   const journeys = top.length === 1 ? (flow.parts || []).filter((p) => p.parent === top[0].id) : top;
   const journeyOf = (it) => { for (let p = partsById[it.step.part], n = 0; p && n < 50; p = partsById[p.parent], n++) if (journeys.some((j) => j.id === p.id)) return p.id; return null; };
   const list = [], taken = new Set();
-  const iconFor = (sec, its) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : its.every((i) => i.approval) ? 'shield' : flow ? 'phone' : 'help';
+  const iconFor = (sec, its) => sec && sec.mode === 'choose-one' ? 'branch' : sec && sec.kind === 'challenge' ? 'alert' : its.every((i) => i.approval) ? 'shield' : flow ? (flow.device === 'website' ? 'globe' : 'phone') : 'help';
   const add = (label, sec, its) => { if (!its.length) return; its.forEach((i) => taken.add(i.id)); list.push({ label, sec, items: its, icon: iconFor(sec, its) }); };
   for (const sec of sections) add(sec.label || sec.id, sec, items.filter((i) => i.sectionId === sec.id));
   if (flow && !sections.length) for (const j of journeys) add(j.title || j.id, null, items.filter((i) => i.step && !taken.has(i.id) && journeyOf(i) === j.id));
@@ -1883,7 +1883,7 @@ function progressHtml(nowStep){
     + seg('Return', 'var(--s0)', 'send', 0, 0, st.phase === 'return', 'return') + '</div>'
     + '<p class="prog-sum" id="overview">' + (nowStep ? esc(nowStep.seg.label) + ' · ' : '') + a + ' of ' + n + ' answered' + (n - a ? ' · ' + (n - a) + ' open' : '') + '</p></div>';
 }
-const SLOTS = [['map', 'Map', 'map'], ['proto', 'Prototype', 'phone'], ['expected', 'What should happen', 'list'], ['build', "How I'd build it", 'code']];
+const SLOTS = [['map', 'Map', 'map'], ['proto', 'Prototype', FLOW && FLOW.device === 'website' ? 'globe' : 'phone'], ['expected', 'What should happen', 'list'], ['build', "How I'd build it", 'code']];
 function slotHtml(id, label, icon, i, body, sub, tab){
   const min = st.min.has(id), shown = (tab || st.ptab) === id;
   return '<section class="slot' + (min ? ' min' : '') + (shown ? ' shown' : '') + '" id="slot-' + id + '" data-slot="' + id + '"><div class="slot-head"><span class="num">' + (i + 1) + '</span><h3>' + I(icon, 'sm') + label + (sub ? ' <small>· ' + esc(sub) + '</small>' : '') + '</h3>'
