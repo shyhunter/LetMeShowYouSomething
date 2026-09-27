@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// #146 — a desktop screen: drawn in a browser window, wide, wherever a screen is shown (the tour, Expand, Whole
+// #146 — a desktop screen: drawn in its own app window (a website: in a browser), wide, wherever a screen is shown (the tour, Expand, Whole
 // screen); on a phone scaled to fill the width, never scrolled sideways; a screen's own device overrides the flow's.
 import { test, expect } from '@playwright/test';
 import { mkdtempSync, writeFileSync } from 'node:fs';
@@ -13,7 +13,8 @@ test('a desktop flow: a browser window in the tour, in Expand and as the whole s
   await showPlace(page, 'proto');
   const app = page.locator('#slot-proto .app');
   await expect(app).toHaveClass(/\bdesk\b/);
-  await expect(app.locator('.win .url')).toHaveText('This week');
+  await expect(app.locator('.win .title')).toHaveText('This week');
+  await expect(app.locator('.win .url')).toHaveCount(0);
   await expect(app).toHaveAttribute('aria-label', /on a computer/);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
   const [frame, place] = [await app.boundingBox(), await page.locator('#slot-proto .slot-body').boundingBox()];
@@ -44,4 +45,20 @@ test('the checker refuses a device that is not a phone or a computer', () => {
   const out = check('review', file);
   expect(out.status).not.toBe(0);
   expect(out.stdout).toMatch(/flow\.device/);
+});
+
+test('a website: a browser window with the page address, wide, and the checker takes it', async ({ page }) => {
+  const r = readReview('salon-desk.review.json');
+  r.id = 'website-flow'; r.flow.device = 'website';
+  const { rp, url } = rendered(r);
+  expect(check('review', rp).status).toBe(0);
+  await page.goto(url);
+  await start(page);
+  await showPlace(page, 'proto');
+  const app = page.locator('#slot-proto .app');
+  await expect(app).toHaveClass(/\bdesk\b/);
+  await expect(app).toHaveAttribute('aria-label', /a website in a browser/);
+  await expect(app.locator('.win .url')).toHaveText('/');
+  await expect(app.locator('.win .title')).toHaveCount(0);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth), 'sideways scroll').toBeLessThanOrEqual(0);
 });
