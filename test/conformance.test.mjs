@@ -56,3 +56,13 @@ test('conformance: a hand-made page and a changed skill fail "renderer-fails"', 
   assert.match(s.stdout, /✗ no page was made by hand/);
   assert.match(s.stdout, /✗ the skill folder was left alone/);
 });
+
+// #25, #89 — the commands that start an agent never start one by accident: without a named agent they stop first.
+test('conformance: run and e2e refuse to start without a named agent', () => {
+  const run = node('conformance/run.mjs', 'run', 'handoff', mkdtempSync(join(tmpdir(), 'cf-run-')));
+  assert.equal(run.status, 2);
+  assert.match(run.stderr, /--agent claude or --agent codex/);
+  const e2e = node('conformance/e2e.mjs', mkdtempSync(join(tmpdir(), 'cf-e2e-')));
+  assert.equal(e2e.status, 2);
+  assert.match(e2e.stderr, /usage: e2e\.mjs/);
+});

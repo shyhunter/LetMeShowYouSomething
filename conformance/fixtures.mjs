@@ -19,18 +19,18 @@ export function installSkill(dir) {
 }
 
 // Every file the agent made: anything in the folder that setup did not put there.
-function made(dir, inputs) {
+export function made(dir, inputs) {
   const out = [];
-  const walk = (d) => { for (const n of readdirSync(d)) { const p = join(d, n); if (n === '_skill' || n === 'conformance-report.json') continue;
+  const walk = (d) => { for (const n of readdirSync(d)) { const p = join(d, n); if (['_skill', '.agents', '.claude', 'conformance-report.json'].includes(n)) continue;
     if (statSync(p).isDirectory()) walk(p); else if (!inputs.includes(relative(dir, p))) out.push(p); } };
   walk(dir);
   return out;
 }
 // The agent's files of one kind (review or feedback); a file that is not JSON is simply not one.
-const docsIn = (files, kind) => files.filter((f) => f.endsWith('.json')).map((f) => { try { return { f, j: JSON.parse(readFileSync(f, 'utf8')) }; } catch { return null; } })
+export const docsIn = (files, kind) => files.filter((f) => f.endsWith('.json')).map((f) => { try { return { f, j: JSON.parse(readFileSync(f, 'utf8')) }; } catch { return null; } })
   .filter((x) => x?.j?.protocol === `letmeshowyousomething/${kind}`);
 const reviewsIn = (files) => docsIn(files, 'review');
-const passes = (...args) => node('bin/check.mjs', ...args).status === 0;
+export const passes = (...args) => node('bin/check.mjs', ...args).status === 0;
 const result = (name, ok, detail) => ({ name, ok: !!ok, detail });
 
 // The page the reviewer exported, with their answers in it (what "Export feedback.html" writes).
