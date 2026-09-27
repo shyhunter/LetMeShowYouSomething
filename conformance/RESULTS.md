@@ -59,3 +59,32 @@ moment it runs, before the page is rendered; the host's own total covers the who
 with or without the skill. The skill's own share is the budget above: about 10,000 tokens for a round. The whole task
 cost about $0.41 to $0.58 in Claude Code (Opus, as it reported), in under a minute. Codex read all of PROTOCOL.md
 (about 14,000 tokens) though SKILL.md never asks it to; SKILL.md now says it does not need to.
+
+### Before and after the token fixes (#164, 2026-09-27)
+
+The same two tasks in fresh sessions, with the skill **before** the fixes (`af5ed15`) and **after** them (`7aa74b8`,
+with #165 and #166): the `handoff` fixture three times per version and host, and a screenshot task twice (a
+password-reset flow built from three real screenshots). All 20 runs passed: a checked review and exactly one page.
+Numbers are each host's own totals for the whole session, averaged per group.
+
+| task | host | tokens written | all tokens | not from cache | cost (as reported) |
+|---|---|---|---|---|---|
+| checkout (`handoff`) | Claude Code · claude-opus-5-5 | 4,705 → 3,116 (−34%) | 324,010 → 399,450 (**+23%**) | 34,252 → 32,030 (−6%) | $0.43 → $0.39 (−8%) |
+| checkout (`handoff`) | Codex CLI 0.155.1 | 11,594 → 4,794 (−59%) | 613,231 → 262,315 (−57%) | 42,448 → 23,623 (−44%) | not reported |
+| screenshots | Claude Code · claude-opus-5-5 | 5,880 → 6,348 (+8%) | 631,990 → 557,308 (−12%) | 49,844 → 38,513 (−23%) | $0.63 → $0.54 (−15%) |
+| screenshots | Codex CLI 0.155.1 | 9,994 → 8,535 (−15%) | 1,322,745 → 524,666 (−60%) | 84,847 → 43,876 (−48%) | not reported |
+
+What changed in how agents worked, counted from each session's own log:
+
+| | before | after |
+|---|---|---|
+| read PROTOCOL.md whole | 5 of 10 runs | 0 of 10 |
+| looked something up in PROTOCOL.md at all | 7 of 10 | 2 of 10, one section each |
+| opened the finished page to inspect it | 3 of 10 | 1 of 10 |
+
+**Reading it.** Codex, which read PROTOCOL.md whole and inspected the page before, now uses 57–60% fewer tokens.
+Claude Code writes 34% less on the checkout task and costs 8–15% less on both, but on the checkout task it made one
+or two more small tool calls, and each call re-reads the host's own setup from the cache, so its total rose by 23%
+while its cost fell (cache reads are the cheapest tokens). Three runs per group is enough to see the direction, not
+to rule out run-to-run variation. The runs are reproducible: `conformance/run.mjs setup handoff` for the first task.
+
