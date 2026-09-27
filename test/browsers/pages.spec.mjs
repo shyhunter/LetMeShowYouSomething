@@ -785,3 +785,15 @@ test('a later round: the flow before and after, changed boxes outlined, the old 
   await expect(page.locator('#main .ba .eyebrow')).toHaveText('Since round 2: before and after');
   await expect(page.locator('#main .ba [data-before]')).toHaveCount(1);
 });
+
+// A diagram box can point at an option of a choose-one section: its storyboard tab draws that band, it does not crash.
+test('the storyboard of another diagram: a box on a choose-one option opens its band', async ({ page }) => {
+  const r = readReview('salon-booking.review.json');
+  r.id = 'storyboard-choose-test';
+  const d = r.diagrams.find((x) => x.id === 'salon-data');
+  d.nodes[0].step = 'opt-sheet';
+  await page.goto(rendered(r, 'pw-sb-choose-').url); await overview(page);
+  await page.locator('#main [data-sbtab="salon-data"]').click();
+  await expect(page.locator('#main [data-sbtab="salon-data"]')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('#main .sb-band:not(.quiet) .sb-card[data-card]').first()).toBeVisible();
+});
