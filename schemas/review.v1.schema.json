@@ -300,8 +300,8 @@
       }
     },
     "device": {
-      "enum": ["phone", "desktop"],
-      "description": "#146 — what the screens are shown on: a phone (the default) or a computer, in a browser window. Set on the flow for every screen, or on one screen."
+      "enum": ["phone", "desktop", "website"],
+      "description": "#146 — what the screens are shown on: a phone (the default), a desktop app in its own window, or a website in a browser window. Set on the flow for every screen, or on one screen."
     },
     "screen": {
       "type": "object",

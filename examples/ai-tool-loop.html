@@ -168,13 +168,15 @@ html:not(.js) #start-review,html.js .no-script,html.js #static-answers{display:n
 /* the app prototype: a real phone screen, the buttons where the app puts them */
 .app{--brand:#0F6E68;--brand-soft:#E3F2F0;width:100%;max-width:280px;border:7px solid #15131A;border-radius:32px;background:#FFFFFF;color:#16181C;overflow:hidden;font:13px/1.4 var(--sans);display:grid;grid-template-rows:auto auto 1fr auto;min-height:470px;box-shadow:0 18px 40px -26px rgba(0,0,0,.6);position:relative;color-scheme:light}
 .app.shot{display:block;min-height:0;background:#15131A}
-/* #146 — a desktop screen: a browser window, wide; buttons in a row, a dialog in the middle. It narrows to fit a phone. */
+/* #146 — a computer screen, wide: a desktop app in its own window, a website in a browser with its address; buttons in a row,
+   a dialog in the middle. It narrows to fit a phone. */
 .app.desk{max-width:760px;min-height:360px;border-width:3px;border-radius:12px;grid-template-rows:auto auto 1fr auto;font-size:13.5px}
 .app.desk.shot{min-height:0}
 .app .win{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#ECEEF1;border-bottom:1px solid #DDE1E6}
 .app .win .lights{display:inline-flex;gap:5px;flex:none}
 .app .win .lights i{width:9px;height:9px;border-radius:50%;background:#C9CED6}
-.app .win .url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#FFFFFF;border-radius:7px;padding:3px 10px;font:500 11.5px var(--sans);color:#4B5260;text-align:center}
+.app .win .title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 12px var(--sans);color:#16181C;text-align:center;margin-right:37px}
+.app .win .url{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;background:#FFFFFF;border-radius:7px;padding:3px 10px;font:500 11.5px var(--sans);color:#4B5260;display:flex;gap:6px;align-items:center}
 .app.desk .bar{grid-template-columns:28px 1fr 28px;padding:8px 16px}
 .app.desk .bar b{text-align:left;font-size:15px}
 .app.desk .body{padding:16px 18px;grid-template-columns:repeat(auto-fit,minmax(min(220px,100%),1fr));gap:12px}
@@ -1774,7 +1776,7 @@ function shotHtml(s, on, live, mine){
     const pos = 'style="--x:' + (+h.x) + ';--y:' + (+h.y) + ';--w:' + (+h.w) + ';--h:' + (+h.h) + '"', cls = 'hot' + (h.id === on ? ' on' : '');
     return live && stp ? '<button type="button" class="' + cls + '" ' + pos + ' data-open="' + k + '" aria-label="' + esc(stp.title) + '"' + (h.id === on ? ' aria-current="step"' : '') + '></button>' : '<span class="' + cls + '" ' + pos + '></span>';
   }).join('');
-  return '<div class="app shot' + (deviceOf(screenOf(s.id) || s) === 'desktop' ? ' desk' : '') + '"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + (mine ? '<span class="shot-tag">' + I('image', 'sm') + 'Your screenshot</span>' : '') + areas + '</div></div>';
+  return '<div class="app shot' + (deviceOf(screenOf(s.id) || s) !== 'phone' ? ' desk' : '') + '"><div class="shot-in">' + (SHOT.test(s.image.src) ? '<img src="' + esc(s.image.src) + '" alt="' + esc(s.image.alt) + '">' : '<p class="shot-alt">' + esc(s.image.alt) + '</p>') + (mine ? '<span class="shot-tag">' + I('image', 'sm') + 'Your screenshot</span>' : '') + areas + '</div></div>';
 }
 function appHtml(screenId, on, live, flow = FLOW){
   const s = screenOf(screenId, flow); if (!s) return '';
@@ -1796,15 +1798,15 @@ function appHtml(screenId, on, live, flow = FLOW){
   }
   const primary = foot.findIndex(([id]) => id !== (header && header.actions || []).map(a => a.id).find(x => x === id));
   const ordered = primary > 0 ? [foot[primary]].concat(foot.filter((_, i) => i !== primary)) : foot;
-  const desk = deviceOf(s, flow) === 'desktop';
-  return '<div class="app' + (desk ? ' desk' : '') + '" role="img" aria-label="The screen: ' + esc(s.title) + (desk ? ', on a computer' : '') + '">'
-    + (desk ? '<div class="win"><span class="lights"><i></i><i></i><i></i></span><span class="url">' + esc(s.title) + '</span></div>' : '<div class="sb"><span>9:41</span><span>' + I('wifi', 'sm') + I('battery', 'sm') + '</span></div>')
+  const device = deviceOf(s, flow), desk = device !== 'phone', site = device === 'website';
+  return '<div class="app' + (desk ? ' desk' : '') + '" role="img" aria-label="The screen: ' + esc(s.title) + (site ? ', a website in a browser' : desk ? ', on a computer' : '') + '">'
+    + (desk ? '<div class="win"><span class="lights"><i></i><i></i><i></i></span>' + (site ? '<span class="url">' + I('globe', 'sm') + '/' + (screenId === flow.start ? '' : esc(screenId)) + '</span>' : '<span class="title">' + esc(s.title) + '</span>') + '</div>' : '<div class="sb"><span>9:41</span><span>' + I('wifi', 'sm') + I('battery', 'sm') + '</span></div>')
     + '<div class="bar">' + (header && header.back || screenId !== flow.start ? I('left') : '<span></span>') + '<b>' + esc(header ? header.title : s.title) + '</b>' + I('dots') + '</div>'
     + '<div class="body">' + body.join('') + '</div><div class="foot">' + ordered.map(([id, label], i) => btn(id, label, i)).join('') + '</div>' + sheet + '</div>';
 }
 function galleryHtml(nowScreen){
   if (!FLOW) return '';
-  return '<div class="gallery" tabindex="0" role="region" aria-label="Every screen, in order">' + FLOW.screens.map((s, i) => '<div class="gcard' + (s.id === nowScreen ? ' now' : '') + (deviceOf(s) === 'desktop' ? ' desk' : '') + '" data-screen="' + esc(s.id) + '">' + appHtml(s.id) + '<p><span class="step">' + (i + 1) + '</span>' + esc(s.title) + '</p></div>').join('') + '</div>';
+  return '<div class="gallery" tabindex="0" role="region" aria-label="Every screen, in order">' + FLOW.screens.map((s, i) => '<div class="gcard' + (s.id === nowScreen ? ' now' : '') + (deviceOf(s) !== 'phone' ? ' desk' : '') + '" data-screen="' + esc(s.id) + '">' + appHtml(s.id) + '<p><span class="step">' + (i + 1) + '</span>' + esc(s.title) + '</p></div>').join('') + '</div>';
 }
 const RISK = { low: 'Low risk', medium: 'Medium risk', high: 'High risk' };
 function consoleHtml(a){
@@ -1829,7 +1831,7 @@ function variantsHtml(s){
   const rec = s.sec.recommended && s.sec.recommended.itemId, pick = store.choices[s.sec.id];
   const cards = s.items.map(it => { const to = it.step && it.step.outcomes.length === 1 && it.step.outcomes[0].to; return to && screenOf(to) ? [it, to] : null; }).filter(Boolean);
   if (!FLOW || cards.length < 2) return '';
-  return '<div class="variants">' + cards.map(([it, to]) => '<div class="variant' + (pick === it.id ? ' on' : '') + (deviceOf(screenOf(to)) === 'desktop' ? ' desk' : '') + '">' + appHtml(to)
+  return '<div class="variants">' + cards.map(([it, to]) => '<div class="variant' + (pick === it.id ? ' on' : '') + (deviceOf(screenOf(to)) !== 'phone' ? ' desk' : '') + '">' + appHtml(to)
     + '<p class="vname">' + (it.id === rec ? I('star', 'sm') : '') + esc(it.title) + (it.id === rec ? ' <small>· recommended</small>' : '') + '</p>'
     + '<button type="button" class="btn small' + (pick === it.id ? ' pri' : '') + '" data-choose="' + esc(s.sec.id) + '" data-opt="' + esc(it.id) + '" aria-pressed="' + (pick === it.id) + '">' + I('check', 'sm') + (pick === it.id ? 'Your pick' : 'Pick this') + '</button></div>').join('') + '</div>';
 }
