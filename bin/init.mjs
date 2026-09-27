@@ -33,7 +33,9 @@ const KINDS = {
       { id: 'go-ahead', sectionId: 'permission', title: f('the one action that needs a yes'),
         approval: { action: f('exactly what will be done'), scope: f('what it touches'), risk: 'medium', preview: f('the command or message, as it will be'), expiresAt: new Date(Date.now() + 7 * 864e5).toISOString().replace(/\.\d+Z$/, 'Z') } }] }),
   test: () => ({ verdictSet: V('test', ['works', 'Works', 'positive'], ['partial', 'Partially works', 'caution'], ['fails', "Doesn't work", 'negative'], ['untested', "Couldn't test it", 'neutral']),
-    items: [item('check-1', 'the first thing to try'), item('check-2', 'the next thing to try')] }),
+    fields: [{ key: 'expect', label: 'Expected', tone: 'positive' }],
+    items: [['check-1', 'the first thing to try'], ['check-2', 'the next thing to try']].map(([id, what]) =>
+      item(id, what, { body: f('the steps to try it'), fields: { expect: f('what should happen') } })) }),
   explain: () => ({ verdictSet: V('explanation', ['clear', 'Clear', 'positive'], ['partly-clear', 'Partly clear', 'caution'], ['lost-me', 'Lost me', 'negative'], ['seems-wrong', 'Seems wrong', 'negative']),
     brief: { explains: f('what you explain, in one or two sentences') }, focus: 'how',
     diagrams: [{ id: 'how', kind: 'flowchart', title: f('what the picture shows'),
