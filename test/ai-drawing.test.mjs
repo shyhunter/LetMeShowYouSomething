@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { drawDiagram } from '../lib/draw-diagram.mjs';
-import { layout } from '../lib/layout.mjs';
+import { drawDiagram } from '../skills/letmeshowyousomething/lib/draw-diagram.mjs';
+import { layout } from '../skills/letmeshowyousomething/lib/layout.mjs';
 import { agentDiagram } from './ai-fixtures.mjs';
 
 // Inspect the renderer's escaped tspan payloads only. This is not an HTML

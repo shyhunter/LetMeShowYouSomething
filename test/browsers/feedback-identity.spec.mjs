@@ -8,14 +8,14 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { overview, download } from './page-helpers.mjs';
 const root = resolve(import.meta.dirname, '../..');
-const base = JSON.parse(readFileSync(join(root, 'examples/review.example.json'), 'utf8'));
+const base = JSON.parse(readFileSync(join(root, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8'));
 const run = (bin, ...args) => spawnSync(process.execPath, [join(root, bin), ...args], { encoding: 'utf8' });
 test.beforeEach(async ({ page }, info) => { info.faults = []; page.on('pageerror', (e) => info.faults.push(e.message)); });
 test.afterEach(async ({}, info) => { expect(info.faults).toEqual([]); });
 function rendered(review) {
   const dir = mkdtempSync(join(tmpdir(), 'identity-browser-')), rp = join(dir, 'review.json'), hp = join(dir, 'review.html');
   writeFileSync(rp, JSON.stringify(review));
-  const r = run('bin/render.mjs', rp, hp); expect(r.status, r.stderr).toBe(0);
+  const r = run('skills/letmeshowyousomething/bin/render.mjs', rp, hp); expect(r.status, r.stderr).toBe(0);
   return { dir, rp, hp };
 }
 const addItem = async (page, title) => { if (!(await page.locator('#at').isVisible())) await page.locator('[data-act="missing"]').click(); await page.locator('#at').fill(title); await page.locator('#addbtn').click(); };
@@ -36,5 +36,5 @@ test('#77: a carried added-1 is never reused, and a removed item takes its pictu
   expect(await page.evaluate(() => store.pictures)).toEqual([]);
   const fp = await download(page, 'json', join(dir, 'feedback.json'));
   expect(JSON.parse(readFileSync(fp, 'utf8')).addedItems.map((a) => a.id)).toEqual(['added-2', 'added-3']);
-  const r = run('bin/check.mjs', 'pair', rp, fp); expect(r.status, r.stdout).toBe(0);
+  const r = run('skills/letmeshowyousomething/bin/check.mjs', 'pair', rp, fp); expect(r.status, r.stdout).toBe(0);
 });

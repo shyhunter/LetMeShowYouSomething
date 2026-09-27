@@ -26,14 +26,14 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildFeedback, applyProposals, partLabel } from '../lib/build-feedback.mjs';
-import { flowAsDiagram, drawDiagram } from '../lib/draw-diagram.mjs';
+import { buildFeedback, applyProposals, partLabel } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
+import { flowAsDiagram, drawDiagram } from '../skills/letmeshowyousomething/lib/draw-diagram.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const at = (p) => join(root, p);
 const tmp = mkdtempSync(join(tmpdir(), 'review-test-'));
 const readJson = (p) => JSON.parse(readFileSync(at(p), 'utf8'));
-const REVIEW = 'examples/review.example.json';
+const REVIEW = 'skills/letmeshowyousomething/examples/review.example.json';
 
 // #69 / #32 part 3: tables are data, never executable SQL or live records.
 const database = () => ({ id: 'db', kind: 'database', title: 'Example booking data', nodes: [
@@ -136,8 +136,8 @@ test('database proposals: bounded operations preserve relationship fields and co
 });
 
 test('database: real example, repeated relationships, proposals and followup pass the same contract', () => {
-  const review = readJson('examples/database-booking.review.json');
-  assert.equal(check('review', at('examples/database-booking.review.json')).status, 0);
+  const review = readJson('skills/letmeshowyousomething/examples/database-booking.review.json');
+  assert.equal(check('review', at('skills/letmeshowyousomething/examples/database-booking.review.json')).status, 0);
   const d = review.diagrams[0];
   const on = { diagram: d.id, edge: { from: 'bookings', to: 'members', nth: 1 } };
   const label = partLabel(d, on);
@@ -147,24 +147,24 @@ test('database: real example, repeated relationships, proposals and followup pas
   ] };
   const feedback = buildFeedback(review, store);
   const fp = join(tmp, 'database-feedback.json'); writeFileSync(fp, JSON.stringify(feedback));
-  const result = check('pair', at('examples/database-booking.review.json'), fp);
+  const result = check('pair', at('skills/letmeshowyousomething/examples/database-booking.review.json'), fp);
   assert.equal(result.status, 0, result.stdout);
   const next = structuredClone(review); next.id = 'database-followup';
   next.items[0].answers = ['comment-1', 'proposal-1', 'proposal-2'];
   const rp = join(tmp, 'database-followup.json'); writeFileSync(rp, JSON.stringify(next));
-  assert.equal(check('followup', rp, at('examples/database-booking.review.json'), fp).status, 0);
+  assert.equal(check('followup', rp, at('skills/letmeshowyousomething/examples/database-booking.review.json'), fp).status, 0);
   next.items[0].answers = []; writeFileSync(rp, JSON.stringify(next));
-  assert.equal(check('followup', rp, at('examples/database-booking.review.json'), fp).status, 1);
+  assert.equal(check('followup', rp, at('skills/letmeshowyousomething/examples/database-booking.review.json'), fp).status, 1);
   // A missing position is ambiguous when there are two foreign keys between the same tables.
   assert.equal(partLabel(d, { edge: { from: 'bookings', to: 'members' } }), null);
   for (const op of ['add-node', 'add-edge']) {
     const bad = buildFeedback(review, { proposals: [{ id: 'proposal-1', diagram: d.id, op, from: 'bookings', to: 'members', text: 'Extra', label: 'Bookings' }] });
     writeFileSync(fp, JSON.stringify(bad));
-    assert.match(check('pair', at('examples/database-booking.review.json'), fp).stdout, /✗ proposals fit the diagram/);
+    assert.match(check('pair', at('skills/letmeshowyousomething/examples/database-booking.review.json'), fp).stdout, /✗ proposals fit the diagram/);
   }
 });
 
-const check = (...args) => spawnSync(process.execPath, [at('bin/check.mjs'), ...args], { encoding: 'utf8' });
+const check = (...args) => spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/check.mjs'), ...args], { encoding: 'utf8' });
 const checkFeedback = (feedback) => {
   const p = join(tmp, `f-${Math.random().toString(36).slice(2)}.json`);
   writeFileSync(p, JSON.stringify(feedback));
@@ -174,8 +174,8 @@ const checkFeedback = (feedback) => {
 test('worked examples pass', () => {
   for (const args of [
     ['review', at(REVIEW)],
-    ['pair', at(REVIEW), at('examples/feedback.example.json')],
-    ['pair', at(REVIEW), at('examples/checkout-uat.feedback.json')],
+    ['pair', at(REVIEW), at('skills/letmeshowyousomething/examples/feedback.example.json')],
+    ['pair', at(REVIEW), at('skills/letmeshowyousomething/examples/checkout-uat.feedback.json')],
   ]) {
     const r = check(...args);
     assert.equal(r.status, 0, `${args[0]} ${args.slice(1).join(' ')}\n${r.stdout}`);
@@ -207,7 +207,7 @@ const faults = {
 
 for (const [checkName, inject] of Object.entries(faults)) {
   test(`checker refuses: ${checkName}`, () => {
-    const feedback = readJson('examples/feedback.example.json');
+    const feedback = readJson('skills/letmeshowyousomething/examples/feedback.example.json');
     inject(feedback);
     const r = checkFeedback(feedback);
     assert.equal(r.status, 1, `expected a refusal\n${r.stdout}`);
@@ -239,10 +239,10 @@ test('the offline rule catches a page that would fetch', () => {
 
 test('page inlines the builder verbatim and fetches nothing', () => {
   const out = join(tmp, 'page.html');
-  const r = spawnSync(process.execPath, [at('bin/render.mjs'), at(REVIEW), out], { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/render.mjs'), at(REVIEW), out], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const html = readFileSync(out, 'utf8');
-  const builder = readFileSync(at('lib/build-feedback.mjs'), 'utf8').replace(/^export function/gm, 'function');
+  const builder = readFileSync(at('skills/letmeshowyousomething/lib/build-feedback.mjs'), 'utf8').replace(/^export function/gm, 'function');
   assert.ok(html.includes(builder), 'the page does not contain lib/build-feedback.mjs verbatim');
   offline(html, 'the list page');
 });
@@ -251,7 +251,7 @@ test('page inlines the builder verbatim and fetches nothing', () => {
 // and keep the primary button's text readable: WCAG AA, 4.5:1.
 test('each theme is readable', () => {
   const out = join(tmp, 'theme.html');
-  spawnSync(process.execPath, [at('bin/render.mjs'), at(REVIEW), out]);
+  spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/render.mjs'), at(REVIEW), out]);
   const css = readFileSync(out, 'utf8');
   const blocks = {
     light: css.match(/:root\{([^}]*)\}/)[1],
@@ -277,8 +277,8 @@ test('each theme is readable', () => {
 });
 
 // ── decisions: choose-one, recommendation, memory of earlier decisions ────────────────────────────
-const DECISION = 'examples/decision-review.example.json';
-const EARLIER = 'examples/earlier-decisions.feedback.json';
+const DECISION = 'skills/letmeshowyousomething/examples/decision-review.example.json';
+const EARLIER = 'skills/letmeshowyousomething/examples/earlier-decisions.feedback.json';
 const decisionFeedback = (choices = { storage: 'opt-db' }) => buildFeedback(readJson(DECISION), {
   verdicts: { 'opt-file': 'agree', 'opt-db': 'partly-agree' }, notes: {}, added: [], choices,
 });
@@ -354,7 +354,7 @@ test('page escapes every agent-written field', () => {
   review.fields[0].label = evil; review.items[0].fields.assumes = evil;
   const src = join(tmp, 'evil.json'), out = join(tmp, 'evil.html');
   writeFileSync(src, JSON.stringify(review));
-  spawnSync(process.execPath, [at('bin/render.mjs'), src, out]);
+  spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/render.mjs'), src, out]);
   const html = readFileSync(out, 'utf8');
   // The page's own code draws pictures (#60); what must never appear is the review's markup, unescaped.
   assert.doesNotMatch(html, /<img src=x onerror/i, 'raw markup from the review reached the static HTML');
@@ -365,9 +365,9 @@ test('page escapes every agent-written field', () => {
 
 // SKILL.md is what an agent actually reads. If it names a file or command that no longer exists,
 // every agent using the skill fails at that step.
-test('SKILL.md frontmatter is valid and every path it names exists', async () => {
+test('skills/letmeshowyousomething/SKILL.md frontmatter is valid and every path it names exists', async () => {
   const { existsSync } = await import('node:fs');
-  const skill = readFileSync(at('SKILL.md'), 'utf8');
+  const skill = readFileSync(at('skills/letmeshowyousomething/SKILL.md'), 'utf8');
   const front = skill.match(/^---\nname: ([a-z0-9-]+)\ndescription: (.+)\n---\n/);
   assert.ok(front, 'frontmatter must be exactly name + description');
   assert.match(front[2], /^Use when /, 'description must start with "Use when"');
@@ -375,9 +375,10 @@ test('SKILL.md frontmatter is valid and every path it names exists', async () =>
   const paths = [...skill.matchAll(/<skill>\/([\w./-]+)/g)].map((m) => m[1])
     .concat([...skill.matchAll(/`([\w-]+\.example\.json)`/g)].map((m) => `examples/${m[1]}`));
   assert.ok(paths.length >= 4, `expected SKILL.md to reference its tools, found ${paths.length}`);
-  for (const p of paths) assert.ok(existsSync(at(p.replace(/\/$/, ''))), `SKILL.md names ${p}, which does not exist`);
+  // Resolved inside the skill's own folder: that folder is all an installed skill has (#175).
+  for (const p of paths) assert.ok(existsSync(at('skills/letmeshowyousomething/' + p.replace(/\/$/, ''))), `SKILL.md names ${p}, which is not in the skill's folder`);
   for (const mode of skill.matchAll(/check\.mjs (\w+)/g))
-    assert.ok(['review', 'feedback', 'pair', 'history', 'followup', 'rounds', 'copies'].includes(mode[1]), `SKILL.md uses unknown checker mode "${mode[1]}"`);
+    assert.ok(['review', 'feedback', 'pair', 'history', 'followup', 'rounds', 'copies'].includes(mode[1]), `skills/letmeshowyousomething/SKILL.md uses unknown checker mode "${mode[1]}"`);
 });
 
 // Licensing (LICENSING.md): a generated page must carry no obligation, so everything copied into it is
@@ -385,17 +386,17 @@ test('SKILL.md frontmatter is valid and every path it names exists', async () =>
 test('licences: every file declares one, and generated pages are MIT-0 only', async () => {
   const { existsSync, readdirSync } = await import('node:fs');
   const spdx = (text) => text.split('\n').slice(0, 3).join('\n').match(/SPDX-License-Identifier: ([\w.-]+)/)?.[1];
-  const code = ['bin', 'lib', 'test'].flatMap((d) => readdirSync(at(d)).filter((f) => f.endsWith('.mjs')).map((f) => `${d}/${f}`));
+  const code = ['skills/letmeshowyousomething/bin', 'skills/letmeshowyousomething/lib', 'test'].flatMap((d) => readdirSync(at(d)).filter((f) => f.endsWith('.mjs')).map((f) => `${d}/${f}`));
   const used = new Set();
   for (const f of code) {
     const id = spdx(readFileSync(at(f), 'utf8'));
     assert.ok(id, `${f} has no SPDX-License-Identifier in its first lines`);
     used.add(id);
   }
-  assert.equal(spdx(readFileSync(at('lib/build-feedback.mjs'), 'utf8')), 'MIT-0', 'lib/build-feedback.mjs is copied into every page and must be MIT-0');
+  assert.equal(spdx(readFileSync(at('skills/letmeshowyousomething/lib/build-feedback.mjs'), 'utf8')), 'MIT-0', 'skills/letmeshowyousomething/lib/build-feedback.mjs is copied into every page and must be MIT-0');
 
   const out = join(tmp, 'licence.html');
-  spawnSync(process.execPath, [at('bin/render.mjs'), at(DECISION), out]);
+  spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/render.mjs'), at(DECISION), out]);
   const page = readFileSync(out, 'utf8');
   const inPage = [...page.matchAll(/SPDX-License-Identifier: ([\w.-]+)/g)].map((m) => m[1]);
   assert.ok(inPage.length >= 2, 'the page must say it is MIT-0 (page header + inlined builder)');
@@ -404,8 +405,8 @@ test('licences: every file declares one, and generated pages are MIT-0 only', as
   const toml = readFileSync(at('REUSE.toml'), 'utf8');
   const licenceFor = (glob) => toml.match(new RegExp(`path = \\[[^\\]]*"${glob.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"[^\\]]*\\]\\nSPDX-License-Identifier = "([\\w.-]+)"`))?.[1];
   assert.equal(licenceFor('examples/**'), 'MIT-0', 'examples must be MIT-0');
-  assert.equal(licenceFor('schemas/**'), 'CC0-1.0', 'schemas must be CC0-1.0');
-  assert.equal(licenceFor('PROTOCOL.md'), 'CC0-1.0', 'the protocol must be CC0-1.0');
+  assert.equal(licenceFor('skills/letmeshowyousomething/schemas/**'), 'CC0-1.0', 'schemas must be CC0-1.0');
+  assert.equal(licenceFor('skills/letmeshowyousomething/PROTOCOL.md'), 'CC0-1.0', 'the protocol must be CC0-1.0');
   for (const m of toml.matchAll(/SPDX-License-Identifier = "([\w.-]+)"/g)) used.add(m[1]);
   for (const id of used) assert.ok(existsSync(at(`LICENSES/${id}.txt`)), `${id} is used but LICENSES/${id}.txt is missing`);
 });
@@ -424,7 +425,7 @@ test('a pick answers its section: unrated options are not gaps', () => {
 });
 
 // ── flows (v0.2 part 1a) ─────────────────────────────────────────────────────────────────────────
-const FLOW = 'examples/flow-booking.review.json';
+const FLOW = 'skills/letmeshowyousomething/examples/flow-booking.review.json';
 // A changed example is a new review, and gets its own id, as an agent's must (#38).
 const ownId = (review) => ({ ...review, id: review.id + '-variant' });
 const checkReviewObj = (review, ...extra) => {
@@ -715,7 +716,7 @@ const SAMPLES = {
 const ENUM_KEYS = new Set(['type', 'mode', 'tone']);
 
 test('every component type has a sample carrying every property its schema defines', () => {
-  const defs = readJson('schemas/review.v1.schema.json').$defs;
+  const defs = readJson('skills/letmeshowyousomething/schemas/review.v1.schema.json').$defs;
   const types = defs.block.oneOf.map((x) => x.$ref.split('/block-')[1]);
   assert.deepEqual(Object.keys(SAMPLES).sort(), [...types].sort(), 'SAMPLES must cover exactly the catalogue');
   for (const t of types) {
@@ -725,7 +726,7 @@ test('every component type has a sample carrying every property its schema defin
 });
 
 test('drawBlock draws every type and shows its text', async () => {
-  const { drawBlock } = await import('../lib/draw-components.mjs');
+  const { drawBlock } = await import('../skills/letmeshowyousomething/lib/draw-components.mjs');
   for (const [type, block] of Object.entries(SAMPLES)) {
     const html = drawBlock(block, { targets: new Set() });
     assert.equal(typeof html, 'string', type);
@@ -736,7 +737,7 @@ test('drawBlock draws every type and shows its text', async () => {
 });
 
 test('drawBlock turns only step targets into buttons', async () => {
-  const { drawBlock } = await import('../lib/draw-components.mjs');
+  const { drawBlock } = await import('../skills/letmeshowyousomething/lib/draw-components.mjs');
   const card = drawBlock(SAMPLES.card, { targets: new Set(['book']) });
   assert.match(card, /<button type="button"[^>]*data-target="book"[^>]*>Book 10:00<\/button>/);
   const untargeted = drawBlock(SAMPLES.card, { targets: new Set() });
@@ -746,7 +747,7 @@ test('drawBlock turns only step targets into buttons', async () => {
 });
 
 test('drawBlock escapes every text field of every type', async () => {
-  const { drawBlock } = await import('../lib/draw-components.mjs');
+  const { drawBlock } = await import('../skills/letmeshowyousomething/lib/draw-components.mjs');
   const evil = '<img src=x onerror=alert(1)>"\'';
   for (const [type, sample] of Object.entries(SAMPLES)) {
     const hostile = JSON.parse(JSON.stringify(sample), function (k, v) { return typeof v === 'string' && !ENUM_KEYS.has(k) ? evil : v; });
@@ -760,10 +761,10 @@ test('drawBlock escapes every text field of every type', async () => {
 
 test('flow page inlines the drawing and feedback code verbatim, and fetches nothing', () => {
   const out = join(tmp, 'flow.html');
-  const r = spawnSync(process.execPath, [at('bin/render.mjs'), at(FLOW), out], { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/render.mjs'), at(FLOW), out], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
   const html = readFileSync(out, 'utf8');
-  for (const lib of ['lib/draw-components.mjs', 'lib/build-feedback.mjs', 'lib/layout.mjs', 'lib/draw-diagram.mjs'])
+  for (const lib of ['skills/letmeshowyousomething/lib/draw-components.mjs', 'skills/letmeshowyousomething/lib/build-feedback.mjs', 'skills/letmeshowyousomething/lib/layout.mjs', 'skills/letmeshowyousomething/lib/draw-diagram.mjs'])
     assert.ok(html.includes(readFileSync(at(lib), 'utf8').replace(/^export function/gm, 'function').replace(/^import .*\n/gm, '')), `${lib} is not inlined verbatim`);
   offline(html, 'the flow page');
   assert.match(html, /id="start-review"/);
@@ -887,7 +888,7 @@ const overlaps = (boxes) => {
 };
 
 test('layout: deterministic, columns by distance from the start, rows by lane', async () => {
-  const { layout } = await import('../lib/layout.mjs');
+  const { layout } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
   const chart = bookingChart();
   const a = layout(chart), b = layout(bookingChart());
   assert.deepEqual(a, b, 'the same diagram must always get the same layout');
@@ -903,7 +904,7 @@ test('layout: deterministic, columns by distance from the start, rows by lane', 
 });
 
 test('layout: loops are routed underneath and pins are respected', async () => {
-  const { layout } = await import('../lib/layout.mjs');
+  const { layout } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
   const chart = bookingChart();
   chart.nodes.push({ id: 'retry', kind: 'retry', lane: 'system', label: 'Try again' });
   chart.edges.push({ from: 'mail', to: 'retry' }, { from: 'retry', to: 'reserve' });
@@ -919,7 +920,7 @@ test('layout: loops are routed underneath and pins are respected', async () => {
 });
 
 test('layout: 200 random diagrams, never an overlap', async () => {
-  const { layout } = await import('../lib/layout.mjs');
+  const { layout } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
   let seed = 7; const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
   for (let t = 0; t < 200; t++) {
     const laneCount = 1 + Math.floor(rnd() * 4);
@@ -936,11 +937,11 @@ test('layout: 200 random diagrams, never an overlap', async () => {
 });
 
 // ── drawing diagrams (our own shapes and icons, D041) ──
-const NODE_KINDS_ALL = readJson('schemas/review.v1.schema.json').$defs.diagramNode.properties.kind.enum;
-const ICONS_ALL = readJson('schemas/review.v1.schema.json').$defs.diagramNode.properties.icon.enum;
+const NODE_KINDS_ALL = readJson('skills/letmeshowyousomething/schemas/review.v1.schema.json').$defs.diagramNode.properties.kind.enum;
+const ICONS_ALL = readJson('skills/letmeshowyousomething/schemas/review.v1.schema.json').$defs.diagramNode.properties.icon.enum;
 
 test('drawDiagram draws every node kind and every icon, as SVG', async () => {
-  const { drawDiagram } = await import('../lib/draw-diagram.mjs');
+  const { drawDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const nodes = NODE_KINDS_ALL.map((kind, i) => ({ id: `n${i}`, kind: i === 0 ? 'start' : kind, label: `${kind} label`, icon: ICONS_ALL[i % ICONS_ALL.length] }));
   const edges = nodes.slice(1).map((n, i) => ({ from: `n${i}`, to: n.id, kind: ['sequence', 'conditional', 'default', 'message', 'association'][i % 5], label: `edge ${i}` }));
   const svg = drawDiagram({ id: 'all', kind: 'flowchart', title: 'Every kind', nodes, edges });
@@ -954,7 +955,7 @@ test('drawDiagram draws every node kind and every icon, as SVG', async () => {
 });
 
 test('drawDiagram shows components inside nodes, links steps, and marks the selected one', async () => {
-  const { drawDiagram } = await import('../lib/draw-diagram.mjs');
+  const { drawDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const svg = drawDiagram(bookingChart(), { selected: 'book' });
   assert.match(svg, /data-node="done"[\s\S]*<foreignObject[\s\S]*Booking saved/, 'the toast component is drawn inside the end node');
   assert.match(svg, /data-node="tap-book"[^>]*data-step="book"[^>]*aria-current="true"/, 'the selected step is marked on its node');
@@ -963,7 +964,7 @@ test('drawDiagram shows components inside nodes, links steps, and marks the sele
 });
 
 test('drawDiagram escapes every text: title, lanes, labels, edge labels, components, ids', async () => {
-  const { drawDiagram } = await import('../lib/draw-diagram.mjs');
+  const { drawDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const evil = '<img src=x onerror=alert(1)>"\'';
   const d = bookingChart();
   d.title = evil; d.lanes[0].title = evil;
@@ -977,7 +978,7 @@ test('drawDiagram escapes every text: title, lanes, labels, edge labels, compone
 
 // ── computed charts: exactly the flow, nothing added or lost ──
 test('the user-flow chart is computed from the flow and matches it exactly', async () => {
-  const { flowAsDiagram, drawDiagram } = await import('../lib/draw-diagram.mjs');
+  const { flowAsDiagram, drawDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const review = readJson(FLOW);
   const steps = review.items.filter((i) => i.step);
   const d = flowAsDiagram(review);
@@ -1012,8 +1013,8 @@ const crossings = (l) => {
   return hits;
 };
 test('layout: no line runs through an unrelated box (example, user-flow chart, 200 random diagrams)', async () => {
-  const { layout } = await import('../lib/layout.mjs');
-  const { flowAsDiagram } = await import('../lib/draw-diagram.mjs');
+  const { layout } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
+  const { flowAsDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   assert.deepEqual(crossings(layout(bookingChart())), []);
   assert.deepEqual(crossings(layout(flowAsDiagram(readJson(FLOW)))), []);
   let seed = 11; const rnd = () => (seed = (seed * 48271) % 2147483647) / 2147483647;
@@ -1030,8 +1031,8 @@ test('layout: no line runs through an unrelated box (example, user-flow chart, 2
 });
 
 test('layout: the End stands alone in the last column, like the Start in the first (D077)', async () => {
-  const { layout } = await import('../lib/layout.mjs');
-  const { flowAsDiagram } = await import('../lib/draw-diagram.mjs');
+  const { layout } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
+  const { flowAsDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const L = layout(flowAsDiagram(readJson(FLOW)));
   const cols = Object.values(L.nodes).map((b) => b.col), last = Math.max(...cols);
   assert.equal(L.nodes.end.col, last);
@@ -1041,8 +1042,8 @@ test('layout: the End stands alone in the last column, like the Start in the fir
 
 // A label drawn over a box hides both (D075). Each label's box, as wide as layout reckons it, must touch no node.
 test('layout: no edge label covers a box (example, user-flow chart, 200 random diagrams with labels)', async () => {
-  const { layout, labelWidth } = await import('../lib/layout.mjs');
-  const { flowAsDiagram } = await import('../lib/draw-diagram.mjs');
+  const { layout, labelWidth } = await import('../skills/letmeshowyousomething/lib/layout.mjs');
+  const { flowAsDiagram } = await import('../skills/letmeshowyousomething/lib/draw-diagram.mjs');
   const covered = (l) => {
     const hits = [];
     for (const e of l.edges) {
@@ -1107,7 +1108,7 @@ test('an example source that is not a web address is refused, and the page never
     const r = checkReviewObj(withBrief((x) => { x.brief.examples[0].source = source; }), '--root', root);
     assert.equal(r.status, 1, r.stdout);
     assert.match(r.stdout, /✗ examples are honest:.*"Class passes at gyms": source ".*" is not a web address\. Give the https:\/\/ link/, r.stdout);
-    const { startCardsHtml, reviewParts } = await import('../lib/review-parts.mjs');
+    const { startCardsHtml, reviewParts } = await import('../skills/letmeshowyousomething/lib/review-parts.mjs');
     const review = withBrief((x) => { x.brief.examples[0].source = source; });
     const html = startCardsHtml(review, reviewParts(review), () => '');
     assert.doesNotMatch(html, /href="(?!https?:)/, 'only web addresses become links');
@@ -1157,7 +1158,7 @@ test('the user flow chart begins with a Start and ends with an End', () => {
 
 // #38 — an agent kept the example's id; its page then shared answers with the example page.
 test('a review may not keep an example\'s id, unless it is that example', () => {
-  const copy = readJson('examples/review.example.json');
+  const copy = readJson('skills/letmeshowyousomething/examples/review.example.json');
   copy.title = 'My own checkout test';
   const p = join(tmp, 'copied-id.review.json');
   writeFileSync(p, JSON.stringify(copy));
@@ -1168,12 +1169,12 @@ test('a review may not keep an example\'s id, unless it is that example', () => 
   writeFileSync(p, JSON.stringify(copy));
   assert.equal(check('review', p).status, 0, 'with its own id it passes');
   for (const ex of ['review.example.json', 'decision-review.example.json', 'flow-booking.review.json'])
-    assert.equal(check('review', at('examples/' + ex)).status, 0, `${ex} itself still passes`);
+    assert.equal(check('review', at('skills/letmeshowyousomething/examples/' + ex)).status, 0, `${ex} itself still passes`);
 });
 
 // #42 — an item can carry real precedents, held to the same rule as the brief's.
 test('item examples: who and what are required, a missing source is a warning, not a refusal', () => {
-  const r = readJson('examples/review.example.json');
+  const r = readJson('skills/letmeshowyousomething/examples/review.example.json');
   r.id = 'examples-on-items';
   r.items[0].examples = [{ name: 'Shopify checkout', what: 'Lets people pay without an account; offers one after the order.', shows: 'A "Continue as guest" choice next to "Sign in".', source: 'https://help.shopify.com/en/manual/checkout-settings/customer-accounts' },
     { name: 'A shop a colleague ran', what: 'Asked for the account only after payment.' }];
@@ -1188,7 +1189,7 @@ test('item examples: who and what are required, a missing source is a warning, n
 
 // #47 — a picture must be drawn: Mermaid on an offline page is only its source text.
 test('checker refuses a Mermaid section diagram, and a list chart may point at items', () => {
-  const r = readJson('examples/review.example.json');
+  const r = readJson('skills/letmeshowyousomething/examples/review.example.json');
   r.sections[0].diagram = { kind: 'mermaid', source: 'flowchart LR\n  A --> B' };
   const bad = checkReviewObj(r);
   assert.equal(bad.status, 1, bad.stdout);
@@ -1202,8 +1203,8 @@ test('checker refuses a Mermaid section diagram, and a list chart may point at i
 
 // #52 — the next round carries everything the reviewer left open.
 test('followup: gaps, added items and requests are carried into the next review', () => {
-  const review = readJson('examples/review.example.json');
-  const base = readJson('examples/feedback.example.json');
+  const review = readJson('skills/letmeshowyousomething/examples/review.example.json');
+  const base = readJson('skills/letmeshowyousomething/examples/feedback.example.json');
   const run = (editNext, editFb) => {
     const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
     next.items.push({ id: 'added-currency', title: 'Prices switch currency halfway through', summary: 'You found this one: which country did you switch to?' });
@@ -1212,7 +1213,7 @@ test('followup: gaps, added items and requests are carried into the next review'
     if (editNext) editNext(next);
     const [pn, pf] = ['next', 'fb'].map((k) => join(tmp, `${k}-${Math.random().toString(36).slice(2)}.json`));
     writeFileSync(pn, JSON.stringify(next)); writeFileSync(pf, JSON.stringify(fb));
-    return check('followup', pn, at('examples/review.example.json'), pf);
+    return check('followup', pn, at('skills/letmeshowyousomething/examples/review.example.json'), pf);
   };
   const ok = run();
   assert.equal(ok.status, 0, ok.stdout);
@@ -1239,7 +1240,7 @@ test('followup: gaps, added items and requests are carried into the next review'
 test('approvals: well-formed, answered approve or decline, echoed exactly, never used after they end', () => {
   const iso = (ms) => new Date(Date.now() + ms).toISOString().replace(/\.\d+Z$/, 'Z');
   const review = () => {
-    const r = readJson('examples/decision-review.example.json');
+    const r = readJson('skills/letmeshowyousomething/examples/decision-review.example.json');
     r.id = 'approval-test'; r.createdAt = iso(-3600e3);
     r.sections.push({ id: 'approve', label: 'Needs your approval' });
     r.items.push({ id: 'drop-db', sectionId: 'approve', title: 'Drop the old staging database',
@@ -1283,31 +1284,31 @@ test('answer.mjs: confirmed chat answers become a checked feedback file; what wa
   const answers = join(tmp, 'answers.json'), out = join(tmp, 'chat.feedback.json');
   writeFileSync(answers, JSON.stringify({ choices: { storage: 'opt-db' }, verdicts: { 'autosave-local': 'agree' },
     notes: { 'opt-db': 'Only if backups are daily.', 'challenge-forgotten-file': 'Ask Sam.' } }));
-  const w = spawnSync(process.execPath, [at('bin/answer.mjs'), at('examples/decision-review.example.json'), answers, out], { encoding: 'utf8' });
+  const w = spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/answer.mjs'), at('skills/letmeshowyousomething/examples/decision-review.example.json'), answers, out], { encoding: 'utf8' });
   assert.equal(w.status, 0, w.stderr);
   const fb = JSON.parse(readFileSync(out, 'utf8'));
   assert.equal(fb.via, 'chat');
   assert.equal(fb.choices.find((c) => c.sectionId === 'storage').itemId, 'opt-db');
   assert.equal(fb.responses.find((r) => r.itemId === 'challenge-forgotten-file').verdict, 'unset', 'a note alone is not an answer');
   assert.ok(fb.gaps.includes('challenge-forgotten-file'));
-  const c = check('pair', at('examples/decision-review.example.json'), out);
+  const c = check('pair', at('skills/letmeshowyousomething/examples/decision-review.example.json'), out);
   assert.equal(c.status, 0, c.stdout);
 });
 
 // #88 — an answer that settles nothing (a caution or neutral verdict: "Partially works", "Couldn't
 // test it", "Revisit") is carried like a gap; a settled one may be left out.
 test('followup: caution and neutral answers are carried; settled ones may be dropped', () => {
-  const review = readJson('examples/review.example.json');
+  const review = readJson('skills/letmeshowyousomething/examples/review.example.json');
   const run = (dropId, editFb, carry) => {
     const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
     next.items = next.items.filter((i) => i.id !== dropId);
     for (const n of next.diagrams[0].nodes) if (n.step === dropId) delete n.step;
     if (carry) next.items.push(carry);
-    const fb = readJson('examples/feedback.example.json');
+    const fb = readJson('skills/letmeshowyousomething/examples/feedback.example.json');
     if (editFb) editFb(fb);
     const [pn, pf] = ['next', 'fb'].map((k) => join(tmp, `${k}-${Math.random().toString(36).slice(2)}.json`));
     writeFileSync(pn, JSON.stringify(next)); writeFileSync(pf, JSON.stringify(fb));
-    return check('followup', pn, at('examples/review.example.json'), pf).stdout;
+    return check('followup', pn, at('skills/letmeshowyousomething/examples/review.example.json'), pf).stdout;
   };
   // saved-card is "Partially works" (caution) in the example feedback.
   assert.match(run('saved-card'), /✗ open answers carried: "A returning customer can pay with a saved card" was answered "Partially works"/);
@@ -1321,7 +1322,7 @@ test('followup: caution and neutral answers are carried; settled ones may be dro
 
 // #60 — comments on a box or an arrow: echoed in words, checked against the review, answered next round.
 test('comments on a diagram: labelled, resolved against the review, and answered in the follow-up', () => {
-  const review = readJson('examples/review.example.json');
+  const review = readJson('skills/letmeshowyousomething/examples/review.example.json');
   const d = review.diagrams[0];
   const store = { comments: [
     { id: 'comment-1', diagram: d.id, node: 'guest', label: 'Checks out as a guest', note: 'Say who pays.' },
@@ -1330,7 +1331,7 @@ test('comments on a diagram: labelled, resolved against the review, and answered
   const fb = buildFeedback(review, store);
   assert.deepEqual(fb.comments.map((c) => c.id), ['comment-1', 'comment-2'], 'an empty comment is not an answer');
   const write = (o) => { const p = join(tmp, `c-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
-  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  const pair = (f) => check('pair', at('skills/letmeshowyousomething/examples/review.example.json'), write(f));
   assert.equal(pair(fb).status, 0, pair(fb).stdout);
   const moved = structuredClone(fb); moved.comments[0].label = 'Picks a saved card';
   assert.match(pair(moved).stdout, /✗ comments resolve: comment-1: says it is on "Picks a saved card", but that part is "Checks out as a guest"/);
@@ -1342,15 +1343,15 @@ test('comments on a diagram: labelled, resolved against the review, and answered
   const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
   next.items[0].answers = ['comment-1'];
   const fbPath = write(fb);
-  assert.match(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ comments answered: comment-2 on "Items in the cart → Signed in\?" is not answered/);
+  assert.match(check('followup', write(next), at('skills/letmeshowyousomething/examples/review.example.json'), fbPath).stdout, /✗ comments answered: comment-2 on "Items in the cart → Signed in\?" is not answered/);
   next.items[2].answers = ['comment-2'];
-  const ok = check('followup', write(next), at('examples/review.example.json'), fbPath);
+  const ok = check('followup', write(next), at('skills/letmeshowyousomething/examples/review.example.json'), fbPath);
   assert.doesNotMatch(ok.stdout, /✗ comments answered/, ok.stdout);
 });
 
 // #60 — pictures: really PNG, JPEG or WebP by their own bytes, attached to something in the file, small enough.
 test('pictures: kept on what they are attached to, refused when they are not really pictures', () => {
-  const review = readJson('examples/review.example.json');
+  const review = readJson('skills/letmeshowyousomething/examples/review.example.json');
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   const store = { notes: { 'declined-card': 'See the picture.' }, pictures: [
     { id: 'picture-1', on: 'declined-card', type: 'image/png', width: 1, height: 1, data: PNG },
@@ -1358,7 +1359,7 @@ test('pictures: kept on what they are attached to, refused when they are not rea
   const fb = buildFeedback(review, store);
   assert.deepEqual(fb.pictures.map((p) => [p.id, p.onTitle]), [['picture-1', 'A declined card explains itself']], 'a picture on nothing is left out');
   const write = (o) => { const p = join(tmp, `p-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
-  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  const pair = (f) => check('pair', at('skills/letmeshowyousomething/examples/review.example.json'), write(f));
   assert.equal(pair(fb).status, 0, pair(fb).stdout);
   const svg = structuredClone(fb); svg.pictures[0].data = Buffer.from('<svg onload="alert(1)"/>').toString('base64');
   assert.match(pair(svg).stdout, /✗ pictures are pictures: picture-1: says image\/png, but its bytes are not that kind of picture/);
@@ -1374,7 +1375,7 @@ test('pictures: kept on what they are attached to, refused when they are not rea
   assert.equal(buildFeedback(review, { ...store, pictures: [{ ...store.pictures[0], screen: 'slot-list' }] }).pictures[0].screen, undefined, 'the page never sends a screen the review does not have');
   // The agent looks at them as files.
   const dir = join(tmp, 'pics');
-  const w = spawnSync(process.execPath, [at('bin/pictures.mjs'), write(fb), dir], { encoding: 'utf8' });
+  const w = spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/pictures.mjs'), write(fb), dir], { encoding: 'utf8' });
   assert.equal(w.status, 0, w.stderr);
   assert.match(w.stdout, /picture-1\.png {2}on "A declined card explains itself"/);
   assert.deepEqual(readFileSync(join(dir, 'picture-1.png')), Buffer.from(PNG, 'base64'));
@@ -1382,7 +1383,7 @@ test('pictures: kept on what they are attached to, refused when they are not rea
 
 // #60 part 3 — proposed changes: applied to a copy of the diagram, refused when they would break it.
 test('proposals: applied, refused when they break the diagram, and answered in the follow-up', () => {
-  const review = readJson('examples/review.example.json');
+  const review = readJson('skills/letmeshowyousomething/examples/review.example.json');
   const d = review.diagrams[0];
   const store = { proposals: [
     { id: 'proposal-1', diagram: d.id, op: 'rename', node: 'pay', label: 'Takes the payment', text: 'Charges the card', comment: 'comment-1' },
@@ -1391,7 +1392,7 @@ test('proposals: applied, refused when they break the diagram, and answered in t
   const fb = buildFeedback(review, store);
   assert.equal(fb.proposals[0].why, 'Say what is charged.', 'the words from the comment on the same part travel with it');
   const write = (o) => { const p = join(tmp, `pr-${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
-  const pair = (f) => check('pair', at('examples/review.example.json'), write(f));
+  const pair = (f) => check('pair', at('skills/letmeshowyousomething/examples/review.example.json'), write(f));
   assert.equal(pair(fb).status, 0, pair(fb).stdout);
 
   // The change is applied to a copy of the diagram, and the same rules judge the result.
@@ -1409,9 +1410,9 @@ test('proposals: applied, refused when they break the diagram, and answered in t
   const next = structuredClone(review); next.id = 'checkout-uat-2026-09-round-2';
   next.items[0].answers = ['comment-1', 'proposal-1'];
   const fbPath = write(fb);
-  assert.match(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ proposals answered: proposal-2 on "Takes the payment" is not answered/);
+  assert.match(check('followup', write(next), at('skills/letmeshowyousomething/examples/review.example.json'), fbPath).stdout, /✗ proposals answered: proposal-2 on "Takes the payment" is not answered/);
   next.items[1].answers = ['proposal-2'];
-  assert.doesNotMatch(check('followup', write(next), at('examples/review.example.json'), fbPath).stdout, /✗ proposals answered/);
+  assert.doesNotMatch(check('followup', write(next), at('skills/letmeshowyousomething/examples/review.example.json'), fbPath).stdout, /✗ proposals answered/);
 });
 
 // #32 — a system diagram: its own boxes, its own rules. No start and no end, but nothing floats.
@@ -1422,7 +1423,7 @@ test('system diagrams: their own catalogue of boxes, and nothing unconnected', (
       { id: 'db', kind: 'data-store', lane: 'ours', label: 'Bookings' },
       { id: 'mail', kind: 'external', lane: 'out', label: 'Email provider' }],
     edges: [{ from: 'app', to: 'db' }, { from: 'app', to: 'mail', kind: 'async' }] });
-  const withDiagram = (d) => { const r = readJson('examples/decision-review.example.json'); r.diagrams = [d]; return r; };
+  const withDiagram = (d) => { const r = readJson('skills/letmeshowyousomething/examples/decision-review.example.json'); r.diagrams = [d]; return r; };
   const run = (d) => checkReviewObj(withDiagram(d));
   const ok = run(base());
   assert.equal(ok.status, 0, ok.stdout);                        // no start, no end: that is right for a system diagram
@@ -1450,7 +1451,7 @@ test('sequence diagrams: every message speaks, every participant takes part, an 
       { id: 'db', kind: 'data-store', label: 'Slots' }],
     edges: [{ from: 'app', to: 'svc', label: 'book 10:00' }, { from: 'svc', to: 'db', label: 'still free?' },
       { from: 'db', to: 'svc', kind: 'return', label: 'free' }, { from: 'svc', to: 'app', kind: 'return', label: 'booked' }] });
-  const withDiagram = (d) => { const r = readJson('examples/decision-review.example.json'); r.diagrams = [d]; return r; };
+  const withDiagram = (d) => { const r = readJson('skills/letmeshowyousomething/examples/decision-review.example.json'); r.diagrams = [d]; return r; };
   const run = (d) => checkReviewObj(withDiagram(d));
   assert.equal(run(base()).status, 0, run(base()).stdout);
 

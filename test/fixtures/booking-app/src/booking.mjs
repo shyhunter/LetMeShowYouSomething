@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT-0
-// Fixture for examples/flow-booking.review.json. Line numbers are referenced; keep them stable.
+// Fixture for skills/letmeshowyousomething/examples/flow-booking.review.json. Line numbers are referenced; keep them stable.
 export function hasCapacity(slot) {
   return slot.booked < slot.capacity;
 }

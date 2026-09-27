@@ -6,7 +6,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildFeedback, partLabel } from '../lib/build-feedback.mjs';
+import { buildFeedback, partLabel } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const tmp = mkdtempSync(join(tmpdir(), 'answered-html-'));
@@ -18,16 +18,16 @@ const exported = (html, store) => html.replace(/^const SEED = .*$/m, () => 'cons
   + JSON.stringify({ ...store, exportedAt: AT }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + ';');
 const page = (reviewFile) => {
   const out = join(tmp, `${reviewFile}.html`);
-  assert.equal(run('bin/render.mjs', join(root, 'examples', reviewFile), out).status, 0);
+  assert.equal(run('skills/letmeshowyousomething/bin/render.mjs', join(root, 'skills/letmeshowyousomething/examples', reviewFile), out).status, 0);
   return readFileSync(out, 'utf8');
 };
 const importPage = (reviewFile, html, name) => {
   const out = join(tmp, `${name}.feedback.json`);
-  return { out, w: run('bin/answer.mjs', join(root, 'examples', reviewFile), raw(`${name}.html`, html), out) };
+  return { out, w: run('skills/letmeshowyousomething/bin/answer.mjs', join(root, 'skills/letmeshowyousomething/examples', reviewFile), raw(`${name}.html`, html), out) };
 };
 
 const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
-const uat = JSON.parse(readFileSync(join(root, 'examples/review.example.json'), 'utf8'));
+const uat = JSON.parse(readFileSync(join(root, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8'));
 const label = partLabel(uat.diagrams[0], { node: 'guest' });
 
 test('#78: every kind of answer in an exported page comes back as the same checked feedback', () => {
@@ -83,12 +83,12 @@ test('#78: answers that fail the checker are refused before anything is written'
 
 test('#78: answer.mjs never overwrites a file', () => {
   const out = raw('taken.feedback.json', 'keep me');
-  const w = run('bin/answer.mjs', join(root, 'examples/review.example.json'), raw('taken.html', exported(page('review.example.json'), {})), out);
+  const w = run('skills/letmeshowyousomething/bin/answer.mjs', join(root, 'skills/letmeshowyousomething/examples/review.example.json'), raw('taken.html', exported(page('review.example.json'), {})), out);
   assert.equal(w.status, 2);
   assert.equal(readFileSync(out, 'utf8'), 'keep me');
 });
 
 test('#78: the reader never runs, loads or fetches the page', () => {
-  const src = readFileSync(join(root, 'bin/answer.mjs'), 'utf8');
+  const src = readFileSync(join(root, 'skills/letmeshowyousomething/bin/answer.mjs'), 'utf8');
   assert.doesNotMatch(src, /node:vm|eval\(|new Function|playwright|import\(|fetch\(|https?:/);
 });

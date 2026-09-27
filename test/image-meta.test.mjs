@@ -8,10 +8,10 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { crc32 } from 'node:zlib';
-import { readImage } from '../lib/image-meta.mjs';
+import { readImage } from '../skills/letmeshowyousomething/lib/image-meta.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const review = () => JSON.parse(readFileSync(join(ROOT, 'examples/password-reset.review.json'), 'utf8'));
+const review = () => JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/password-reset.review.json'), 'utf8'));
 const b64 = (src) => Buffer.from(src.split(',')[1], 'base64');
 const url = (type, buf) => `data:${type};base64,${buf.toString('base64')}`;
 const SECRET = 'SYNTHETIC GPS 51.5007N 0.1246W · camera: test';
@@ -66,10 +66,10 @@ test('the checker names hidden details and refuses what is too large; the page l
   const dir = mkdtempSync(join(tmpdir(), 'image-')), r = review(), p = join(dir, 'r.json'), out = join(dir, 'r.html');
   r.id = 'image-meta-test'; r.flow.screens[0].image.src = url('image/jpeg', jpegWithExif().dirty);
   writeFileSync(p, JSON.stringify(r));
-  const c = spawnSync(process.execPath, [join(ROOT, 'bin/check.mjs'), 'review', p], { encoding: 'utf8' });
+  const c = spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/check.mjs'), 'review', p], { encoding: 'utf8' });
   assert.equal(c.status, 0, c.stdout);
   assert.match(c.stdout, /! pictures carry hidden details: sign-in \(EXIF\/XMP, comment\): details a viewer never sees.*render\.mjs leaves them out of the page/);
-  const w = spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), p, out], { encoding: 'utf8' });
+  const w = spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), p, out], { encoding: 'utf8' });
   assert.equal(w.status, 0, w.stderr);
   assert.match(w.stdout, /sign-in: left out of the page: EXIF\/XMP, comment/);
   const page = readFileSync(out, 'utf8'), line = page.split('\n').find((l) => l.startsWith('const REVIEW = '));
@@ -78,7 +78,7 @@ test('the checker names hidden details and refuses what is too large; the page l
   const big = review(); big.id = 'image-too-big';
   const iend = PNG.length - 12; big.flow.screens[0].image.src = url('image/png', Buffer.concat([PNG.subarray(0, iend), chunk('tEXt', 'x'.repeat(2.1 * 1024 * 1024)), PNG.subarray(iend)]));
   writeFileSync(p, JSON.stringify(big));
-  const b = spawnSync(process.execPath, [join(ROOT, 'bin/check.mjs'), 'review', p], { encoding: 'utf8' });
+  const b = spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/check.mjs'), 'review', p], { encoding: 'utf8' });
   assert.equal(b.status, 1);
   assert.match(b.stdout, /sign-in: the image is 2\.1 MB, more than 2 MB/);
 });

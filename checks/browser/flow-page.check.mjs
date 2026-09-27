@@ -5,7 +5,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
-const FLOW = join(REPO, 'examples/flow-booking.review.json');
+const FLOW = join(REPO, 'skills/letmeshowyousomething/examples/flow-booking.review.json');
 const start = `document.querySelector('#start-review').click()`;
 
 await withChrome('flow-page', async ({ dir, say, ev, load, shot, sleep, exported }) => {

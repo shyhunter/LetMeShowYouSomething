@@ -5,9 +5,9 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { REPO, checkPair, render, withChrome } from './lib.mjs';
 
-const CHECKOUT = join(REPO, 'examples/review.example.json');
-const DECISION = join(REPO, 'examples/decision-review.example.json');
-const AI = join(REPO, 'examples/ai-tool-loop.review.json');
+const CHECKOUT = join(REPO, 'skills/letmeshowyousomething/examples/review.example.json');
+const DECISION = join(REPO, 'skills/letmeshowyousomething/examples/decision-review.example.json');
+const AI = join(REPO, 'skills/letmeshowyousomething/examples/ai-tool-loop.review.json');
 // #74 — every page opens on Let me explain; the Overview holds every question and the downloads.
 const overview = `(document.querySelector('#start-review').offsetParent && document.querySelector('#start-review').click(), document.querySelector('#mode-overview').click())`;
 const exportAs = (fmt) => `document.querySelector('[data-export="${fmt}"]').click()`;

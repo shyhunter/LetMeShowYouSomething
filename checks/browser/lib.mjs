@@ -17,13 +17,13 @@ function findChrome() {
 
 export function render(reviewPath, outDir) {
   const out = join(outDir, 'page.html');
-  const r = spawnSync(process.execPath, [join(REPO, 'bin/render.mjs'), reviewPath, out], { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [join(REPO, 'skills/letmeshowyousomething/bin/render.mjs'), reviewPath, out], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(r.stderr);
   return out;
 }
 
 export function checkPair(reviewPath, feedbackPath) {
-  return spawnSync(process.execPath, [join(REPO, 'bin/check.mjs'), 'pair', reviewPath, feedbackPath, '--root', REPO], { encoding: 'utf8' });
+  return spawnSync(process.execPath, [join(REPO, 'skills/letmeshowyousomething/bin/check.mjs'), 'pair', reviewPath, feedbackPath, '--root', REPO], { encoding: 'utf8' });
 }
 
 export async function withChrome(name, body) {

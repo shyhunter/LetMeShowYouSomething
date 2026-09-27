@@ -6,16 +6,16 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { schemaErrors, KNOWN } from '../lib/schema-check.mjs';
+import { schemaErrors, KNOWN } from '../skills/letmeshowyousomething/lib/schema-check.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const read = (p) => JSON.parse(readFileSync(join(root, p), 'utf8'));
-const SCHEMAS = Object.fromEntries(['review', 'feedback', 'history'].map((k) => [`letmeshowyousomething/${k}`, read(`schemas/${k}.v1.schema.json`)]));
+const SCHEMAS = Object.fromEntries(['review', 'feedback', 'history'].map((k) => [`letmeshowyousomething/${k}`, read(`skills/letmeshowyousomething/schemas/${k}.v1.schema.json`)]));
 const all = Object.values(SCHEMAS);
 
 test('every example matches its schema', () => {
-  for (const f of readdirSync(join(root, 'examples')).filter((n) => n.endsWith('.json'))) {
-    const x = read(`examples/${f}`);
+  for (const f of readdirSync(join(root, 'skills/letmeshowyousomething/examples')).filter((n) => n.endsWith('.json'))) {
+    const x = read(`skills/letmeshowyousomething/examples/${f}`);
     if (SCHEMAS[x.protocol]) assert.deepEqual(schemaErrors(SCHEMAS[x.protocol], x, all), [], f);
   }
 });
@@ -36,7 +36,7 @@ test('every keyword the schemas use is one the validator knows', () => {
 
 // What another agent (Hermes) wrote on its first try: fields the protocol does not have. The checker passed it.
 test('a review with fields the protocol does not have is refused, each field named', () => {
-  const r = read('examples/review.example.json');
+  const r = read('skills/letmeshowyousomething/examples/review.example.json');
   r.id = 'drifted-review';
   r.createdBy.respondent = 'user';
   r.brief = { what: 'Everything about the app', highlights: ['a', 'b'] };
@@ -44,7 +44,7 @@ test('a review with fields the protocol does not have is refused, each field nam
   r.focusDiagram = 'userflow';
   const p = join(mkdtempSync(join(tmpdir(), 'schema-')), 'r.json');
   writeFileSync(p, JSON.stringify(r));
-  const out = spawnSync(process.execPath, [join(root, 'bin/check.mjs'), 'review', p], { encoding: 'utf8' }).stdout;
+  const out = spawnSync(process.execPath, [join(root, 'skills/letmeshowyousomething/bin/check.mjs'), 'review', p], { encoding: 'utf8' }).stdout;
   assert.match(out, /✗ matches the schema:/);
   for (const said of [/createdBy: "respondent" is not a field here/, /brief: "what" is not a field here/, /brief\.highlights: should be object, not array/,
     /sections\[0\]\.mode: "explain" is not one of "judge-each", "choose-one"/, /the file: "focusDiagram" is not a field here/, /Fix each one to match schemas\/review\.v1\.schema\.json/])
@@ -52,7 +52,7 @@ test('a review with fields the protocol does not have is refused, each field nam
 });
 
 test('answers are held to their schema too', () => {
-  const f = read('examples/feedback.example.json');
+  const f = read('skills/letmeshowyousomething/examples/feedback.example.json');
   f.mood = 'happy';
   delete f.responses[0].title;
   const e = schemaErrors(SCHEMAS['letmeshowyousomething/feedback'], f, all);

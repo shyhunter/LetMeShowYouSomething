@@ -5,11 +5,11 @@ import { readFileSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildFeedback, partLabel } from '../lib/build-feedback.mjs';
+import { buildFeedback, partLabel } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 const root = new URL('..', import.meta.url).pathname;
 for (const name of ['retry-backoff', 'booking-race', 'ai-tool-loop']) test(`AI catalogue: ${name} checks and round-trips comments, proposals and followup`, () => {
-  const rp = join(root, `examples/${name}.review.json`), review = JSON.parse(readFileSync(rp, 'utf8'));
-  const check = (...args) => { const r = spawnSync(process.execPath, [join(root, 'bin/check.mjs'), ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stdout + r.stderr); };
+  const rp = join(root, `skills/letmeshowyousomething/examples/${name}.review.json`), review = JSON.parse(readFileSync(rp, 'utf8'));
+  const check = (...args) => { const r = spawnSync(process.execPath, [join(root, 'skills/letmeshowyousomething/bin/check.mjs'), ...args], { encoding: 'utf8' }); assert.equal(r.status, 0, r.stdout + r.stderr); };
   check('review', rp); assert.equal(review.verdictSet.id, 'understanding');
   const d = review.diagrams[0], n = d.nodes.find(n => n.step), dir = mkdtempSync(join(tmpdir(), 'ai-example-'));
   assert.ok(n, 'example has item-linked nodes');

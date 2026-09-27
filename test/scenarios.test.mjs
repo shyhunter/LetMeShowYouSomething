@@ -9,7 +9,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { buildFeedback } from '../lib/build-feedback.mjs';
+import { buildFeedback } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const at = (p) => join(ROOT, p);
@@ -47,14 +47,14 @@ function play(name, rounds, { root } = {}) {
       rv.createdAt = `2026-09-${String(10 + i * 2).padStart(2, '0')}T09:00:00Z`;
     }
     const rp = join(dir, `r${n}.review.json`); writeFileSync(rp, JSON.stringify(rv));
-    ok(run(at('bin/check.mjs'), 'review', rp, ...rootArgs), `${name} round ${n}: the review`);
-    if (i) ok(run(at('bin/check.mjs'), 'rounds', rp, ...earlier, ...rootArgs), `${name} round ${n}: the chain of rounds`);
+    ok(run(at('skills/letmeshowyousomething/bin/check.mjs'), 'review', rp, ...rootArgs), `${name} round ${n}: the review`);
+    if (i) ok(run(at('skills/letmeshowyousomething/bin/check.mjs'), 'rounds', rp, ...earlier, ...rootArgs), `${name} round ${n}: the chain of rounds`);
     const withRounds = earlier.flatMap((f, k) => (k % 2 ? [f] : ['--earlier', f]));
-    ok(run(at('bin/render.mjs'), rp, join(dir, `r${n}.html`), ...withRounds), `${name} round ${n}: the page`);
+    ok(run(at('skills/letmeshowyousomething/bin/render.mjs'), rp, join(dir, `r${n}.html`), ...withRounds), `${name} round ${n}: the page`);
     const f = typeof answers === 'function' ? answers(rp, dir) : buildFeedback(rv, answers, `2026-09-${String(11 + i * 2).padStart(2, '0')}T09:00:00Z`);
     const fp = join(dir, `r${n}.feedback.json`); writeFileSync(fp, JSON.stringify(f));
-    ok(run(at('bin/check.mjs'), 'pair', rp, fp, ...rootArgs), `${name} round ${n}: the answers`);
-    ok(run(at('bin/check.mjs'), 'feedback', fp), `${name} round ${n}: the answers, read on their own`);
+    ok(run(at('skills/letmeshowyousomething/bin/check.mjs'), 'pair', rp, fp, ...rootArgs), `${name} round ${n}: the answers`);
+    ok(run(at('skills/letmeshowyousomething/bin/check.mjs'), 'feedback', fp), `${name} round ${n}: the answers, read on their own`);
     earlier.push(rp, fp); feedbacks.push(f);
   });
   return { feedbacks, dir, earlier };
@@ -100,7 +100,7 @@ test('revisit an earlier decision: a new proposal quotes what was agreed, and th
     [review('Offline first', DECISION, [item('fonts', 'Use the system font instead', { reply: 'No web font: the page stays offline, as agreed in round 1.' })]),
       store({ fonts: 'agree' })],
   ]);
-  ok(run(at('bin/check.mjs'), 'history', join(dir, 'r2.review.json'), earlier[1]), 'the earlier decision is quoted word for word');
+  ok(run(at('skills/letmeshowyousomething/bin/check.mjs'), 'history', join(dir, 'r2.review.json'), earlier[1]), 'the earlier decision is quoted word for word');
   settled(feedbacks.at(-1));
 });
 
@@ -132,21 +132,21 @@ test('show a graphical concept: a part that lost them is explained differently, 
   const r2 = JSON.parse(readFileSync(join(dir, 'r2.review.json'), 'utf8'));
   r2.diagrams[0].nodes[0].step = 'never-asked';
   const bad = join(dir, 'r2-bad.review.json'); writeFileSync(bad, JSON.stringify(r2));
-  const r = run(at('bin/check.mjs'), 'rounds', bad, ...earlier.slice(0, 2));
+  const r = run(at('skills/letmeshowyousomething/bin/check.mjs'), 'rounds', bad, ...earlier.slice(0, 2));
   assert.equal(r.status, 1, r.stdout);
   assert.match(r.stdout, /✗ round 2: diagrams resolve across the rounds: how\.n1 → never-asked: no round asked about it/);
 });
 
 test('walk through a clickable prototype: the booking flow over four rounds, until every step is agreed', () => {
-  const R = ['flow-booking.review.json', 'flow-booking-round2.review.json', 'flow-booking-round3.review.json'].map((f) => read(`examples/${f}`));
-  const F = ['flow-booking.feedback.json', 'flow-booking-round2.feedback.json'].map((f) => read(`examples/${f}`));
+  const R = ['flow-booking.review.json', 'flow-booking-round2.review.json', 'flow-booking-round3.review.json'].map((f) => read(`skills/letmeshowyousomething/examples/${f}`));
+  const F = ['flow-booking.feedback.json', 'flow-booking-round2.feedback.json'].map((f) => read(`skills/letmeshowyousomething/examples/${f}`));
   const agreeAll = (r) => buildFeedback(r, store(Object.fromEntries(r.items.map((i) => [i.id, 'agree']))), '2026-09-25T10:00:00Z');
   const { feedbacks } = play('prototype', [[R[0], () => F[0]], [R[1], () => F[1]], [R[2], (rp) => agreeAll(JSON.parse(readFileSync(rp, 'utf8')))]], { root: true });
   settled(feedbacks.at(-1));
 });
 
 test('walk through screenshots: the password reset, a step marked with a picture of the real screen, then agreed', () => {
-  const r1 = read('examples/password-reset.review.json');
+  const r1 = read('skills/letmeshowyousomething/examples/password-reset.review.json');
   const PNG = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
   const shot = { id: 'picture-1', on: 'send', screen: 'reset', type: 'image/png', width: 1, height: 1, data: PNG };
   const r2 = () => { const r = structuredClone(r1); r.id = 'set-by-play'; r.items = [{ ...r.items.find((i) => i.id === 'send'), reply: 'Your screenshot is the reset screen now.' }]; return r; };
@@ -160,7 +160,7 @@ test('walk through screenshots: the password reset, a step marked with a picture
 
 test('compare visual variants: the layouts drawn side by side, one picked with a change, the merged one agreed', () => {
   const { feedbacks } = play('variants', [
-    [read('examples/results-layout.review.json'), store({}, { choices: { layout: 'opt-list' }, notes: { 'opt-list': 'The list, with the photos of the cards.' } })],
+    [read('skills/letmeshowyousomething/examples/results-layout.review.json'), store({}, { choices: { layout: 'opt-list' }, notes: { 'opt-list': 'The list, with the photos of the cards.' } })],
     [review('The results page', DECISION, [item('merged', 'A list with a small photo on each line', { summary: 'Your pick, with the change you asked for.' })]), store({ merged: 'agree' })],
   ]);
   assert.equal(feedbacks[0].choices[0].itemId, 'opt-list');
@@ -179,9 +179,9 @@ test('confirm the agent understood: a wrong assumption is corrected, a partly ri
 
 // ── Judge a batch: many items, one verdict each ──
 test('acceptance testing: the checkout, round 2 retests what failed and the added case, then everything works', () => {
-  const R2 = read('examples/checkout-round2.review.json');
+  const R2 = read('skills/letmeshowyousomething/examples/checkout-round2.review.json');
   const works = (rp) => { const r = JSON.parse(readFileSync(rp, 'utf8')); return buildFeedback(r, store(Object.fromEntries(r.items.map((i) => [i.id, r.verdictSet.options.find((o) => o.tone === 'positive').value]))), '2026-09-25T10:00:00Z'); };
-  const { feedbacks } = play('acceptance', [[read('examples/review.example.json'), () => read('examples/checkout-uat.feedback.json')], [R2, works]]);
+  const { feedbacks } = play('acceptance', [[read('skills/letmeshowyousomething/examples/review.example.json'), () => read('skills/letmeshowyousomething/examples/checkout-uat.feedback.json')], [R2, works]]);
   settled(feedbacks.at(-1));
 });
 
@@ -227,7 +227,7 @@ test('sign-off by someone with no AI account: the answered page comes back and i
     const seed = JSON.stringify({ ...answers, exportedAt: '2026-09-25T10:00:00Z' }).replace(/[<\u2028\u2029]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
     const answered = join(dir, `r${n}.answered.html`), out = join(dir, `r${n}.from-page.json`);
     writeFileSync(answered, page.replace(/^const SEED = .*$/m, () => `const SEED = ${seed};`));
-    ok(run(at('bin/answer.mjs'), rp, answered, out), 'the answered page is read as data');
+    ok(run(at('skills/letmeshowyousomething/bin/answer.mjs'), rp, answered, out), 'the answered page is read as data');
     return JSON.parse(readFileSync(out, 'utf8'));
   };
   const { feedbacks } = play('signoff', [
@@ -270,7 +270,7 @@ test('two people answer the same page: the copies are compared, the person who a
   const ana = buildFeedback(r1, store({ t1: 'agree', t2: 'agree' }, { respondent: { name: 'Ana' } }), '2026-09-20T10:00:00Z');
   const ben = buildFeedback(r1, store({ t1: 'agree', t2: 'disagree' }, { respondent: { name: 'Ben' }, notes: { t2: 'Six months is enough.' } }), '2026-09-20T11:00:00Z');
   const [ap, bp] = [['ana', ana], ['ben', ben]].map(([n, f]) => { const p = join(dir, `${n}.json`); writeFileSync(p, JSON.stringify(f)); return p; });
-  const copies = run(at('bin/check.mjs'), 'copies', rp, ap, bp);
+  const copies = run(at('skills/letmeshowyousomething/bin/check.mjs'), 'copies', rp, ap, bp);
   assert.equal(copies.status, 1, 'competing answers are never merged silently');
   assert.match(copies.stdout, /"Data kept for one year": copy 1 \(Ana\) Agree, copy 2 \(Ben\) Disagree "Six months is enough\."/);
   // The person who asked says Ana's answers count; Ben's different answer is asked again, quoted, in round 2.

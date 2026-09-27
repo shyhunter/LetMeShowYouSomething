@@ -7,7 +7,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { measure } from '../bin/usage.mjs';
+import { measure } from '../skills/letmeshowyousomething/bin/usage.mjs';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const run = (args, env = {}) => spawnSync(process.execPath, args, { encoding: 'utf8', env: { PATH: process.env.PATH, HOME: process.env.HOME, ...env } });
@@ -66,21 +66,21 @@ test('usage: what cannot be counted makes it partial, and says why', () => {
 test('usage: written into the review, checked, and shown on the page as reported, never as a price', () => {
   const dir = mkdtempSync(join(tmpdir(), 'usage-')), log = join(dir, 'session.jsonl'), rp = join(dir, 'r.review.json');
   writeFileSync(log, [call('m1', new Date(Date.now() - 60000).toISOString(), u(12, 345, 6789, 10))].join('\n'));
-  const r = JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8')); r.id = 'usage-review';
+  const r = JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8')); r.id = 'usage-review';
   writeFileSync(rp, JSON.stringify(r));
-  const w = run([join(ROOT, 'bin/usage.mjs'), log, '--since', new Date(Date.now() - 3600000).toISOString(), '--into', rp]);
+  const w = run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), log, '--since', new Date(Date.now() - 3600000).toISOString(), '--into', rp]);
   assert.equal(w.status, 0, w.stderr);
   assert.match(w.stdout, /usage measured · 1 calls · 12 in · 345 out · 6789 read from cache/);
-  const c = run([join(ROOT, 'bin/check.mjs'), 'review', rp]);
+  const c = run([join(ROOT, 'skills/letmeshowyousomething/bin/check.mjs'), 'review', rp]);
   assert.equal(c.status, 0, c.stdout);
   const out = join(dir, 'r.html');
-  assert.equal(run([join(ROOT, 'bin/render.mjs'), rp, out]).status, 0);
+  assert.equal(run([join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), rp, out]).status, 0);
   const page = readFileSync(out, 'utf8');
   assert.match(page, /<p class="usage">Making this review \(the whole conversation that ran it, not the skill alone\): 12 tokens in, 345 out, 6,789 read from cache and 10 written to it, over 1 model call \(claude-test-model\); reported by Claude Code's session log, not independently verified\. Cost: not measured\.<\/p>/);
 });
 
 test('usage: outside a Claude Code session it is unavailable, with the reason, and never guessed', () => {
-  const r = run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', SINCE], { CLAUDE_CODE_SESSION_ID: '' });
+  const r = run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), '--claude-code', '--since', SINCE], { CLAUDE_CODE_SESSION_ID: '' });
   assert.equal(r.status, 0, r.stderr);
   const m = JSON.parse(r.stdout);
   assert.equal(m.status, 'unavailable');
@@ -88,11 +88,11 @@ test('usage: outside a Claude Code session it is unavailable, with the reason, a
   assert.equal(m.source.host, 'this agent, not Claude Code', 'another agent is never called Claude Code');
   assert.doesNotMatch(m.scope, /Claude Code logged/);
   const dir = mkdtempSync(join(tmpdir(), 'usage-other-')), rp = join(dir, 'r.review.json');
-  writeFileSync(rp, readFileSync(join(ROOT, 'examples/review.example.json')));
-  const w = run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', SINCE, '--into', rp], { CLAUDE_CODE_SESSION_ID: '' });
+  writeFileSync(rp, readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json')));
+  const w = run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), '--claude-code', '--since', SINCE, '--into', rp], { CLAUDE_CODE_SESSION_ID: '' });
   assert.match(w.stdout, /usage unavailable · this agent does not report it; only Claude Code does so far · written into .*r\.review\.json; never edit it by hand/);
   assert.equal(JSON.parse(readFileSync(rp, 'utf8')).usage.status, 'unavailable', 'the record is in the file');
-  assert.equal(run([join(ROOT, 'bin/usage.mjs'), '--claude-code']).status, 2, 'without --since it refuses');
+  assert.equal(run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), '--claude-code']).status, 2, 'without --since it refuses');
 });
 
 test('usage: a record that is not honest is refused by the checker', () => {
@@ -107,9 +107,9 @@ test('usage: a record that is not honest is refused by the checker', () => {
     'captured in the future': [{ ...base, status: 'measured', calls: 1, tokens: { input: 1, output: 1, cacheRead: 0, cacheWrite: 0 }, source: { ...source, capturedAt: '2099-01-01T00:00:00Z' } }, /✗ usage is honest/],
   };
   for (const [what, [usage, said]] of Object.entries(cases)) {
-    const r = JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8')); r.id = 'usage-bad'; r.usage = usage;
+    const r = JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8')); r.id = 'usage-bad'; r.usage = usage;
     const p = join(dir, 'r.json'); writeFileSync(p, JSON.stringify(r));
-    const c = run([join(ROOT, 'bin/check.mjs'), 'review', p]);
+    const c = run([join(ROOT, 'skills/letmeshowyousomething/bin/check.mjs'), 'review', p]);
     assert.equal(c.status, 1, `${what} should be refused\n${c.stdout}`);
     assert.match(c.stdout, said, what);
   }
@@ -117,10 +117,10 @@ test('usage: a record that is not honest is refused by the checker', () => {
 
 test('usage: markup in the host or the reason stays text on the page', () => {
   const dir = mkdtempSync(join(tmpdir(), 'usage-hostile-')), bad = '<img src=x onerror=alert(1)>';
-  const r = JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8')); r.id = 'usage-hostile';
+  const r = JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8')); r.id = 'usage-hostile';
   r.usage = { status: 'unavailable', reason: bad, scope: bad, source: { host: bad, method: 'session-transcript', since: SINCE, capturedAt: NOW } };
   const p = join(dir, 'r.json'), out = join(dir, 'r.html'); writeFileSync(p, JSON.stringify(r));
-  assert.equal(run([join(ROOT, 'bin/render.mjs'), p, out]).status, 0);
+  assert.equal(run([join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), p, out]).status, 0);
   const line = readFileSync(out, 'utf8').match(/<p class="usage">.*?<\/p>/)[0];
   assert.equal(line, '<p class="usage">Making this review (the whole conversation that ran it): usage unavailable (&lt;img src=x onerror=alert(1)&gt;).</p>');
 });
@@ -138,7 +138,7 @@ test('usage: the log that ran the command is the one counted, never the whole se
   writeFileSync(join(dir, `${id}.jsonl`), [call('main-1', recent, u(9, 900))].join('\n'));                        // the parent's own calls
   writeFileSync(join(dir, id, 'subagents', 'agent-a.jsonl'), [call('a-1', recent, u(3, 30)), ran(recent)].join('\n'));
   writeFileSync(join(dir, id, 'subagents', 'agent-b.jsonl'), [call('b-1', recent, u(7, 70))].join('\n'));
-  const measureHere = () => JSON.parse(run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
+  const measureHere = () => JSON.parse(run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
   const a = measureHere();
   assert.deepEqual([a.status, a.calls, a.tokens.output], ['measured', 2, 35], 'agent a counts its own two calls, not the parent\'s or agent b\'s');
   writeFileSync(join(dir, id, 'subagents', 'agent-b.jsonl'), [call('b-1', recent, u(7, 70)), ran(recent)].join('\n'));
@@ -159,7 +159,7 @@ test('usage: in a headless session, before its own command is logged, the only l
   mkdirSync(dir, { recursive: true });
   const recent = new Date(Date.now() - 60000).toISOString();
   writeFileSync(join(dir, `${id}.jsonl`), [call('m-1', recent, u(4, 400)), call('m-2', recent, u(2, 20))].join('\n'));
-  const measure = () => JSON.parse(run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
+  const measure = () => JSON.parse(run([join(ROOT, 'skills/letmeshowyousomething/bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
   const m = measure();
   assert.deepEqual([m.status, m.calls, m.tokens.output], ['measured', 2, 420]);
   mkdirSync(join(dir, id, 'subagents'), { recursive: true });

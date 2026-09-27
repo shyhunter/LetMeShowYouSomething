@@ -106,7 +106,7 @@ test('the landing page: a step opens its video in front, and closes back to the 
 // still fits every screen with targets big enough to hit.
 test('a published page: home on Let me explain and in the top bar; it still fits', async ({ page }, info) => {
   const out = join(tmp(), 'home.html');
-  expect(spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), join(ROOT, 'examples/salon-booking.review.json'), out, '--home', 'https://example.org/'], { encoding: 'utf8' }).status).toBe(0);
+  expect(spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), join(ROOT, 'skills/letmeshowyousomething/examples/salon-booking.review.json'), out, '--home', 'https://example.org/'], { encoding: 'utf8' }).status).toBe(0);
   await page.goto(pathToFileURL(out).href);
   await expect(page.locator('#start .home')).toHaveAttribute('href', 'https://example.org/');
   await start(page);
@@ -249,7 +249,7 @@ test('checkout, in the Overview: answer, add a note, download JSON; the checker 
   await expect(page.locator('label[for="n-declined-card"]')).toContainText('What should be different?');
   await page.locator('#n-declined-card').fill('Customer sees error 51.');
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'declined-card')).toMatchObject({ verdict: 'fails', note: 'Customer sees error 51.' });
 });
@@ -260,7 +260,7 @@ test('flow, in the tour: judge a step, download from Return; the checker passes'
   await page.locator('input[name="v-book"][value="agree"]').check();
   await note(page, 'book', 'Clear.');
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/flow-booking.review.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).responses.find((x) => x.itemId === 'book')).toMatchObject({ verdict: 'agree', note: 'Clear.' });
 });
@@ -302,7 +302,7 @@ test('a choice is one question: pick from the tiles or the option cards; the che
   await expect(page.locator('input[name="c-storage"][value="opt-db"]')).toBeChecked();
   await page.locator('input[name="c-storage"][value="opt-file"]').check();
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/decision-review.example.json'), file);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/decision-review.example.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).choices.find((c) => c.sectionId === 'storage').itemId).toBe('opt-file');
 });
@@ -330,7 +330,7 @@ test('mark it on the map: after a critical answer, tap a box and say what about 
   await expect(page.locator('.mark')).toContainText('Takes the payment');
   await page.locator('textarea[data-comment="comment-1"]').fill('Say which card is charged.');
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).comments).toEqual([expect.objectContaining({ node: 'pay', label: 'Takes the payment', note: 'Say which card is charged.' })]);
 });
@@ -347,7 +347,7 @@ test('a picture on a note: re-saved, kept across a reload, and the checker passe
   await page.reload(); await overview(page);
   await expect(page.locator('[data-pics="guest-checkout"] img')).toHaveCount(1);
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/review.example.json'), file);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), file);
   expect(r.status, r.stdout).toBe(0);
   expect(JSON.parse(readFileSync(file, 'utf8')).pictures[0]).toMatchObject({ on: 'guest-checkout', width: 1280, height: 640 });
 });
@@ -539,7 +539,7 @@ test('a second round: since last time, tags and replies, History, settled answer
   expect(md).toContain('Reply: Changed: error 51 now reads');
   const html = await download(page, 'html', join(tmp(), 'r2.html'));
   expect(readFileSync(html, 'utf8').match(/^const HISTORY = /gm)).toHaveLength(1);
-  const back = check('pair', join(ROOT, 'examples/checkout-round2.review.json'), await download(page, 'json', join(tmp(), 'r2.json')));
+  const back = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/checkout-round2.review.json'), await download(page, 'json', join(tmp(), 'r2.json')));
   expect(back.status, back.stdout).toBe(0);
   await page.goto(pathToFileURL(html).href);
   await expect(page.locator('#start .eyebrow')).toHaveText('Let me explain · round 2');
@@ -547,7 +547,7 @@ test('a second round: since last time, tags and replies, History, settled answer
 
 test('a hostile earlier round stays text in the tags, the replies and History', async ({ page }) => {
   const bad = '<img src=x onerror="window.__pwned=1">';
-  const r1 = readReview('review.example.json'), f1 = JSON.parse(readFileSync(join(ROOT, 'examples/checkout-uat.feedback.json'), 'utf8'));
+  const r1 = readReview('review.example.json'), f1 = JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/checkout-uat.feedback.json'), 'utf8'));
   f1.responses.find((x) => x.itemId === 'declined-card').note = bad; f1.addedItems[0].title = bad;
   const r2 = readReview('checkout-round2.review.json');
   r1.id = f1.review.id = r2.continues = 'hostile-round-1'; r2.id = 'hostile-round-2';   // examples' ids are theirs alone (#38)
@@ -555,7 +555,7 @@ test('a hostile earlier round stays text in the tags, the replies and History', 
   const dir = tmp('pw-hostile-rounds-');
   const w = (name, o) => { const p = join(dir, name); writeFileSync(p, JSON.stringify(o)); return p; };
   const rp = w('r2.json', r2), out = join(dir, 'r2.html');
-  const run = spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), rp, out, '--earlier', w('r1.json', r1), w('f1.json', f1)], { encoding: 'utf8' });
+  const run = spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), rp, out, '--earlier', w('r1.json', r1), w('f1.json', f1)], { encoding: 'utf8' });
   expect(run.status, run.stderr + run.stdout).toBe(0);
   await page.goto(pathToFileURL(out).href);
   await start(page);
@@ -632,7 +632,7 @@ test('your own screenshot of a screen: shown in its place, replaced, kept, and s
   await page.reload(); await start(page); await showPlace(page, 'proto');
   await expect(page.locator('[data-shotadd="slot-list"]')).toHaveText('Replace your screenshot');
   const file = await download(page, 'json', join(tmp(), 'feedback.json'));
-  const r = check('pair', join(ROOT, 'examples/flow-booking.review.json'), file, '--root', ROOT);
+  const r = check('pair', join(ROOT, 'skills/letmeshowyousomething/examples/flow-booking.review.json'), file, '--root', ROOT);
   expect(r.status, r.stdout).toBe(0);
   const pics = JSON.parse(readFileSync(file, 'utf8')).pictures;
   expect(pics).toHaveLength(1);

@@ -5,17 +5,17 @@
 import { spawnSync } from 'node:child_process';
 import { cpSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { buildFeedback, partLabel } from '../lib/build-feedback.mjs';
+import { buildFeedback, partLabel } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 
 export const ROOT = new URL('..', import.meta.url).pathname;
 const node = (script, ...args) => spawnSync(process.execPath, [join(ROOT, script), ...args], { encoding: 'utf8' });
-const example = () => JSON.parse(readFileSync(join(ROOT, 'examples/review.example.json'), 'utf8'));
+const example = () => JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8'));
 const put = (dir, path, text) => { mkdirSync(join(dir, path, '..'), { recursive: true }); writeFileSync(join(dir, path), text); };
 const putJson = (dir, path, o) => put(dir, path, JSON.stringify(o, null, 2));
 
 // The skill as it ships, copied into the folder, so the agent never sees these fixtures or their rubric.
 export function installSkill(dir) {
-  for (const p of ['SKILL.md', 'PROTOCOL.md', 'bin', 'lib', 'schemas', 'examples']) cpSync(join(ROOT, p), join(dir, '_skill', p), { recursive: true });
+  cpSync(join(ROOT, 'skills/letmeshowyousomething'), join(dir, '_skill'), { recursive: true });
 }
 
 // Every file the agent made: anything in the folder that setup did not put there.
@@ -30,14 +30,14 @@ export function made(dir, inputs) {
 export const docsIn = (files, kind) => files.filter((f) => f.endsWith('.json')).map((f) => { try { return { f, j: JSON.parse(readFileSync(f, 'utf8')) }; } catch { return null; } })
   .filter((x) => x?.j?.protocol === `letmeshowyousomething/${kind}`);
 const reviewsIn = (files) => docsIn(files, 'review');
-export const passes = (...args) => node('bin/check.mjs', ...args).status === 0;
+export const passes = (...args) => node('skills/letmeshowyousomething/bin/check.mjs', ...args).status === 0;
 const result = (name, ok, detail) => ({ name, ok: !!ok, detail });
 
 // The page the reviewer exported, with their answers in it (what "Export feedback.html" writes).
 function answeredPage(dir, review, store) {
   const page = join(dir, '.page.html');
   putJson(dir, '.review.json', review);
-  node('bin/render.mjs', join(dir, '.review.json'), page);
+  node('skills/letmeshowyousomething/bin/render.mjs', join(dir, '.review.json'), page);
   const seed = JSON.stringify({ ...store, exportedAt: '2026-09-24T09:30:00.000Z' })
     .replace(new RegExp('[<' + String.fromCharCode(0x2028, 0x2029) + ']', 'g'), (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
   const html = readFileSync(page, 'utf8').replace(/^const SEED = .*$/m, () => `const SEED = ${seed};`);

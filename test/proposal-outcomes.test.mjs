@@ -6,14 +6,14 @@ import { spawnSync } from 'node:child_process';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildFeedback } from '../lib/build-feedback.mjs';
+import { buildFeedback } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const tmp = mkdtempSync(join(tmpdir(), 'outcomes-'));
 const at = (p) => join(root, p);
-const check = (...args) => spawnSync(process.execPath, [at('bin/check.mjs'), ...args], { encoding: 'utf8' });
+const check = (...args) => spawnSync(process.execPath, [at('skills/letmeshowyousomething/bin/check.mjs'), ...args], { encoding: 'utf8' });
 const write = (o) => { const p = join(tmp, `${Math.random().toString(36).slice(2)}.json`); writeFileSync(p, JSON.stringify(o)); return p; };
-const review = JSON.parse(readFileSync(at('examples/review.example.json'), 'utf8'));
+const review = JSON.parse(readFileSync(at('skills/letmeshowyousomething/examples/review.example.json'), 'utf8'));
 const d = review.diagrams[0];
 const fbPath = write(buildFeedback(review, { proposals: [
   { id: 'proposal-1', diagram: d.id, op: 'rename', node: 'pay', label: 'Takes the payment', text: 'Charges the card' },
@@ -28,7 +28,7 @@ const round2 = (a1, a2, drawRename = true) => {
 };
 const ok1 = { review: review.id, id: 'proposal-1', outcome: 'drawn' };
 const ok2 = { review: review.id, id: 'proposal-2', outcome: 'not-drawn', why: 'The amount is already on the button.' };
-const followup = (next) => check('followup', write(next), at('examples/review.example.json'), fbPath).stdout;
+const followup = (next) => check('followup', write(next), at('skills/letmeshowyousomething/examples/review.example.json'), fbPath).stdout;
 
 test('#87: true outcomes pass, and plain ids still do', () => {
   assert.match(followup(round2(ok1, ok2)), /✓ proposal outcomes true[\s\S]*PASS/);

@@ -9,7 +9,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
-const run = (bin, ...args) => spawnSync(process.execPath, [join(ROOT, 'bin', bin), ...args], { encoding: 'utf8' });
+const run = (bin, ...args) => spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin', bin), ...args], { encoding: 'utf8' });
 const failing = (out) => out.split('\n').filter((l) => /^\s+✗ [^:]+$/.test(l)).map((l) => l.trim().slice(2));
 
 for (const kind of ['decision', 'plan', 'test', 'explain', 'flow', 'backlog']) {
