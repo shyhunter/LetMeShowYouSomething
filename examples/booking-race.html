@@ -2103,7 +2103,7 @@ function sbBox(d, n, touched){
 // What changes in that box under this step: its data or system entries, else what should happen.
 function sbChanges(s, n){
   const name = String(n.label || n.id).toLowerCase(), rows = [];
-  for (const o of (s.it.step ? s.it.step.outcomes : [])) {
+  for (const o of (s.kind === 'item' && s.it.step ? s.it.step.outcomes : [])) {
     for (const e of o.data || []) if (String(e.entity).toLowerCase() === name || String(e.id) === n.id)
       rows.push('<div class="sb-chg"><span class="lbl">' + esc(o.label || CHANGE[e.change] || e.change) + '</span>' + ((e.fields || []).map(f => '<span><b>' + esc(f.name) + '</b> <s>' + esc(f.before ?? '—') + '</s> → <b class="a">' + esc(f.after ?? '—') + '</b></span>').join('') || '<span>' + esc(CHANGE[e.change] || e.change) + ' a row</span>') + '</div>');
     for (const e of o.system || []) if (String(e.name).toLowerCase() === name || e.id === n.id) rows.push('<div class="sb-chg"><span class="lbl">' + esc(o.label || 'Result') + '</span><span>' + esc(KIND[e.kind] || e.kind) + ' ' + esc(e.name) + ' · ' + esc(e.status) + '</span></div>');
