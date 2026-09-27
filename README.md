@@ -18,8 +18,8 @@ Any agent, any reviewer: no account, no install, no network. The answer is data,
 
 [**Tutorial**](https://shyhunter.github.io/LetMeShowYouSomething/tutorial.html) ·
 [**Try an example**](https://shyhunter.github.io/LetMeShowYouSomething/) ·
-[**Wiki**](docs/wiki/README.md) ·
-[**FAQ**](docs/wiki/faq.md)
+[**Wiki**](https://github.com/shyhunter/LetMeShowYouSomething/wiki) ·
+[**FAQ**](https://github.com/shyhunter/LetMeShowYouSomething/wiki/FAQ)
 
 <br>
 
@@ -122,12 +122,12 @@ Each page below is the real thing: open it, press **Start**, answer, and downloa
 
 | Part | What it does | Read more |
 |---|---|---|
-| `SKILL.md` | Tells the agent when to use it, how to write a review, and how to report what comes back | [With your agent](docs/wiki/with-your-agent.md) |
-| `review.json` | What the agent asks: items, answer words, choices, approvals, diagrams, a flow of screens | [The review](docs/wiki/the-review.md) |
-| `bin/render.mjs` | Turns a review into one offline page: Let me explain, the tour, Overview, Return | [The page](docs/wiki/the-page.md) |
-| `feedback.json` | What comes back: every answer, note, picture and added item, readable without the page | [The answers](docs/wiki/the-answers.md) |
-| `bin/check.mjs` | Proves a review or an answer is complete and honest, in seven modes | [The checker](docs/wiki/the-checker.md) |
-| `bin/init.mjs`, `answer.mjs`, `usage.mjs`, `pictures.mjs` | Start right, read a returned page safely, report cost honestly, look at pictures | [The other tools](docs/wiki/the-tools.md) |
+| `SKILL.md` | Tells the agent when to use it, how to write a review, and how to report what comes back | [With your agent](https://github.com/shyhunter/LetMeShowYouSomething/wiki/With-your-agent) |
+| `review.json` | What the agent asks: items, answer words, choices, approvals, diagrams, a flow of screens | [The review](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-review) |
+| `bin/render.mjs` | Turns a review into one offline page: Let me explain, the tour, Overview, Return | [The page](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-page) |
+| `feedback.json` | What comes back: every answer, note, picture and added item, readable without the page | [The answers](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-answers) |
+| `bin/check.mjs` | Proves a review or an answer is complete and honest, in seven modes | [The checker](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-checker) |
+| `bin/init.mjs`, `answer.mjs`, `usage.mjs`, `pictures.mjs` | Start right, read a returned page safely, report cost honestly, look at pictures | [The other tools](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-other-tools) |
 | [`PROTOCOL.md`](PROTOCOL.md), [`schemas/`](schemas) | The format, so any agent, script or tool can write the question or read the answer | [PROTOCOL.md](PROTOCOL.md) |
 
 ## What it does not do

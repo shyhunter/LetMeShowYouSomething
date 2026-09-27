@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-// #145 — no broken links: every local link and picture in the README, the wiki and the site's pages points at a file
+// #145 — no broken links: every local link and picture in the README and the site's pages points at a file
 // that exists (the site's example pages and schemas are rendered from examples/ and schemas/ at deploy).
 // Links to other sites are checked by hand before a launch, not here: a test must not need the network.
 import { test } from 'node:test';
@@ -9,7 +9,7 @@ import { join, dirname, normalize, basename } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '..');
 const list = (dir, ext) => readdirSync(join(ROOT, dir)).filter((f) => f.endsWith(ext)).map((f) => join(dir, f));
-const FILES = ['README.md', ...list('docs/wiki', '.md'), ...list('site', '.html'), ...list('site/tutorial', '.html')];
+const FILES = ['README.md', ...list('site', '.html'), ...list('site/tutorial', '.html')];
 const SITE_ROOT = '/LetMeShowYouSomething/';
 
 function where(file, link) {
@@ -21,7 +21,7 @@ function where(file, link) {
   return at;
 }
 
-test('every local link and picture in the README, the wiki and the site resolves', () => {
+test('every local link and picture in the README and the site resolves', () => {
   const broken = [];
   for (const file of FILES) {
     const text = readFileSync(join(ROOT, file), 'utf8');

@@ -21,5 +21,5 @@ test('the landing page: install on the first screen, copyable, the tutorial seco
   await expect(faq).toHaveCount(5);
   await faq.first().locator('summary').click();
   await expect(faq.first()).toHaveAttribute('open', '');
-  await expect(page.getByRole('link', { name: 'All questions in the FAQ →' })).toHaveAttribute('href', /docs\/wiki\/faq\.md$/);
+  await expect(page.getByRole('link', { name: 'All questions in the FAQ →' })).toHaveAttribute('href', 'https://github.com/shyhunter/LetMeShowYouSomething/wiki/FAQ');
 });
