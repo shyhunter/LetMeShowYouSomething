@@ -1,0 +1,186 @@
+{
+  "protocol": "letmeshowyousomething/review",
+  "schemaVersion": 1,
+  "id": "bakery-website-2026-09",
+  "title": "The bakery's website: ordering a cake",
+  "audience": "The bakery owner, who takes cake orders by phone today",
+  "ask": "Click through how a customer would order a cake on the website. Judge each step, then pick how people pay.",
+  "afterwards": "Steps you agree with I build as shown; the rest I change and send back. Nothing goes online until you say so.",
+  "addNoun": "page",
+  "focus": "user-flow",
+  "brief": {
+    "question": "Is this how you want people to order a cake from your website?",
+    "explains": "A small website: the cakes you make, one page per cake, and an order form with a pickup day. Orders reach you by email, and a day you are fully booked cannot be picked. Nothing is built yet: every page is a sketch.",
+    "recommendation": "Keep it to four pages and take payment at pickup at first. A website that only takes orders can be live in a week; online payment can come once people use it.",
+    "risks": [
+      "Without a deposit, some people will order and not come. A reminder email the day before cuts that down; a deposit stops it.",
+      "The pickup days must match your real week. If the calendar is out of date, the website promises cakes you cannot make."
+    ]
+  },
+  "createdAt": "2026-09-27T12:00:00Z",
+  "createdBy": { "agent": "claude-code" },
+  "verdictSet": {
+    "id": "decision",
+    "options": [
+      { "value": "agree", "label": "Agree", "tone": "positive" },
+      { "value": "partly-agree", "label": "Partly agree", "tone": "caution" },
+      { "value": "disagree", "label": "Disagree", "tone": "negative" },
+      { "value": "revisit", "label": "Revisit", "tone": "caution", "hint": "Right question, not ready to decide" }
+    ]
+  },
+  "fields": [
+    { "key": "cost", "label": "What it costs" },
+    { "key": "risk", "label": "Watch out", "tone": "caution" }
+  ],
+  "sections": [
+    { "id": "order", "label": "Ordering a cake" },
+    {
+      "id": "pay",
+      "label": "How people pay",
+      "mode": "choose-one",
+      "recommended": { "itemId": "pay-at-pickup", "why": "Nothing to set up and no fees: the website can go live this week. Add a deposit if people order and do not come." }
+    }
+  ],
+  "flow": {
+    "start": "home",
+    "device": "website",
+    "screens": [
+      {
+        "id": "home",
+        "title": "Home",
+        "blocks": [
+          { "type": "header", "title": "Rosa's Bakery" },
+          { "type": "text", "text": "Cakes baked to order, for pickup in the shop." },
+          { "type": "card", "id": "c-choc", "title": "Chocolate cake", "text": "From €28" },
+          { "type": "card", "id": "c-lemon", "title": "Lemon tart", "text": "From €22" },
+          { "type": "button", "id": "see-cakes", "label": "See all cakes" }
+        ]
+      },
+      {
+        "id": "cakes",
+        "title": "Our cakes",
+        "blocks": [
+          { "type": "header", "title": "Our cakes", "back": { "id": "back-home" } },
+          { "type": "card", "id": "choc", "title": "Chocolate cake", "text": "8 or 12 slices · from €28", "actions": [{ "id": "order-choc", "label": "Order" }] },
+          { "type": "card", "id": "lemon", "title": "Lemon tart", "text": "8 slices · €22", "actions": [{ "id": "order-lemon", "label": "Order" }] },
+          { "type": "card", "id": "berry", "title": "Berry pavlova", "text": "10 slices · €30", "actions": [{ "id": "order-berry", "label": "Order" }] }
+        ]
+      },
+      {
+        "id": "order",
+        "title": "Order a chocolate cake",
+        "blocks": [
+          { "type": "header", "title": "Chocolate cake", "back": { "id": "back-cakes" } },
+          { "type": "radio-group", "id": "size", "label": "Size", "options": [{ "id": "s8", "label": "8 slices · €28" }, { "id": "s12", "label": "12 slices · €38" }], "selected": "s8" },
+          { "type": "date-time", "id": "pickup", "label": "Pickup day", "mode": "date", "value": "2026-10-03" },
+          { "type": "input", "id": "name", "label": "Your name", "placeholder": "Name" },
+          { "type": "input", "id": "email", "label": "Email", "placeholder": "you@example.com" },
+          { "type": "button", "id": "place-order", "label": "Order for pickup" }
+        ]
+      },
+      {
+        "id": "full",
+        "title": "That day is fully booked",
+        "blocks": [
+          { "type": "header", "title": "Chocolate cake", "back": { "id": "back-cakes-2" } },
+          { "type": "banner", "tone": "negative", "text": "Saturday 3 October is fully booked.", "because": "Rosa bakes at most 6 cakes a day, and Saturday has 6 orders already.", "canNow": "Pick Friday 2 or Sunday 4 October instead." },
+          { "type": "button", "id": "pick-other", "label": "Pick another day" }
+        ]
+      },
+      {
+        "id": "ordered",
+        "title": "Order received",
+        "end": true,
+        "blocks": [
+          { "type": "header", "title": "Thank you!" },
+          { "type": "banner", "tone": "positive", "text": "Your chocolate cake is ordered for Saturday 3 October.", "canNow": "Pick it up from 10:00. We sent the details to your email." },
+          { "type": "text", "text": "Pay in the shop when you pick it up." }
+        ]
+      }
+    ]
+  },
+  "items": [
+    {
+      "id": "see-cakes",
+      "sectionId": "order",
+      "title": "Clicks See all cakes on the home page",
+      "summary": "The home page shows two cakes and one way on: the whole list.",
+      "step": {
+        "goal": "to see what the bakery makes",
+        "from": "home",
+        "on": "see-cakes",
+        "status": "proposed",
+        "basis": { "kind": "conversation", "note": "The bakery owner: people ask on the phone which cakes we make" },
+        "outcomes": [{ "effect": "Shows every cake with its size and price", "to": "cakes", "canNow": "Order one" }]
+      }
+    },
+    {
+      "id": "order-choc",
+      "sectionId": "order",
+      "title": "Clicks Order on the chocolate cake",
+      "summary": "Each cake has its own order page: size, pickup day, name and email. No account.",
+      "fields": { "risk": "Asking for a phone number too would help with questions, but every extra field loses some orders." },
+      "step": {
+        "goal": "to order the cake they want",
+        "from": "cakes",
+        "on": "order-choc",
+        "status": "proposed",
+        "basis": { "kind": "assumption", "note": "I assume people order as guests; an account only slows a one-off order" },
+        "outcomes": [{ "effect": "Opens the order form for that cake", "to": "order", "canNow": "Pick a size and a pickup day" }]
+      }
+    },
+    {
+      "id": "place-order",
+      "sectionId": "order",
+      "title": "Clicks Order for pickup",
+      "summary": "The order reaches the bakery by email, and the customer gets a confirmation. A full day cannot be ordered.",
+      "fields": { "cost": "Sending the emails is free up to about 100 a day." },
+      "step": {
+        "goal": "to have the cake ready on the day",
+        "from": "order",
+        "on": "place-order",
+        "status": "proposed",
+        "basis": { "kind": "conversation", "note": "The bakery owner: at most 6 cakes a day" },
+        "outcomes": [
+          { "label": "The day has room", "effect": "Saves the order, emails the bakery and the customer", "to": "ordered", "canNow": "Pick up the cake and pay in the shop" },
+          { "label": "The day is full", "effect": "Nothing is ordered", "because": "the bakery has 6 orders for that day already", "to": "full", "canNow": "Pick another day" }
+        ]
+      }
+    },
+    {
+      "id": "pick-other",
+      "sectionId": "order",
+      "title": "Clicks Pick another day after a full day",
+      "summary": "The customer goes back to the form with everything they typed kept, and picks another day.",
+      "step": {
+        "goal": "to still get the cake",
+        "from": "full",
+        "on": "pick-other",
+        "status": "proposed",
+        "basis": { "kind": "assumption", "note": "I assume most people take a day close to the one they wanted rather than leave" },
+        "outcomes": [{ "effect": "Back to the order form, the size, name and email kept", "to": "order", "canNow": "Pick a day that has room" }]
+      }
+    },
+    {
+      "id": "pay-at-pickup",
+      "sectionId": "pay",
+      "title": "Pay at pickup",
+      "summary": "People order online and pay in the shop, as they do now.",
+      "fields": { "cost": "Nothing to set up, no fees", "risk": "Some people order and do not come" }
+    },
+    {
+      "id": "pay-deposit",
+      "sectionId": "pay",
+      "title": "A €10 deposit online",
+      "summary": "People pay €10 when they order and the rest in the shop.",
+      "fields": { "cost": "A payment account; about 1.5% plus €0.25 per payment", "risk": "A few people stop at the payment step" }
+    },
+    {
+      "id": "pay-online",
+      "sectionId": "pay",
+      "title": "Pay everything online",
+      "summary": "People pay the whole cake when they order.",
+      "fields": { "cost": "A payment account; the same fee on the whole price", "risk": "Refunds to handle when a cake is cancelled" }
+    }
+  ]
+}

@@ -45,7 +45,7 @@ test('the sitemap lists only pages that exist, the site pages among them', () =>
 
 test('the chat replay stays out of search; every example page describes itself', async ({ page }) => {
   expect(readFileSync(join(ROOT, 'site/tutorial/chat.html'), 'utf8')).toContain('<meta name="robots" content="noindex">');
-  for (const name of ['salon-booking', 'flow-booking', 'checkout-uat', 'decision-review', 'results-layout', 'password-reset']) {
+  for (const name of ['salon-booking', 'flow-booking', 'checkout-uat', 'decision-review', 'results-layout', 'password-reset', 'bakery-website']) {
     await page.goto(pathToFileURL(join(ROOT, 'examples', name + '.html')).href);
     expect((await meta(page, 'meta[name="description"]')).length, name).toBeGreaterThan(20);
   }
