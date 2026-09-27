@@ -661,6 +661,10 @@ h1,h2,.t-head h2,.brief h2,#start h1{font-weight:800;letter-spacing:-.022em}
 .sb-band.now{box-shadow:6px 6px 0 var(--lift)}
 .sb-band.quiet{padding:8px 14px;background:var(--sunk);align-items:center}
 .sb-card{background:var(--surf);border:2px solid var(--edge);border-radius:12px;padding:14px;display:flex;flex-direction:column;gap:9px;min-width:0;overflow-wrap:anywhere}
+/* A question with no step (a choice) has no place in the flow: its prototype and options take both columns, stacked. */
+.sb-wide{grid-column:span 2}
+.sb-wide .pair{grid-template-columns:minmax(0,1fr)}
+.sb-wide .pair>*{min-width:0}
 .sb-card h3{font-size:17px;font-weight:800;letter-spacing:-.01em}
 .sb-top{display:flex;gap:8px;align-items:center;justify-content:space-between;flex-wrap:wrap}
 .sb-num{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--ac);color:var(--on-ac);border:2px solid var(--edge);margin-right:8px;font-size:11px}
@@ -712,7 +716,7 @@ h1,h2,.t-head h2,.brief h2,#start h1{font-weight:800;letter-spacing:-.022em}
 .sb-check .chk .ic{color:var(--ok)}
 @container (max-width:900px){
   .sb-head{grid-template-columns:1fr;justify-items:start;gap:8px}.sb-head>.eyebrow{display:none}.sb-head .dtabs{justify-self:stretch;overflow-x:auto}
-  .sb-band{grid-template-columns:minmax(0,1fr)}
+  .sb-band{grid-template-columns:minmax(0,1fr)}.sb-wide{grid-column:auto}
   .sb-lane{order:-1;flex-direction:row;flex-wrap:wrap;justify-content:flex-start;gap:6px;padding:0}
   .sb-lane::before{display:none}
   .sb-outs{justify-content:flex-start}
@@ -1372,7 +1376,7 @@ function storyboardHtml(){
   if (flowTab) {
     const flowSteps = STEPS.filter(s => s.kind === 'item' && s.it.step);
     rows = STEPS.map(s => s.kind === 'item' && s.it.step ? band(s, sbLane(s, flowSteps[0] === s, flowSteps[flowSteps.length - 1] === s), sbTap(s))
-      : band(s, '<div></div>', ovDetail(s) ? '<div class="sb-card">' + ovDetail(s) + '</div>' : '<div></div>')).join('');
+      : band(s, '', ovDetail(s) ? '<div class="sb-card sb-wide">' + ovDetail(s) + '</div>' : '<div></div><div></div>')).join('');
   } else {
     // Boxes no question is about fold into one quiet row between the questions, so the diagram stays whole.
     const out = [], quiet = [];
