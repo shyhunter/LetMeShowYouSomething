@@ -149,3 +149,20 @@ test('usage: the log that ran the command is the one counted, never the whole se
   assert.deepEqual([none.status, none.tokens], ['unavailable', undefined]);
   assert.match(none.reason, /this command was not found in the session's logs/);
 });
+
+// Headless Claude Code (claude -p) writes a tool call only once it has finished: the command is not in the log yet.
+// With no sub-agent, the main log is the only one it can be, and it is counted; with sub-agents it stays unavailable.
+test('usage: in a headless session, before its own command is logged, the only log is counted', async () => {
+  const { mkdirSync } = await import('node:fs');
+  const id = '66666666-7777-8888-9999-000000000000', since = '2026-09-25T09:00:00Z';
+  const home = mkdtempSync(join(tmpdir(), 'usage-headless-')), dir = join(home, 'projects', 'p');
+  mkdirSync(dir, { recursive: true });
+  const recent = new Date(Date.now() - 60000).toISOString();
+  writeFileSync(join(dir, `${id}.jsonl`), [call('m-1', recent, u(4, 400)), call('m-2', recent, u(2, 20))].join('\n'));
+  const measure = () => JSON.parse(run([join(ROOT, 'bin/usage.mjs'), '--claude-code', '--since', since], { CLAUDE_CODE_SESSION_ID: id, CLAUDE_CONFIG_DIR: home }).stdout);
+  const m = measure();
+  assert.deepEqual([m.status, m.calls, m.tokens.output], ['measured', 2, 420]);
+  mkdirSync(join(dir, id, 'subagents'), { recursive: true });
+  writeFileSync(join(dir, id, 'subagents', 'agent-a.jsonl'), call('a-1', recent, u(3, 30)));
+  assert.equal(measure().status, 'unavailable', 'with a sub-agent, whose calls to count is not known');
+});

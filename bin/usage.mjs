@@ -83,6 +83,9 @@ function main() {
     const holds = logs.filter((p) => { let text; try { text = readFileSync(p, 'utf8'); } catch { return false; }
       return text.split('\n').some((l) => l.includes('usage.mjs') && l.includes(since) && runsThis(l)); });
     if (holds.length === 1) return [holds[0], null];
+    // Headless Claude Code (claude -p) writes a tool call to the log only once it has finished, so this very command
+    // is not there yet. With no sub-agent in the session, the main log can only be this conversation's: count it.
+    if (!holds.length && logs.length === 1) return [logs[0], null];
     return [null, holds.length ? 'this command is in more than one log of the session, so whose calls to count is not known' : 'this command was not found in the session\'s logs, so whose calls to count is not known'];
   }
   function runsThis(line) {
