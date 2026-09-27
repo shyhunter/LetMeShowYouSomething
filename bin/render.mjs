@@ -150,9 +150,9 @@ const usageLine = (() => {
   const u = review.usage; if (!u || typeof u !== 'object') return '';
   const n = (x) => Number.isSafeInteger(x) && x >= 0 ? x.toLocaleString('en-US') : '?';
   const who = `reported by ${esc(u.source?.host || 'the host')}'s session log, not independently verified`;
-  if (u.status === 'unavailable') return `<p class="usage">Making this review: usage unavailable (${esc(u.reason || 'no reason given')}).</p>`;
+  if (u.status === 'unavailable') return `<p class="usage">Making this review (the whole conversation that ran it): usage unavailable (${esc(u.reason || 'no reason given')}).</p>`;
   const t = u.tokens || {};
-  return `<p class="usage">Making this review${u.status === 'partial' ? ', at least' : ''}: ${n(t.input)} tokens in, ${n(t.output)} out, ${n(t.cacheRead)} read from cache and ${n(t.cacheWrite)} written to it, over ${n(u.calls)} model call${u.calls === 1 ? '' : 's'}${(u.models || []).length ? ` (${u.models.map(esc).join(', ')})` : ''}; ${who}.${u.status === 'partial' ? ` Partial: ${esc(u.reason || '')}.` : ''} Cost: not measured.</p>`;
+  return `<p class="usage">Making this review (the whole conversation that ran it, not the skill alone)${u.status === 'partial' ? ', at least' : ''}: ${n(t.input)} tokens in, ${n(t.output)} out, ${n(t.cacheRead)} read from cache and ${n(t.cacheWrite)} written to it, over ${n(u.calls)} model call${u.calls === 1 ? '' : 's'}${(u.models || []).length ? ` (${u.models.map(esc).join(', ')})` : ''}; ${who}.${u.status === 'partial' ? ` Partial: ${esc(u.reason || '')}.` : ''} Cost: not measured.</p>`;
 })();
 
 // What the page is about, in one line, for a browser tab, a search result or a shared link: the review's own words.
