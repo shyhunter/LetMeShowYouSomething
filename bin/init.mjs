@@ -44,6 +44,7 @@ const KINDS = {
       { id: 'first', title: f('the first screen'), blocks: [{ type: 'header', title: f('its title') }, { type: 'text', text: f('what it shows') }, { type: 'button', id: 'go', label: f('the button') }] },
       { id: 'next', title: f('the screen it leads to'), end: true, blocks: [{ type: 'header', title: f('its title') }, { type: 'text', text: f('what it shows') }] }] },
     items: [{ id: 'tap-go', title: f('Taps …, the cause'), step: { goal: f('what the person wants'), from: 'first', on: 'go', status: 'proposed',
+      basis: { kind: 'assumption', note: f('what you assume, or who said it (conversation); from code: kind "code", ref "file:line"') },
       outcomes: [{ effect: f('what happens'), to: 'next', canNow: f('what they can do then') }] } }] }),
   backlog: () => ({ verdictSet: V('priority', ['now', 'Now', 'positive'], ['next', 'Next', 'caution'], ['later', 'Later', 'neutral'], ['unclear', "Can't place it", 'negative']),
     items: [item('work-1', 'the first piece of work'), item('work-2', 'the next piece of work')] }),
