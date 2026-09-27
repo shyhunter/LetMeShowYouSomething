@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { overview, download } from './page-helpers.mjs';
 const root = resolve(import.meta.dirname, '../..');
-const base = JSON.parse(readFileSync(join(root, 'examples/review.example.json'), 'utf8'));
+const base = JSON.parse(readFileSync(join(root, 'skills/letmeshowyousomething/examples/review.example.json'), 'utf8'));
 const run = (bin, ...args) => spawnSync(process.execPath, [join(root, bin), ...args], { encoding: 'utf8' });
 test.beforeEach(async ({ page }, info) => {
   info.faults = [];
@@ -22,7 +22,7 @@ const open = async (page, url) => { await page.goto(url); await overview(page); 
 test('#78: an exported page, opened and exported again, reads back as the same feedback', async ({ page }) => {
   const dir = mkdtempSync(join(tmpdir(), 'answered-html-')), rp = join(dir, 'review.json'), hp = join(dir, 'review.html');
   writeFileSync(rp, JSON.stringify({ ...base, id: 'answered-html-browser' }));
-  expect(run('bin/render.mjs', rp, hp).status).toBe(0);
+  expect(run('skills/letmeshowyousomething/bin/render.mjs', rp, hp).status).toBe(0);
   // Pasted text can carry U+2028: it used to break the second export of a copy.
   const note = `</script><script>document.title="ran"</script> & a pasted line${String.fromCharCode(0x2028)}separator`;
   await page.goto(pathToFileURL(hp).href);
@@ -42,7 +42,7 @@ test('#78: an exported page, opened and exported again, reads back as the same f
   await expect(page.locator('#n-guest-checkout')).toHaveValue(note);
   for (const [name, html] of [['first', first], ['second', second]]) {
     const out = join(dir, `${name}.feedback.json`);
-    const w = run('bin/answer.mjs', rp, html, out); expect(w.status, w.stderr).toBe(0);
+    const w = run('skills/letmeshowyousomething/bin/answer.mjs', rp, html, out); expect(w.status, w.stderr).toBe(0);
     const got = JSON.parse(readFileSync(out, 'utf8'));
     expect(got.via).toBe('page');
     // Two export clicks, two moments: only the time and how it arrived differ.

@@ -22,12 +22,12 @@ as what comes back passes the checker.
 
 | Question | Answered by | Not by |
 |---|---|---|
-| What may a review or a feedback file say, and what does each field mean? | [`PROTOCOL.md`](../PROTOCOL.md), with the schemas in [`schemas/`](../schemas) | the page, SKILL.md, this file |
-| Is this file valid, complete, and does it belong to this review? (Not: who wrote it; files are unsigned) | [`bin/check.mjs`](../bin/check.mjs): `review`, `feedback`, `pair`, `history`, `followup`; each refusal is listed in PROTOCOL.md | the agent's own reading of the file |
-| What does a completed review export? | [`lib/build-feedback.mjs`](../lib/build-feedback.mjs), inlined verbatim into every page, so the page and the tests run the same code | a second copy of those rules anywhere else |
-| How does a review look to a person? | [`bin/render.mjs`](../bin/render.mjs) and the drawings in [`lib/`](../lib) | the protocol (presentation is not part of it) |
-| How are answers brought back? | [`bin/answer.mjs`](../bin/answer.mjs): an answered page, read as data, or answers confirmed in chat; either is checked before a file is written | opening or running the returned page |
-| What should an agent do, step by step? | [`SKILL.md`](../SKILL.md) (operational, for agents) | this file |
+| What may a review or a feedback file say, and what does each field mean? | [`PROTOCOL.md`](../skills/letmeshowyousomething/PROTOCOL.md), with the schemas in [`schemas/`](../skills/letmeshowyousomething/schemas) | the page, SKILL.md, this file |
+| Is this file valid, complete, and does it belong to this review? (Not: who wrote it; files are unsigned) | [`bin/check.mjs`](../skills/letmeshowyousomething/bin/check.mjs): `review`, `feedback`, `pair`, `history`, `followup`; each refusal is listed in PROTOCOL.md | the agent's own reading of the file |
+| What does a completed review export? | [`lib/build-feedback.mjs`](../skills/letmeshowyousomething/lib/build-feedback.mjs), inlined verbatim into every page, so the page and the tests run the same code | a second copy of those rules anywhere else |
+| How does a review look to a person? | [`bin/render.mjs`](../skills/letmeshowyousomething/bin/render.mjs) and the drawings in [`lib/`](../skills/letmeshowyousomething/lib) | the protocol (presentation is not part of it) |
+| How are answers brought back? | [`bin/answer.mjs`](../skills/letmeshowyousomething/bin/answer.mjs): an answered page, read as data, or answers confirmed in chat; either is checked before a file is written | opening or running the returned page |
+| What should an agent do, step by step? | [`SKILL.md`](../skills/letmeshowyousomething/SKILL.md) (operational, for agents) | this file |
 | Do different agents keep the contract? | [`conformance/`](../conformance) fixtures and their recorded runs | a single good run |
 | What work is planned or in progress? | [GitHub issues](https://github.com/shyhunter/LetMeShowYouSomething/issues) | any file in this repo |
 | How is the repo worked on? | [`CONTRIBUTING.md`](../CONTRIBUTING.md); licences in [`LICENSING.md`](../LICENSING.md) | |

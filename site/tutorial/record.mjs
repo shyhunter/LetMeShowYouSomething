@@ -104,7 +104,7 @@ async function reviewer(browser) {
   const src = await video.path(), ids = ['explain', 'flow', 'choice', 'overview', 'return', 'end'];
   for (let i = 0; i < ids.length - 1; i++) cut(src, ids[i], marks[ids[i]], marks[ids[i + 1]]);
   // The answered page becomes the checked feedback file, the way an agent reads it (SKILL.md, step 3).
-  const read = spawnSync(process.execPath, ['bin/answer.mjs', 'examples/salon-booking.review.json', join(TMP, 'salon-booking.answered.html'), 'examples/salon-booking.feedback.json'], { encoding: 'utf8' });
+  const read = spawnSync(process.execPath, ['skills/letmeshowyousomething/bin/answer.mjs', 'skills/letmeshowyousomething/examples/salon-booking.review.json', join(TMP, 'salon-booking.answered.html'), 'skills/letmeshowyousomething/examples/salon-booking.feedback.json'], { encoding: 'utf8' });
   if (read.status) throw new Error(read.stdout + read.stderr);
   console.log('chapters', marks);
 }

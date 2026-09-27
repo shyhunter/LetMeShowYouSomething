@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, download } from './page-helpers.mjs';
-const reviewPath = join(ROOT, 'examples/ai-tool-loop.review.json');
+const reviewPath = join(ROOT, 'skills/letmeshowyousomething/examples/ai-tool-loop.review.json');
 guard(test);
 
 test('AI: captions, stops and tokens on the map; a mark on a box survives both downloads', async ({ page }) => {

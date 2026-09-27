@@ -54,46 +54,46 @@ jobs:
 
       - name: Every example passes the checker
         run: |
-          node bin/check.mjs review examples/review.example.json
-          node bin/check.mjs review examples/decision-review.example.json
-          node bin/check.mjs review examples/flow-booking.review.json --root .
-          node bin/check.mjs review examples/database-booking.review.json
-          node bin/check.mjs review examples/retry-backoff.review.json
-          node bin/check.mjs review examples/booking-race.review.json
-          node bin/check.mjs review examples/ai-tool-loop.review.json
-          node bin/check.mjs review examples/password-reset.review.json
-          node bin/check.mjs review examples/results-layout.review.json
-          node bin/check.mjs review examples/salon-booking.review.json --root .
-          node bin/check.mjs review examples/salon-desk.review.json --root .
-          node bin/check.mjs review examples/bakery-website.review.json --root .
-          node bin/check.mjs pair examples/salon-booking.review.json examples/salon-booking.feedback.json
-          node bin/check.mjs rounds examples/salon-booking-round2.review.json examples/salon-booking.review.json examples/salon-booking.feedback.json
-          node bin/check.mjs pair examples/review.example.json examples/checkout-uat.feedback.json
-          node bin/check.mjs pair examples/review.example.json examples/feedback.example.json
-          node bin/check.mjs pair examples/flow-booking.review.json examples/flow-booking.feedback.json --root .
-          node bin/check.mjs history examples/decision-review.example.json examples/earlier-decisions.feedback.json
-          node bin/check.mjs history examples/flow-booking.review.json examples/booking-earlier.feedback.json
-          node bin/check.mjs rounds examples/checkout-round2.review.json examples/review.example.json examples/checkout-uat.feedback.json
-          node bin/check.mjs pair examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json --root .
-          node bin/check.mjs rounds examples/flow-booking-round3.review.json examples/flow-booking.review.json examples/flow-booking.feedback.json examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/review.example.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/decision-review.example.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/flow-booking.review.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/database-booking.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/retry-backoff.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/booking-race.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/ai-tool-loop.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/password-reset.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/results-layout.review.json
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/salon-booking.review.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/salon-desk.review.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs review skills/letmeshowyousomething/examples/bakery-website.review.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs pair skills/letmeshowyousomething/examples/salon-booking.review.json skills/letmeshowyousomething/examples/salon-booking.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs rounds skills/letmeshowyousomething/examples/salon-booking-round2.review.json skills/letmeshowyousomething/examples/salon-booking.review.json skills/letmeshowyousomething/examples/salon-booking.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs pair skills/letmeshowyousomething/examples/review.example.json skills/letmeshowyousomething/examples/checkout-uat.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs pair skills/letmeshowyousomething/examples/review.example.json skills/letmeshowyousomething/examples/feedback.example.json
+          node skills/letmeshowyousomething/bin/check.mjs pair skills/letmeshowyousomething/examples/flow-booking.review.json skills/letmeshowyousomething/examples/flow-booking.feedback.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs history skills/letmeshowyousomething/examples/decision-review.example.json skills/letmeshowyousomething/examples/earlier-decisions.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs history skills/letmeshowyousomething/examples/flow-booking.review.json skills/letmeshowyousomething/examples/booking-earlier.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs rounds skills/letmeshowyousomething/examples/checkout-round2.review.json skills/letmeshowyousomething/examples/review.example.json skills/letmeshowyousomething/examples/checkout-uat.feedback.json
+          node skills/letmeshowyousomething/bin/check.mjs pair skills/letmeshowyousomething/examples/flow-booking-round2.review.json skills/letmeshowyousomething/examples/flow-booking-round2.feedback.json --root .
+          node skills/letmeshowyousomething/bin/check.mjs rounds skills/letmeshowyousomething/examples/flow-booking-round3.review.json skills/letmeshowyousomething/examples/flow-booking.review.json skills/letmeshowyousomething/examples/flow-booking.feedback.json skills/letmeshowyousomething/examples/flow-booking-round2.review.json skills/letmeshowyousomething/examples/flow-booking-round2.feedback.json --root .
 
       # The example pages are what people open first: they must be what the renderer makes today.
       - name: Example pages are up to date
         run: |
           out="$RUNNER_TEMP/pages"; mkdir -p "$out"
           for pair in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking retry-backoff.review.json:retry-backoff booking-race.review.json:booking-race ai-tool-loop.review.json:ai-tool-loop password-reset.review.json:password-reset results-layout.review.json:results-layout salon-booking.review.json:salon-booking salon-desk.review.json:salon-desk bakery-website.review.json:bakery-website; do
-            node bin/render.mjs "examples/${pair%%:*}" "$out/${pair##*:}.html" > /dev/null
+            node skills/letmeshowyousomething/bin/render.mjs "skills/letmeshowyousomething/examples/${pair%%:*}" "$out/${pair##*:}.html" > /dev/null
             cmp -s "$out/${pair##*:}.html" "examples/${pair##*:}.html" \
-              || { echo "::error file=examples/${pair##*:}.html::out of date; run: node bin/render.mjs examples/${pair%%:*} examples/${pair##*:}.html"; exit 1; }
+              || { echo "::error file=examples/${pair##*:}.html::out of date; run: node skills/letmeshowyousomething/bin/render.mjs skills/letmeshowyousomething/examples/${pair%%:*} examples/${pair##*:}.html"; exit 1; }
           done
           # #82 — the continuing examples, each rendered with its earlier rounds.
-          F1="examples/flow-booking.review.json examples/flow-booking.feedback.json"; F2="examples/flow-booking-round2.review.json examples/flow-booking-round2.feedback.json"
+          F1="skills/letmeshowyousomething/examples/flow-booking.review.json skills/letmeshowyousomething/examples/flow-booking.feedback.json"; F2="skills/letmeshowyousomething/examples/flow-booking-round2.review.json skills/letmeshowyousomething/examples/flow-booking-round2.feedback.json"
           while read -r name earlier; do
-            node bin/render.mjs "examples/$name.review.json" "$out/$name.html" $earlier > /dev/null
-            cmp -s "$out/$name.html" "examples/$name.html" || { echo "::error file=examples/$name.html::out of date; run: node bin/render.mjs examples/$name.review.json examples/$name.html $earlier"; exit 1; }
+            node skills/letmeshowyousomething/bin/render.mjs "skills/letmeshowyousomething/examples/$name.review.json" "$out/$name.html" $earlier > /dev/null
+            cmp -s "$out/$name.html" "examples/$name.html" || { echo "::error file=examples/$name.html::out of date; run: node skills/letmeshowyousomething/bin/render.mjs skills/letmeshowyousomething/examples/$name.review.json examples/$name.html $earlier"; exit 1; }
           done <<EOF
-          checkout-round2 --earlier examples/review.example.json examples/checkout-uat.feedback.json
-          salon-booking-round2 --earlier examples/salon-booking.review.json examples/salon-booking.feedback.json
+          checkout-round2 --earlier skills/letmeshowyousomething/examples/review.example.json skills/letmeshowyousomething/examples/checkout-uat.feedback.json
+          salon-booking-round2 --earlier skills/letmeshowyousomething/examples/salon-booking.review.json skills/letmeshowyousomething/examples/salon-booking.feedback.json
           flow-booking-round2 --earlier $F1
           flow-booking-round3 --earlier $F1 --earlier $F2
           EOF

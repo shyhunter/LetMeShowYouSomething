@@ -121,6 +121,8 @@ Each page below is the real thing: open it, press **Start**, answer, and downloa
 
 ## What's inside
 
+Everything the skill needs is in [`skills/letmeshowyousomething/`](skills/letmeshowyousomething), and that folder is all an install copies: no tests, site or videos.
+
 | Part | What it does | Read more |
 |---|---|---|
 | `SKILL.md` | Tells the agent when to use it, how to write a review, and how to report what comes back | [With your agent](https://github.com/shyhunter/LetMeShowYouSomething/wiki/With-your-agent) |
@@ -129,7 +131,7 @@ Each page below is the real thing: open it, press **Start**, answer, and downloa
 | `feedback.json` | What comes back: every answer, note, picture and added item, readable without the page | [The answers](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-answers) |
 | `bin/check.mjs` | Proves a review or an answer is complete and honest, in seven modes | [The checker](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-checker) |
 | `bin/init.mjs`, `answer.mjs`, `usage.mjs`, `pictures.mjs` | Start right, read a returned page safely, report cost honestly, look at pictures | [The other tools](https://github.com/shyhunter/LetMeShowYouSomething/wiki/The-other-tools) |
-| [`PROTOCOL.md`](PROTOCOL.md), [`schemas/`](schemas) | The format, so any agent, script or tool can write the question or read the answer | [PROTOCOL.md](PROTOCOL.md) |
+| [`PROTOCOL.md`](skills/letmeshowyousomething/PROTOCOL.md), [`schemas/`](skills/letmeshowyousomething/schemas) | The format, so any agent, script or tool can write the question or read the answer | [PROTOCOL.md](skills/letmeshowyousomething/PROTOCOL.md) |
 
 ## What it does not do
 

@@ -139,7 +139,7 @@ for (const [device, out] of [['phone', join(dir, `phone.${back}`)], ['desktop', 
   const did = answered[device] = await answer(device, out);
   check(`${device}: the page runs clean and offline`, !did.errors.length, did.errors.slice(0, 3).join(' · '));
   const json = join(dir, `${device}.feedback.json`);
-  const read = sh(process.execPath, [join(ROOT, 'bin/answer.mjs'), reviewPath, out, json]);
+  const read = sh(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/answer.mjs'), reviewPath, out, json]);
   const fb = read.status === 0 && JSON.parse(readFileSync(json, 'utf8'));
   const verdictOf = (id) => fb?.responses.find((r) => r.itemId === id)?.verdict;
   check(`${device}: the downloaded page reads back as checked answers`, fb, read.status === 0 ? '' : read.stderr.slice(0, 300));

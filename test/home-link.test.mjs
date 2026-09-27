@@ -8,7 +8,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..'), dir = mkdtempSync(join(tmpdir(), 'home-'));
-const render = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), join(ROOT, 'examples/results-layout.review.json'), ...args], { encoding: 'utf8' });
+const render = (...args) => spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), join(ROOT, 'skills/letmeshowyousomething/examples/results-layout.review.json'), ...args], { encoding: 'utf8' });
 
 test('render --home: a home button on Let me explain and in the top bar, to that address', () => {
   const out = join(dir, 'home.html');

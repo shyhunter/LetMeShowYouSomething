@@ -19,24 +19,24 @@ check.
 
 ## What a change carries
 
-- **A new refusal comes with a test that proves it.** Add the rule to `bin/check.mjs`, then a test in
+- **A new refusal comes with a test that proves it.** Add the rule to `skills/letmeshowyousomething/bin/check.mjs`, then a test in
   `test/protocol.test.mjs` that feeds it a file it must refuse. Remove the rule and watch the test
   fail before you keep it: a guard nobody has seen fail is not a guard.
 - **Every checker message says three things**: what is wrong, what to do, and what leaving it would
   cause. `expiresAt "yesterday" is not a UTC date-time like 2026-10-03T08:00:00Z. Give it an end, or
   an old yes can be used for a new situation.` A message that only names the problem is a bug.
-- **The example pages are generated.** After changing `bin/render.mjs` or an example, run:
+- **The example pages are generated.** After changing `skills/letmeshowyousomething/bin/render.mjs` or an example, run:
   ```bash
   for p in review.example.json:checkout-uat decision-review.example.json:decision-review flow-booking.review.json:flow-booking database-booking.review.json:database-booking retry-backoff.review.json:retry-backoff booking-race.review.json:booking-race ai-tool-loop.review.json:ai-tool-loop; do
-    node bin/render.mjs "examples/${p%%:*}" "examples/${p##*:}.html"; done
+    node skills/letmeshowyousomething/bin/render.mjs "skills/letmeshowyousomething/examples/${p%%:*}" "examples/${p##*:}.html"; done
   ```
   CI fails if they are out of date.
 - **A page fetches nothing.** No URL, no web font, no script from anywhere: a reviewer opens it on a
   plane, and a test refuses any request that is not the file itself. Inline what you need.
-- **Anything copied into a generated page is MIT-0** (`lib/build-feedback.mjs`, the page template, the
+- **Anything copied into a generated page is MIT-0** (`skills/letmeshowyousomething/lib/build-feedback.mjs`, the page template, the
   styles). A test fails if another licence reaches a page. The tools are Apache-2.0, the protocol and
   schemas CC0-1.0; see [LICENSING.md](LICENSING.md).
-- **Both sides of a format change.** A new field belongs in the schema (`schemas/*.json`, both are
+- **Both sides of a format change.** A new field belongs in the schema (`skills/letmeshowyousomething/schemas/*.json`, both are
   `additionalProperties: false`), in the checker, in the page, and in `PROTOCOL.md` in the same change.
 - **Touch targets stay 44 px on a touch screen**, and the page must work by keyboard alone.
 - **`SKILL.md` is tested with agents, not only read.** If you change what it tells an agent to do, run
@@ -52,6 +52,12 @@ check.
 
 ## Where things are
 
+The skill is [`skills/letmeshowyousomething/`](skills/letmeshowyousomething), and that folder is exactly what `npx skills add` copies into a user's project (#175).
+Put only what the skill needs at runtime there: its instructions, tools, schemas, example reviews and licences.
+Tests, the site, videos, fixtures and tooling stay outside it, where users never get them.
+
+In `skills/letmeshowyousomething/`:
+
 | Path | What it is |
 |---|---|
 | `SKILL.md` | what an agent reads: when to use the skill, how to write a review, how to report what comes back |
@@ -62,7 +68,13 @@ check.
 | `bin/answer.mjs` | an answered page (read as data) or answers given in chat, written as a checked feedback file |
 | `bin/pictures.mjs` | the pictures a reviewer attached, written out as files to look at |
 | `lib/` | the pieces the page and the checker share: the builder, the layouts, the drawings |
-| `examples/` | the worked examples, and the pages generated from them |
+| `examples/` | the worked example reviews and answers, as JSON |
+
+Outside it, never installed:
+
+| Path | What it is |
+|---|---|
+| `examples/` | the pages generated from the example reviews, for the site and the tests |
 | `test/`, `checks/browser/` | the unit tests, the cross-browser tests, the real-Chrome checks |
 | `conformance/` | the same task for any agent, checked the same way, and the runs recorded so far |
 | `docs/ARCHITECTURE.md` | which file owns which part, what ships and what is only proposed |

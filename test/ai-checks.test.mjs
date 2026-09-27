@@ -6,12 +6,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { agentDiagram, aiReview, aiMutations } from './ai-fixtures.mjs';
-import { applyProposals, buildFeedback, partLabel } from '../lib/build-feedback.mjs';
+import { applyProposals, buildFeedback, partLabel } from '../skills/letmeshowyousomething/lib/build-feedback.mjs';
 const root = new URL('..', import.meta.url).pathname;
 const dir = mkdtempSync(join(tmpdir(), 'ai-checks-'));
 let serial = 0;
 const json = value => { const path = join(dir, `${serial++}.json`); writeFileSync(path, JSON.stringify(value)); return path; };
-const check = (...args) => spawnSync(process.execPath, [join(root, 'bin/check.mjs'), ...args], { encoding: 'utf8' });
+const check = (...args) => spawnSync(process.execPath, [join(root, 'skills/letmeshowyousomething/bin/check.mjs'), ...args], { encoding: 'utf8' });
 const valid = d => { const r = check('review', json(aiReview(d))); assert.equal(r.status, 0, r.stdout + r.stderr); };
 test('AI accepts explained endings, estimated/reported and zero token totals', () => {
   valid(agentDiagram());

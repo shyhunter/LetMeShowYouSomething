@@ -16,11 +16,11 @@ const nextOf = (dir, id) => ({ ...read(join(dir, 'docs/checkout.review.json')), 
 
 const GOOD = {
   handoff(dir) {
-    write(join(dir, 'checkout.review.json'), { ...read(join(ROOT, 'examples/review.example.json')), id: 'checkout-release' });
-    node('bin/render.mjs', join(dir, 'checkout.review.json'), join(dir, 'checkout.html'));
+    write(join(dir, 'checkout.review.json'), { ...read(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json')), id: 'checkout-release' });
+    node('skills/letmeshowyousomething/bin/render.mjs', join(dir, 'checkout.review.json'), join(dir, 'checkout.html'));
   },
-  'renderer-fails'(dir) { write(join(dir, 'checkout.review.json'), { ...read(join(ROOT, 'examples/review.example.json')), id: 'checkout-release' }); },
-  'returned-page'(dir) { node('bin/answer.mjs', join(dir, 'docs/checkout.review.json'), join(dir, 'checkout.feedback.html'), join(dir, 'docs/checkout.feedback.json')); },
+  'renderer-fails'(dir) { write(join(dir, 'checkout.review.json'), { ...read(join(ROOT, 'skills/letmeshowyousomething/examples/review.example.json')), id: 'checkout-release' }); },
+  'returned-page'(dir) { node('skills/letmeshowyousomething/bin/answer.mjs', join(dir, 'docs/checkout.review.json'), join(dir, 'checkout.feedback.html'), join(dir, 'docs/checkout.feedback.json')); },
   'couldnt-test'(dir) { write(join(dir, 'docs/checkout-2.review.json'), nextOf(dir, 'checkout-uat-untested-2')); },
   'proposal-outcomes'(dir) {
     const next = nextOf(dir, 'checkout-uat-proposals-2'), prev = 'checkout-uat-proposals';

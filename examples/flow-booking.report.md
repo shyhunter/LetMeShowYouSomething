@@ -14,7 +14,7 @@ This is the last leg of the loop, for the booking flow example:
    ```
 
    The warning is one of the agent's own examples with no source; the page already shows it as unverified.
-4. Then it reported back, in the order [`SKILL.md`](../SKILL.md) asks for. What follows is that report, written by an
+4. Then it reported back, in the order [`SKILL.md`](../skills/letmeshowyousomething/SKILL.md) asks for. What follows is that report, written by an
    agent following SKILL.md, word for word.
 
 ---

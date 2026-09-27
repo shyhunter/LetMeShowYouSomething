@@ -120,7 +120,7 @@ const fingerprint = createHash('sha256').update(JSON.stringify(review) + JSON.st
 // The same mark signs the page at the bottom (D095): "Made with LetMeShowYouSomething", quiet, drawn inline.
 let favicon = '', mark = '';
 try {
-  const logo = readFileSync(new URL('../site/logo.svg', import.meta.url), 'utf8');
+  const logo = readFileSync(new URL('../logo.svg', import.meta.url), 'utf8');
   favicon = `<link rel="icon" href="data:image/svg+xml;base64,${Buffer.from(logo).toString('base64')}">`;
   mark = (logo.match(/<g [\s\S]*<\/g>/) || [''])[0];
 } catch {}

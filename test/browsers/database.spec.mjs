@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { ROOT, example, readReview, check, rendered, guard, start, overview, download } from './page-helpers.mjs';
-const reviewPath = join(ROOT, 'examples/database-booking.review.json');
+const reviewPath = join(ROOT, 'skills/letmeshowyousomething/examples/database-booking.review.json');
 guard(test);
 
 test('database: tables, keys and examples on the map; a box leads to its question; a mark survives the download', async ({ page }) => {

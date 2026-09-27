@@ -9,14 +9,14 @@ import { pathToFileURL } from 'node:url';
 
 export const ROOT = resolve(import.meta.dirname, '../..');
 export const example = (name) => pathToFileURL(join(ROOT, 'examples', name + '.html')).href;
-export const readReview = (file) => JSON.parse(readFileSync(join(ROOT, 'examples', file), 'utf8'));
-export const check = (...args) => spawnSync(process.execPath, [join(ROOT, 'bin/check.mjs'), ...args, '--root', ROOT], { encoding: 'utf8' });
+export const readReview = (file) => JSON.parse(readFileSync(join(ROOT, 'skills/letmeshowyousomething/examples', file), 'utf8'));
+export const check = (...args) => spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/check.mjs'), ...args, '--root', ROOT], { encoding: 'utf8' });
 
 // A review written to a folder of its own and rendered there.
 export function rendered(review, prefix = 'pw-') {
   const dir = mkdtempSync(join(tmpdir(), prefix)), rp = join(dir, 'review.json'), hp = join(dir, 'review.html');
   writeFileSync(rp, JSON.stringify(review));
-  const r = spawnSync(process.execPath, [join(ROOT, 'bin/render.mjs'), rp, hp], { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, [join(ROOT, 'skills/letmeshowyousomething/bin/render.mjs'), rp, hp], { encoding: 'utf8' });
   if (r.status !== 0) throw new Error(r.stderr);
   return { dir, rp, hp, url: pathToFileURL(hp).href };
 }

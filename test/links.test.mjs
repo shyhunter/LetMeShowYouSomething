@@ -17,7 +17,7 @@ function where(file, link) {
   if (!path) return null;
   const at = path.startsWith(SITE_ROOT) ? normalize(join('site', path.slice(SITE_ROOT.length) || 'index.html')) : normalize(join(dirname(file), path));
   if (at.startsWith('site/examples/')) return join('examples', basename(at));
-  if (at.startsWith('site/schema/')) return join('schemas', basename(at).replace('.v1.json', '.v1.schema.json'));
+  if (at.startsWith('site/schema/')) return join('skills/letmeshowyousomething/schemas', basename(at).replace('.v1.json', '.v1.schema.json'));
   return at;
 }
 
