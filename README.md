@@ -23,7 +23,7 @@ Any agent, any reviewer: no account, no install, no network. The answer is data,
 
 <br>
 
-<a href="https://shyhunter.github.io/LetMeShowYouSomething/tutorial.html#flow"><img src="site/tutorial/answering.gif" width="720" alt="Answering a salon booking review: agreeing with a step, then partly agreeing with a note, while the map and the phone prototype follow along."></a>
+<a href="https://shyhunter.github.io/LetMeShowYouSomething/hero-walkthrough.mp4"><img src="site/hero-walkthrough-play.jpg" width="720" alt="Watch the 1-minute walkthrough: ask your agent, read the intro, answer each step, add a note, pick an option, download your answers, and see round 2."></a>
 
 </div>
 
