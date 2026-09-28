@@ -31,6 +31,8 @@ jobs:
         run: |
           mkdir -p _site/examples _site/schema
           cp -R site/. _site/
+          # Only what visitors see: the scripts that record the tutorial videos stay in the repository, off the site.
+          rm _site/tutorial/record.mjs _site/tutorial/chat.html
           # The example pages, each rendered as in examples/ plus a home button back to this site.
           SITE="https://shyhunter.github.io/LetMeShowYouSomething/"
           F1="skills/letmeshowyousomething/examples/flow-booking.review.json skills/letmeshowyousomething/examples/flow-booking.feedback.json"; F2="skills/letmeshowyousomething/examples/flow-booking-round2.review.json skills/letmeshowyousomething/examples/flow-booking-round2.feedback.json"
