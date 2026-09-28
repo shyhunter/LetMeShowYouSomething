@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // The landing page's top: a bar with the name, the code on GitHub and the day or night switch, never on the title;
-// a hero with the promise, the install, and a picture of a real page; and a link to the author's other project.
+// a hero with the promise, the install, and the one-minute walkthrough of a real page; and a link to the author's other project.
 import { test, expect } from '@playwright/test';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -18,9 +18,11 @@ test('the landing page: a top bar, a hero, the switch clear of the title, and th
   expect(s.y + s.height, 'the switch sits above the title, never on it').toBeLessThanOrEqual(h.y);
   const min = info.project.use.hasTouch ? 44 : 24;
   for (const box of [s, await gh.boundingBox()]) expect(box.height).toBeGreaterThanOrEqual(min);
-  const shot = page.locator('.hero-shot img');
-  expect(existsSync(join(ROOT, 'site', await shot.getAttribute('src')))).toBe(true);
-  await expect(page.locator('.hero-shot')).toHaveAttribute('href', 'tutorial.html');
+  // The hero is the one-minute walkthrough: muted, with controls, its poster shown first, the tutorial one link away.
+  const video = page.locator('.hero-shot video');
+  for (const attr of ['src', 'poster']) expect(existsSync(join(ROOT, 'site', await video.getAttribute(attr))), attr).toBe(true);
+  expect(await video.evaluate((v) => v.muted && v.controls && v.loop)).toBe(true);
+  await expect(page.locator('.hero .cta a[href="tutorial.html"]')).toBeVisible();
   await expect(page.locator('.hero .cta .install')).toBeInViewport();
   const other = page.getByRole('link', { name: 'PaperOtter on GitHub →' });
   await expect(other).toHaveAttribute('href', 'https://github.com/shyhunter/PaperOtter');
