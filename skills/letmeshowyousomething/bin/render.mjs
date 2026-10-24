@@ -1105,7 +1105,8 @@ function buildFor(s){
 }
 function progressHtml(nowStep){
   const n = STEPS.length, a = answeredCount();
-  const seg = (label, color, icon, done, total, now, jump) => '<button type="button" class="pseg' + (now ? ' now' : '') + '" style="--sc:' + color + ';--w:' + Math.max(total, 0.7) + '" data-jump="' + jump + '" aria-label="' + esc(label) + ': ' + done + ' of ' + total + ' done"' + (now ? ' aria-current="step"' : '') + '>'
+  // Label in Name (WCAG 2.5.3): the name says what the button shows, the count included, so voice control finds it.
+  const seg =(label, color, icon, done, total, now, jump) => '<button type="button" class="pseg' + (now ? ' now' : '') + '" style="--sc:' + color + ';--w:' + Math.max(total, 0.7) + '" data-jump="' + jump + '" aria-label="' + esc(label) + (total ? ' ' + done + '/' + total + ' done' : '') + '"' + (now ? ' aria-current="step"' : '') + '>'
     + '<span class="track"><i style="width:' + (total ? done / total * 100 : (done ? 100 : 0)) + '%"></i></span><span class="pl">' + I(icon, 'sm') + esc(label) + ' <small>' + (total ? done + '/' + total : '') + '</small></span></button>';
   return '<div class="prog"><div class="segs">' + seg('Let me explain', 'var(--s0)', 'flag', 1, 0, false, 'start')
     + SEGS.map(s => seg(s.label, s.color, s.icon, s.steps.filter(stepAnswer).length, s.steps.length, nowStep && nowStep.seg === s, 'q:' + STEPS.indexOf(s.steps[0]))).join('')

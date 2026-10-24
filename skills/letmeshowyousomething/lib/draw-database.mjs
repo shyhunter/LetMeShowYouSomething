@@ -14,11 +14,18 @@ export function drawDatabase(diagram, opts = {}) {
     }
     result.push(part); return result;
   });
-  const text = (value, x, y, size = 24, cls = 'dg-label') => lines(value, size).map((line, i) => `<text class="${cls}" x="${x}" y="${y + i * 18}">${escape(line)}</text>`).join('');
+  // A wrapped value keeps its spaces in its lines, so they are joined as they are; separate values and
+  // lines are kept apart by a space, which is not drawn between <text> elements. A table's name is every
+  // value it shows (Label in Name, WCAG 2.5.3), so voice control and screen readers get what is on screen.
+  let said = [];
+  const text = (value, x, y, size = 24, cls = 'dg-label') => {
+    said.push(String(value ?? 'null')); let row = 0;
+    return ' ' + String(value ?? 'null').split(/\r?\n/).map(part => lines(part, size).map(line => `<text class="${cls}" x="${x}" y="${y + row++ * 18}">${escape(line)}</text>`).join('')).join(' ');
+  };
   const width = 420, left = 20, right = left + width;
   const boxes = new Map(), parts = []; let top = 20;
   for (const n of diagram.nodes || []) {
-    const columnY = new Map();
+    const columnY = new Map(); said = [];
     const titleHeight = Math.max(48, lines(n.label, 40).length * 18 + 20);
     let offset = titleHeight;
     let content = text(n.label, left + 14, top + 26, 40, 'dg-label dg-db-title');
@@ -45,7 +52,7 @@ export function drawDatabase(diagram, opts = {}) {
     }
     const selected = n.step !== undefined && n.step === opts.selected;
     boxes.set(n.id, { n, columnY });
-    parts.push(`<g class="dg-node dg-k-table${selected ? ' dg-selected' : ''}" data-node="${escape(n.id)}"${n.step !== undefined ? ` data-step="${escape(n.step)}"` : ''}${n.step !== undefined || opts.commentable ? ' tabindex="0" role="button"' : ''} aria-current="${selected}" aria-label="${escape(n.label)}">`
+    parts.push(`<g class="dg-node dg-k-table${selected ? ' dg-selected' : ''}" data-node="${escape(n.id)}"${n.step !== undefined ? ` data-step="${escape(n.step)}"` : ''}${n.step !== undefined || opts.commentable ? ' tabindex="0" role="button"' : ''} aria-current="${selected}" aria-label="${escape(said.join(' '))}">`
       + `<title>${escape(n.label)}</title><rect class="dg-shape" x="${left}" y="${top}" width="${width}" height="${offset}" rx="8"/>${content}</g>`);
     top += offset + 80;
   }

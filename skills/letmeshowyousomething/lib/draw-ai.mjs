@@ -30,11 +30,12 @@ function aiText(value, x, y, max = 18) {
 export function drawAiContent(node, box) {
   const caption = aiCaption(node.kind); let y = box.y + (caption ? 44 : 26);
   let out = caption ? `<text class="dg-ai-caption" x="${box.x + 34}" y="${box.y + 21}">${caption}</text>` : '';
-  out += aiText(node.label, box.x + 12, y);
+  // A space between the <text> elements is not drawn, but keeps caption and words apart for assistive tech.
+  out += ' ' + aiText(node.label, box.x + 12, y);
   y += aiLines(node.label).length * 16;
   if (node.stop) for (const [heading, value] of [['Why', node.stop.reason], ['Next', node.stop.next]]) {
-    y += 8; out += `<text class="dg-ai-caption" x="${box.x + 12}" y="${y}">${heading}</text>`;
-    y += 16; out += aiText(value, box.x + 12, y); y += aiLines(value).length * 16;
+    y += 8; out += ` <text class="dg-ai-caption" x="${box.x + 12}" y="${y}">${heading}</text>`;
+    y += 16; out += ' ' + aiText(value, box.x + 12, y); y += aiLines(value).length * 16;
   }
   return out;
 }

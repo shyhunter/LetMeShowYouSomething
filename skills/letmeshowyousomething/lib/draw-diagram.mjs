@@ -132,15 +132,18 @@ export function drawDiagram(diagram, opts = {}) {
     const rich = aiContentHeight(n);
     const glyph = diamond || (opts.plain && !rich) ? null : n.icon || KIND_ICON[n.kind];
     const textX = diamond ? box.x + box.w / 2 : box.x + (glyph ? 34 : 12);
+    // wrap() breaks only at spaces, so each line is a <text> of its own with a space between them, which is
+    // not drawn: the words stay apart for assistive tech without moving centred text. The name (aria-label)
+    // carries every word shown, the line underneath included (Label in Name, WCAG 2.5.3).
     const lines = wrap(n.label, diamond ? 14 : glyph ? 18 : 22);
     const labelTop = box.y + (n.component ? 22 : box.h / 2 - (lines.length - 1) * 7 + 4) - (sub ? 5 : 0);
     parts.push(`<g data-node="${escSvg(nodeId)}" class="dg-node dg-k-${escSvg(n.kind)}${selected ? ' dg-selected' : ''}${answered ? ' dg-answered' : ''}${partClass(nodeId)}"`
       + (linked ? ` data-step="${escSvg(n.step)}"` : '') + (linked || opts.commentable ? ' tabindex="0" role="button"' : '')
-      + ` aria-label="${escSvg([aiCaption(n.kind), n.label || n.kind, n.stop ? `Why: ${n.stop.reason}. Next: ${n.stop.next}` : ''].filter(Boolean).join('. '))}" aria-current="${selected}">`
+      + ` aria-label="${escSvg([aiCaption(n.kind), n.label || n.kind, sub && !rich ? sub[0] + sub.slice(1).toLowerCase() : '', n.stop ? `Why: ${n.stop.reason}. Next: ${n.stop.next}` : ''].filter(Boolean).join('. '))}" aria-current="${selected}">`
       + outline(n.kind, box.x, box.y, box.w, box.h)
       + (glyph && (!rich || aiCaption(n.kind)) ? icon(glyph, box.x + 8, box.y + (rich || n.component ? 6 : box.h / 2 - 9)) : '')
-      + (rich ? drawAiContent(n, box) : `<text class="dg-label" x="${textX}" y="${labelTop}"${diamond ? ' text-anchor="middle"' : ''}>${lines.map((l, i) => `<tspan x="${textX}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text>`)
-      + (sub && !rich ? `<text class="dg-sub" x="${textX}" y="${labelTop + (lines.length - 1) * 14 + 13}"${diamond ? ' text-anchor="middle"' : ''}>${sub}</text>` : '')
+      + (rich ? drawAiContent(n, box) : lines.map((l, i) => `<text class="dg-label" x="${textX}" y="${labelTop + i * 14}"${diamond ? ' text-anchor="middle"' : ''}>${escSvg(l)}</text>`).join(' '))
+      + (sub && !rich ? ` <text class="dg-sub" x="${textX}" y="${labelTop + (lines.length - 1) * 14 + 13}"${diamond ? ' text-anchor="middle"' : ''}>${sub}</text>` : '')
       + (n.component ? `<foreignObject x="${box.x + 6}" y="${box.y + (rich || 34)}" width="${box.w - 12}" height="${box.h - (rich || 34) - 6}"><div class="dg-component">${drawBlock(n.component, { targets: new Set() })}</div></foreignObject>` : '')
       + '</g>');
   }
@@ -174,7 +177,7 @@ function drawSequence(diagram, opts = {}) {
       + ` aria-label="${escSvg(n.label || n.kind)}">`
       + outline(n.kind, box.x, box.y, box.w, box.h)
       + (glyph ? icon(glyph, box.x + 8, box.y + box.h / 2 - 9) : '')
-      + `<text class="dg-label" x="${box.x + (glyph ? 34 : 12)}" y="${box.y + box.h / 2 - (lines.length - 1) * 7 + 4}">${lines.map((l, i) => `<tspan x="${box.x + (glyph ? 34 : 12)}" dy="${i ? 14 : 0}">${escSvg(l)}</tspan>`).join('')}</text></g>`);
+      + lines.map((l, i) => `<text class="dg-label" x="${box.x + (glyph ? 34 : 12)}" y="${box.y + box.h / 2 - (lines.length - 1) * 7 + 4 + i * 14}">${escSvg(l)}</text>`).join(' ') + '</g>');
   }
   const labels = L.edges.filter((e) => e.label).map((e) =>
     `<text class="dg-edge-label" x="${e.labelAt[0]}" y="${e.labelAt[1]}" text-anchor="${e.self ? 'start' : 'middle'}" dominant-baseline="middle">${escSvg(e.label)}</text>`);
